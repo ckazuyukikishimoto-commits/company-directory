@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html class="dark" lang="ja">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>データアップロード制御ステーション</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13c8ec",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#101f22",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+
+<body class="font-display bg-background-light dark:bg-background-dark">
+    <!-- 成功メッセージ -->
+    <div th:if="${successMessage}" class="p-4 mb-4 text-green-800 rounded-lg bg-green-100">
+        <span th:text="${successMessage}"></span>
+    </div>
+
+    <!-- エラーメッセージ -->
+    <div th:if="${errorMessage}" class="p-4 mb-4 text-red-800 rounded-lg bg-red-100">
+        <span th:text="${errorMessage}"></span>
+    </div>
+    <div class="relative flex h-auto min-h-screen w-full flex-col">
+        <div class="layout-container flex h-full grow flex-col">
+            <header
+                class="flex items-center justify-between whitespace-nowrap border-b border-solid border-white/10 px-6 sm:px-10 py-3 font-display">
+                <div class="flex items-center gap-4 text-white">
+                    <div class="size-6 text-primary">
+                        <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M13.8261 30.5736C16.7203 29.8826 20.2244 29.4783 24 29.4783C27.7756 29.4783 31.2797 29.8826 34.1739 30.5736C36.9144 31.2278 39.9967 32.7669 41.3563 33.8352L24.8486 7.36089C24.4571 6.73303 23.5429 6.73303 23.1514 7.36089L6.64374 33.8352C8.00331 32.7669 11.0856 31.2278 13.8261 30.5736Z"
+                                fill="currentColor"></path>
+                            <path clip-rule="evenodd"
+                                d="M39.998 35.764C39.9944 35.7463 39.9875 35.7155 39.9748 35.6706C39.9436 35.5601 39.8949 35.4259 39.8346 35.2825C39.8168 35.2403 39.7989 35.1993 39.7813 35.1602C38.5103 34.2887 35.9788 33.0607 33.7095 32.5189C30.9875 31.8691 27.6413 31.4783 24 31.4783C20.3587 31.4783 17.0125 31.8691 14.2905 32.5189C12.0012 33.0654 9.44505 34.3104 8.18538 35.1832C8.17384 35.2075 8.16216 35.233 8.15052 35.2592C8.09919 35.3751 8.05721 35.4886 8.02977 35.589C8.00356 35.6848 8.00039 35.7333 8.00004 35.7388C8.00004 35.739 8 35.7393 8.00004 35.7388C8.00004 35.7641 8.0104 36.0767 8.68485 36.6314C9.34546 37.1746 10.4222 37.7531 11.9291 38.2772C14.9242 39.319 19.1919 40 24 40C28.8081 40 33.0758 39.319 36.0709 38.2772C37.5778 37.7531 38.6545 37.1746 39.3151 36.6314C39.9006 36.1499 39.9857 35.8511 39.998 35.764ZM4.95178 32.7688L21.4543 6.30267C22.6288 4.4191 25.3712 4.41909 26.5457 6.30267L43.0534 32.777C43.0709 32.8052 43.0878 32.8338 43.104 32.8629L41.3563 33.8352C43.104 32.8629 43.1038 32.8626 43.104 32.8629L43.1051 32.865L43.1065 32.8675L43.1101 32.8739L43.1199 32.8918C43.1276 32.906 43.1377 32.9246 43.1497 32.9473C43.1738 32.9925 43.2062 33.0545 43.244 33.1299C43.319 33.2792 43.4196 33.489 43.5217 33.7317C43.6901 34.1321 44 34.9311 44 35.7391C44 37.4427 43.003 38.7775 41.8558 39.7209C40.6947 40.6757 39.1354 41.4464 37.385 42.0552C33.8654 43.2794 29.133 44 24 44C18.867 44 14.1346 43.2794 10.615 42.0552C8.86463 41.4464 7.30529 40.6757 6.14419 39.7209C4.99695 38.7775 3.99999 37.4427 3.99999 35.7391C3.99999 34.8725 4.29264 34.0922 4.49321 33.6393C4.60375 33.3898 4.71348 33.1804 4.79687 33.0311C4.83898 32.9556 4.87547 32.8935 4.9035 32.8471C4.91754 32.8238 4.92954 32.8043 4.93916 32.7889L4.94662 32.777L4.95178 32.7688ZM35.9868 29.004L24 9.77997L12.0131 29.004C12.4661 28.8609 12.9179 28.7342 13.3617 28.6282C16.4281 27.8961 20.0901 27.4783 24 27.4783C27.9099 27.4783 31.5719 27.8961 34.6383 28.6282C35.082 28.7342 35.5339 28.8609 35.9868 29.004Z"
+                                fill="currentColor" fill-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em]">データアップロード制御ステーション</h2>
+                </div>
+                <div class="flex flex-1 justify-end gap-2 sm:gap-4"></div>
+            </header>
+            <main class="flex-1 px-4 sm:px-10 py-8">
+                <div class="layout-content-container flex flex-col max-w-7xl mx-auto gap-8">
+                    <div class="flex flex-wrap justify-between gap-4">
+                        <div class="flex min-w-72 flex-col gap-2">
+                            <p class="text-white text-4xl font-black leading-tight tracking-[-0.033em]">
+                                データアップロード制御ステーション</p>
+                            <p class="text-slate-400 dark:text-slate-400 text-base font-normal leading-normal">
+                                外部のデータストリームをシステムに取り込み、品質監査し、最終的に登録します。</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-8">
+                        <form id="uploadForm" action="/companies/import" method="post" enctype="multipart/form-data">
+                            <div class="flex flex-col items-center gap-6 rounded-xl border-2 border-dashed border-white/20 px-6 py-14 bg-white/5 hover:border-primary/80 transition-colors duration-300"
+                                id="dropZone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)"
+                                ondrop="handleDrop(event)">
+                                <div class="flex max-w-[480px] flex-col items-center gap-2">
+                                    <span class="material-symbols-outlined text-primary text-5xl">upload_file</span>
+                                    <p class="text-white text-lg font-bold leading-tight tracking-[-0.015em] max-w-[480px] text-center"
+                                        id="uploadText">データストリームをここに注入</p>
+                                    <p
+                                        class="text-slate-400 dark:text-slate-400 text-sm font-normal leading-normal max-w-[480px] text-center">
+                                        ファイルをドラッグ＆ドロップするか、クリックして選択</p>
+                                </div>
+                                <input type="file" id="fileInput" name="file" accept=".xlsx" style="display: none;"
+                                    onchange="handleFileSelect(event)" aria-label="Excelファイルを選択">
+                                <button type="button"
+                                    class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-white/10 text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-white/20 transition-colors"
+                                    onclick="document.getElementById('fileInput').click()" aria-label="ファイル選択ダイアログを開く">
+                                    <span class="truncate">ファイルを選択</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <div th:if="${importResult != null}">
+                        <h2 class="text-white text-[22px] font-bold leading-tight tracking-[-0.015em] pt-5">一次品質監査レポート
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div onclick="filterTable('all')" data-filter-card="all" class="cursor-pointer"
+                                role="button" aria-pressed="true" tabindex="0">
+                                <div class="rounded-xl p-6 bg-white/5 border border-white/10 flex flex-col gap-2">
+                                    <p class="text-sm text-slate-400">総件数</p>
+                                    <p class="text-4xl font-bold text-white" th:text="${importResult.totalCount}"></p>
+                                </div>
+                            </div>
+                            <div onclick="filterTable('success')" data-filter-card="success" class="cursor-pointer"
+                                role="button" aria-pressed="false" tabindex="0">
+                                <div class="rounded-xl p-6 bg-white/5 border border-white/10 flex flex-col gap-2">
+                                    <p class="text-sm text-slate-400">正常</p>
+                                    <p class="text-4xl font-bold text-green-400" th:text="${importResult.successCount}">
+                                    </p>
+                                </div>
+                            </div>
+                            <div onclick="filterTable('warning')" data-filter-card="warning" class="cursor-pointer"
+                                role="button" aria-pressed="false" tabindex="0">
+                                <div class="rounded-xl p-6 bg-white/5 border border-white/10 flex flex-col gap-2">
+                                    <p class="text-sm text-slate-400">警告</p>
+                                    <p class="text-4xl font-bold text-yellow-400"
+                                        th:text="${importResult.warningCount}"></p>
+                                </div>
+                            </div>
+                            <div onclick="filterTable('error')" data-filter-card="error" class="cursor-pointer"
+                                role="button" aria-pressed="false" tabindex="0">
+                                <div class="rounded-xl p-6 bg-white/5 border border-white/10 flex flex-col gap-2">
+                                    <p class="text-sm text-slate-400">エラー</p>
+                                    <p class="text-4xl font-bold text-red-500" th:text="${importResult.errorCount}"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-6">
+                            <h2 class="text-white text-[22px] font-bold leading-tight tracking-[-0.015em] pt-5">
+                                深層検査プレビュー</h2>
+                            <div class="overflow-hidden rounded-xl border border-white/10 bg-white/5">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left text-sm text-slate-300" role="table"
+                                        aria-label="インポートデータ検証結果">
+                                        <thead class="bg-white/5 text-xs uppercase text-slate-400">
+                                            <tr>
+                                                <th class="px-6 py-3" scope="col">行番号</th>
+                                                <th class="px-6 py-3" scope="col">企業ID</th>
+                                                <th class="px-6 py-3" scope="col">企業名</th>
+                                                <th class="px-6 py-3" scope="col">住所</th>
+                                                <th class="px-6 py-3" scope="col">郵便番号</th>
+                                                <th class="px-6 py-3" scope="col">登録日</th>
+                                                <th class="px-6 py-3" scope="col">備考</th>
+                                                <th class="px-6 py-3" scope="col">ステータス</th>
+                                                <th class="px-6 py-3" scope="col">エラー詳細</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr class="border-b border-white/10"
+                                                th:attr="data-status=${row.isValid} ? (${row.hasWarning} ? 'warning' : 'success') : 'error'"
+                                                th:classappend="${row.isValid} ? (${row.hasWarning} ? 'bg-yellow-400/10' : '') : 'bg-red-500/10'"
+                                                th:each="row : ${importResult.totalList}">
+                                                <th class="whitespace-nowrap px-6 py-4 font-medium text-white"
+                                                    th:text="${row.rowNum == null} ? '-' : ${row.rowNum}"></th>
+                                                <td class="px-6 py-4"
+                                                    th:text="${#strings.isEmpty(row.companyId)} ? '-' : ${row.companyId}">
+                                                </td>
+                                                <td class="px-6 py-4"
+                                                    th:text="${#strings.isEmpty(row.companyName)} ? '-' : ${row.companyName}">
+                                                </td>
+                                                <td class="px-6 py-4"
+                                                    th:text="${#strings.isEmpty(row.address)} ? '-' : ${row.address}">
+                                                </td>
+                                                <td class="px-6 py-4"
+                                                    th:text="${#strings.isEmpty(row.zipCode)} ? '-' : ${row.zipCode}">
+                                                </td>
+                                                <td class="px-6 py-4"
+                                                    th:text="${#strings.isEmpty(row.registrationDate)} ? '-' : ${row.registrationDate}">
+                                                </td>
+                                                <td class="px-6 py-4"
+                                                    th:text="${#strings.isEmpty(row.remarks)} ? '-' : ${row.remarks}">
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="inline-block h-2 w-2 rounded-full"
+                                                            th:classappend="${row.isValid} ? (${row.hasWarning} ? ' bg-yellow-400' : ' bg-green-400') : ' bg-red-500'"></span>
+                                                        <span
+                                                            th:text="${row.isValid} ? (${row.hasWarning} ? '警告' : 'OK') : 'エラー'"></span>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <!-- エラーがある場合 -->
+                                                    <ul th:if="${row.hasError}">
+                                                        <li th:each="err : ${row.errorMessages}" th:text="${err}"></li>
+                                                    </ul>
+
+                                                    <!-- 警告がある場合（エラーは無い前提） -->
+                                                    <ul th:if="${!row.hasError and row.hasWarning}">
+                                                        <li th:each="warn : ${row.warningMessages}" th:text="${warn}">
+                                                        </li>
+                                                    </ul>
+
+                                                    <!-- どっちもない場合（有効な行） -->
+                                                    <span th:if="${row.isValid and !row.hasWarning}">-</span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div th:if="${importResult != null && 
+                            !((importResult.successCount > 0 && importResult.warningCount == 0 && importResult.errorCount == 0)
+                             || (importResult.successCount == 0 && importResult.warningCount == 0 && importResult.errorCount > 0)
+                            )}">
+                            <form method="post" class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
+                                <input type="hidden" name="tempFileName" th:value="${tempFileName}">
+                                <div class="flex flex-col gap-5 rounded-xl bg-white/5 border border-white/10 p-6">
+                                    <div class="flex items-center gap-3 border-b border-white/10 pb-4">
+                                        <span class="material-symbols-outlined text-primary text-2xl">database</span>
+                                        <h3 class="text-white text-lg font-bold">データベース登録エリア</h3>
+                                    </div>
+                                    <div class="flex flex-col gap-4">
+                                        <button type="button" onclick="openConfirmationModal('all')"
+                                            class="group flex items-center justify-center gap-3 w-full rounded-lg bg-primary h-14 px-6 text-background-dark text-base font-bold transition-all hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(19,200,236,0.3)]">
+                                            <span class="material-symbols-outlined">done_all</span>
+                                            有効データ（正常＋警告）をすべて登録
+                                        </button>
+                                        <button type="button" onclick="openConfirmationModal('strict')"
+                                            class="group flex items-center justify-center gap-3 w-full rounded-lg bg-white/5 border border-white/10 h-14 px-6 text-white text-base font-bold transition-all hover:bg-white/10 hover:border-white/20">
+                                            <span class="material-symbols-outlined text-green-400">check_circle</span>
+                                            正常データのみ登録（警告は無視）
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-5 rounded-xl bg-white/5 border border-white/10 p-6">
+                                    <div class="flex items-center gap-3 border-b border-white/10 pb-4">
+                                        <span
+                                            class="material-symbols-outlined text-slate-400 text-2xl">folder_zip</span>
+                                        <h3 class="text-white text-lg font-bold">データ保全・確認エリア</h3>
+                                    </div>
+                                    <div class="flex flex-col gap-3">
+                                        <button type="submit"
+                                            th:formaction="@{/companies/import/download(target='both')}"
+                                            class="flex items-center justify-between w-full rounded-lg bg-white/5 border border-white/10 h-12 px-5 text-slate-200 text-sm font-medium transition-colors hover:bg-white/10 hover:text-white">
+                                            <span>エラー・警告分をダウンロード</span>
+                                            <span class="material-symbols-outlined text-lg">download</span>
+                                        </button>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <button type="submit"
+                                                th:formaction="@{/companies/import/download(target='error')}"
+                                                class="flex items-center justify-between w-full rounded-lg bg-red-500/10 border border-red-500/20 h-12 px-5 text-red-400 text-sm font-medium transition-colors hover:bg-red-500/20 hover:text-red-300">
+                                                <span>エラー分のみダウンロード</span>
+                                                <span class="material-symbols-outlined text-lg">download</span>
+                                            </button>
+                                            <button type="submit"
+                                                th:formaction="@{/companies/import/download(target='warning')}"
+                                                class="flex items-center justify-between w-full rounded-lg bg-yellow-400/10 border border-yellow-400/20 h-12 px-5 text-yellow-400 text-sm font-medium transition-colors hover:bg-yellow-400/20 hover:text-yellow-300">
+                                                <span>警告分のみダウンロード</span>
+                                                <span class="material-symbols-outlined text-lg">download</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div
+                        class="sticky bottom-0 mt-8 py-6 bg-background-dark/80 backdrop-blur-sm border-t border-white/10">
+                        <div class="flex flex-col sm:flex-row justify-end items-center gap-4 max-w-7xl mx-auto">
+                            <a href="/companies"
+                                class="flex w-full sm:w-auto min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-red-500/20 text-red-400 text-base font-bold leading-normal tracking-[0.015em] hover:bg-red-500/30 transition-colors">
+                                <span class="truncate">プロセスを中止</span>
+                            </a>
+                            <form method="post">
+                                <div
+                                    th:if="${importResult != null && (importResult.warningCount == 0 && importResult.errorCount == 0)}">
+                                    <button type="button" onclick="openConfirmationModal('all')"
+                                        class="flex w-full sm:w-auto min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center gap-3 overflow-hidden rounded-lg h-12 px-8 bg-primary text-background-dark text-base font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(19,200,236,0.3)] transition-all">
+                                        <span class="material-symbols-outlined">done_all</span>
+                                        <span class="truncate"
+                                            th:text="'全' + ${importResult.totalCount} + '件を登録する'">全1,234,567件を登録する</span>
+                                    </button>
+                                </div>
+                                <div
+                                    th:if="${importResult != null && (importResult.warningCount == 0 && importResult.successCount == 0)}">
+                                    <button type="submit" th:formaction="@{/companies/import/download(target='both')}"
+                                        class="flex w-full sm:w-auto min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-12 px-6 bg-white/5 border border-white/10 text-slate-200 text-base font-bold leading-normal tracking-[0.015em] hover:bg-white/10 hover:text-white hover:border-white/30 transition-all">
+                                        <span class="material-symbols-outlined">download</span>
+                                        <span class="truncate">全エラーをダウンロード</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <div aria-labelledby="modal-title" aria-modal="true" class="fixed inset-0 z-50 hidden" id="confirmation-modal"
+        role="dialog">
+        <div class="fixed inset-0 bg-[#050b14]/90 backdrop-blur-md transition-opacity"
+            onclick="document.getElementById('confirmation-modal').classList.add('hidden')"
+            style="background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px); background-size: 40px 40px;">
+        </div>
+        <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+                <div
+                    class="relative transform overflow-hidden rounded-2xl border border-white/10 bg-[#0a1116]/80 backdrop-blur-xl text-left shadow-[0_0_100px_rgba(19,200,236,0.08)] transition-all sm:w-full sm:max-w-5xl">
+                    <div
+                        class="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent">
+                    </div>
+                    <div class="flex items-center justify-between border-b border-white/10 px-6 py-6 sm:px-8">
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 border border-primary/20 text-primary shadow-[0_0_15px_rgba(19,200,236,0.15)]">
+                                <span class="material-symbols-outlined text-2xl">analytics</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <h3 class="text-2xl font-bold text-white tracking-tight font-display" id="modal-title">
+                                    登録内容の確認</h3>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span
+                                        class="flex h-2 w-2 rounded-full bg-green-400 shadow-[0_0_8px_#4ade80]"></span>
+                                    <span
+                                        class="text-xs font-mono font-medium text-green-400 tracking-wider">SYSTEM_READY</span>
+                                    <span class="hidden sm:inline text-xs text-slate-500 font-mono">//
+                                        CONFIRMATION_SEQUENCE_INITIATED</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button
+                            class="group rounded-full p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+                            onclick="document.getElementById('confirmation-modal').classList.add('hidden')">
+                            <span
+                                class="material-symbols-outlined transition-transform group-hover:rotate-90">close</span>
+                        </button>
+                    </div>
+                    <div class="px-6 py-8 sm:px-8">
+                        <p class="text-slate-300 mb-6 text-sm">以下の内容でデータベースを更新します。よろしいですか？</p>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <!-- 1. 新規登録の内訳 -->
+                            <div
+                                class="group relative overflow-hidden rounded-xl bg-white/5 border border-green-500/30 hover:border-green-500/50 hover:bg-white/[0.07] transition-all duration-300 hover:shadow-[0_0_30px_rgba(74,222,128,0.1)]">
+                                <div
+                                    class="absolute top-0 left-0 w-[3px] h-full bg-green-500 shadow-[0_0_10px_#22c55e]">
+                                </div>
+                                <div class="p-5 flex flex-col h-full">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <div class="flex flex-col">
+                                            <span
+                                                class="text-[10px] text-green-400 font-bold uppercase tracking-wider mb-1">INSERT
+                                                OPERATION</span>
+                                            <h4 class="text-white font-bold text-lg">新規登録</h4>
+                                        </div>
+                                        <span
+                                            class="material-symbols-outlined text-green-500/30 group-hover:text-green-400 transition-colors text-3xl">add_circle</span>
+                                    </div>
+                                    <div class="mb-5">
+                                        <span id="modal-insert-count"
+                                            class="text-3xl sm:text-4xl font-mono font-bold text-white tracking-tight"
+                                            th:text="${importResult != null ? #lists.size(importResult.successList.?[!isUpdate]) : 0}">0</span>
+                                        <span class="text-sm text-slate-400 ml-1">件</span>
+                                    </div>
+                                    <div class="mt-auto">
+                                        <div class="flex justify-between items-end mb-2">
+                                            <span class="text-xs text-slate-500 font-mono">対象行番号</span>
+                                        </div>
+                                        <div id="modal-insert-list"
+                                            class="h-28 overflow-y-auto custom-scrollbar bg-black/30 rounded border border-white/5 p-3 font-mono text-xs text-green-300/80 leading-relaxed shadow-inner">
+                                            <th:block
+                                                th:if="${importResult == null || #lists.isEmpty(importResult.successList.?[!isUpdate])}">
+                                                <span class="text-slate-500">なし</span>
+                                            </th:block>
+                                            <th:block
+                                                th:if="${importResult != null && !#lists.isEmpty(importResult.successList.?[!isUpdate])}">
+                                                <span th:each="row, stat : ${importResult.successList.?[!isUpdate]}"
+                                                    th:text="${row.rowNum} + (${stat.last} ? '' : ', ')"></span>
+                                            </th:block>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 2. 更新の内訳 -->
+                            <div
+                                class="group relative overflow-hidden rounded-xl bg-white/5 border border-blue-500/30 hover:border-blue-500/50 hover:bg-white/[0.07] transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)]">
+                                <div class="absolute top-0 left-0 w-[3px] h-full bg-blue-500 shadow-[0_0_10px_#3b82f6]">
+                                </div>
+                                <div class="p-5 flex flex-col h-full">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <div class="flex flex-col">
+                                            <span
+                                                class="text-[10px] text-blue-400 font-bold uppercase tracking-wider mb-1">UPDATE
+                                                OPERATION</span>
+                                            <h4 class="text-white font-bold text-lg">既存データ更新</h4>
+                                        </div>
+                                        <span
+                                            class="material-symbols-outlined text-blue-500/30 group-hover:text-blue-400 transition-colors text-3xl">update</span>
+                                    </div>
+                                    <div class="mb-5">
+                                        <span id="modal-update-count"
+                                            class="text-3xl sm:text-4xl font-mono font-bold text-white tracking-tight"
+                                            th:text="${importResult != null ? #lists.size(importResult.successList.?[isUpdate]) : 0}">0</span>
+                                        <span class="text-sm text-slate-400 ml-1">件</span>
+                                    </div>
+                                    <div class="mt-auto">
+                                        <div class="flex justify-between items-end mb-2">
+                                            <span class="text-xs text-slate-500 font-mono">対象行番号</span>
+                                        </div>
+                                        <div id="modal-update-list"
+                                            class="h-28 overflow-y-auto custom-scrollbar bg-black/30 rounded border border-white/5 p-3 font-mono text-xs text-blue-300/80 leading-relaxed shadow-inner">
+                                            <th:block
+                                                th:if="${importResult == null || #lists.isEmpty(importResult.successList.?[isUpdate])}">
+                                                <span class="text-slate-500">なし</span>
+                                            </th:block>
+                                            <th:block
+                                                th:if="${importResult != null && !#lists.isEmpty(importResult.successList.?[isUpdate])}">
+                                                <span th:each="row, stat : ${importResult.successList.?[isUpdate]}"
+                                                    th:text="${row.rowNum} + (${stat.last} ? '' : ', ')"></span>
+                                            </th:block>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 3. 除外（警告/エラー）の内訳 -->
+                            <div
+                                class="group relative overflow-hidden rounded-xl bg-white/5 border border-orange-500/30 hover:border-orange-500/50 hover:bg-white/[0.07] transition-all duration-300 hover:shadow-[0_0_30px_rgba(249,115,22,0.1)]">
+                                <div
+                                    class="absolute top-0 left-0 w-[3px] h-full bg-orange-500 shadow-[0_0_10px_#f97316]">
+                                </div>
+                                <div class="p-5 flex flex-col h-full">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <div class="flex flex-col">
+                                            <span
+                                                class="text-[10px] text-orange-400 font-bold uppercase tracking-wider mb-1">EXCLUDED
+                                                DATA</span>
+                                            <h4 class="text-white font-bold text-lg">除外データ</h4>
+                                        </div>
+                                        <span
+                                            class="material-symbols-outlined text-orange-500/30 group-hover:text-orange-400 transition-colors text-3xl">warning</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span id="modal-excluded-count"
+                                            class="text-3xl sm:text-4xl font-mono font-bold text-white tracking-tight"
+                                            th:text="${importResult != null ? (importResult.errorCount + importResult.warningCount) : 0}">0</span>
+                                        <span class="text-sm text-slate-400 ml-1">件</span>
+                                    </div>
+                                    <div id="modal-excluded-breakdown"
+                                        class="mb-4 px-2 py-1.5 bg-orange-500/10 border border-orange-500/20 rounded text-[10px] text-orange-300 font-medium"
+                                        th:if="${importResult != null && (importResult.errorCount > 0 || importResult.warningCount > 0)}">
+                                        <span
+                                            class="material-symbols-outlined text-[12px] align-middle mr-1">error_outline</span>
+                                        <span id="modal-excluded-detail-text">エラー <span
+                                                th:text="${importResult.errorCount}">0</span>件 / 警告 <span
+                                                th:text="${importResult.warningCount}">0</span>件</span>
+                                    </div>
+                                    <div class="mb-4 px-2 py-1.5 bg-slate-500/10 border border-slate-500/20 rounded text-[10px] text-slate-400 font-medium"
+                                        th:if="${importResult == null || (importResult.errorCount == 0 && importResult.warningCount == 0)}">
+                                        <span
+                                            class="material-symbols-outlined text-[12px] align-middle mr-1">check_circle</span>
+                                        除外データなし
+                                    </div>
+                                    <div class="mt-auto">
+                                        <div class="flex justify-between items-end mb-2">
+                                            <span class="text-xs text-slate-500 font-mono">除外詳細</span>
+                                        </div>
+                                        <div id="modal-excluded-list"
+                                            class="h-28 overflow-y-auto custom-scrollbar bg-black/30 rounded border border-white/5 p-3 font-mono text-xs text-orange-300/80 leading-relaxed shadow-inner">
+                                            <span id="modal-excluded-note"
+                                                th:if="${importResult != null && (importResult.errorCount > 0 || importResult.warningCount > 0)}"
+                                                class="text-orange-300/60 text-[10px]">
+                                                ※これらは登録されません。<br />
+                                                修正が必要な場合は「キャンセル」してダウンロードしてください。
+                                            </span>
+                                            <div id="modal-excluded-rows" class="flex flex-wrap gap-1 mt-2"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-[#080d11]/60 px-6 py-6 sm:px-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div class="flex items-center gap-3 opacity-60 order-2 md:order-1">
+                            <span class="material-symbols-outlined text-slate-400 text-lg">lock</span>
+                            <span
+                                class="text-[10px] sm:text-xs font-mono text-slate-400 tracking-widest uppercase">Secure
+                                Protocol v4.2 // Encrypted</span>
+                        </div>
+                        <div class="flex w-full md:w-auto gap-4 order-1 md:order-2">
+                            <button
+                                class="flex-1 md:flex-none py-3 px-6 rounded-lg border border-white/10 text-slate-300 font-bold text-sm hover:bg-white/5 hover:text-white transition-colors uppercase tracking-wide"
+                                onclick="document.getElementById('confirmation-modal').classList.add('hidden')">
+                                キャンセル
+                            </button>
+                            <form th:action="@{/companies/import/execute}" method="post" class="inline">
+                                <input type="hidden" name="tempFileName" th:value="${tempFileName}">
+                                <input type="hidden" name="mode" id="modalModeInput" value="all">
+                                <button type="submit"
+                                    class="btn-shine relative overflow-hidden flex-1 md:flex-none py-3 px-8 rounded-lg bg-primary text-background-dark font-bold text-sm shadow-[0_0_20px_rgba(19,200,236,0.3)] hover:shadow-[0_0_30px_rgba(19,200,236,0.5)] transition-all uppercase tracking-wide flex items-center justify-center gap-2 group">
+                                    <span
+                                        class="material-symbols-outlined text-lg group-hover:animate-pulse">bolt</span>
+                                    確定して登録
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        var modalStats = {
+            strict: {
+                insertCount: /*[[${importResult != null ? importResult.strictInsertCount : 0}]]*/ 0,
+                insertRows: /*[[${importResult != null ? importResult.strictInsertRows : {}}]]*/[],
+
+                updateCount: /*[[${importResult != null ? importResult.strictUpdateCount : 0}]]*/ 0,
+                updateRows: /*[[${importResult != null ? importResult.strictUpdateRows : {}}]]*/[],
+
+                excludedCount: /*[[${importResult != null ? (importResult.errorCount + importResult.warningCount) : 0}]]*/ 0,
+                excludedRows: /*[[${importResult != null ? importResult.strictExcludedRows : {}}]]*/[],
+                errorCount: /*[[${importResult != null ? importResult.errorCount : 0}]]*/ 0,
+                warningCount: /*[[${importResult != null ? importResult.warningCount : 0}]]*/ 0
+            },
+            all: {
+                insertCount: /*[[${importResult != null ? importResult.allInsertCount : 0}]]*/ 0,
+                insertRows: /*[[${importResult != null ? importResult.allInsertRows : {}}]]*/[],
+
+                updateCount: /*[[${importResult != null ? importResult.allUpdateCount : 0}]]*/ 0,
+                updateRows: /*[[${importResult != null ? importResult.allUpdateRows : {}}]]*/[],
+
+                excludedCount: /*[[${importResult != null ? importResult.errorCount : 0}]]*/ 0,
+                excludedRows: /*[[${importResult != null ? importResult.allExcludedRows : {}}]]*/[],
+                errorCount: /*[[${importResult != null ? importResult.errorCount : 0}]]*/ 0,
+                warningCount: 0
+            }
+        };
+        /*]]>*/
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('border-primary');
+            event.currentTarget.classList.add('bg-primary/10');
+        }
+
+        function handleDragLeave(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('border-primary');
+            event.currentTarget.classList.remove('bg-primary/10');
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('border-primary');
+            event.currentTarget.classList.remove('bg-primary/10');
+
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (validateFile(file)) {
+                    setFile(file);
+                }
+            }
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file && validateFile(file)) {
+                setFile(file);
+            }
+        }
+
+        function validateFile(file) {
+            // Excelファイルの拡張子チェック
+            const validExtensions = ['.xlsx', '.xls'];
+            const fileName = file.name.toLowerCase();
+            const isValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+
+            if (!isValidExtension) {
+                alert('Excelファイル（.xlsx または .xls）のみアップロード可能です。');
+                return false;
+            }
+
+            // ファイルサイズチェック（例: 10MBまで）
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            if (file.size > maxSize) {
+                alert('ファイルサイズは10MB以下にしてください。');
+                return false;
+            }
+
+            return true;
+        }
+
+        function setFile(file) {
+            // ファイル名を表示
+            document.getElementById('uploadText').textContent = `選択されたファイル: ${file.name}`;
+
+            // フォームを自動送信するか、確認ダイアログを表示
+            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            const confirmMessage = `ファイル名: ${file.name}\nファイルサイズ: ${fileSizeMB} MB\n\nこのファイルをアップロードして解析を開始しますか？`;
+            if (confirm(confirmMessage)) {
+                document.getElementById('uploadForm').submit();
+            } else {
+                // キャンセルされた場合は選択をリセット
+                document.getElementById('fileInput').value = '';
+                document.getElementById('uploadText').textContent = 'データストリームをここに注入';
+            }
+        }
+
+        // フィルタタイプ: 'all', 'success', 'warning', 'error'
+        function filterTable(filterType) {
+            const rows = document.querySelectorAll('tbody tr[data-status]');
+
+            rows.forEach(row => {
+                const status = row.getAttribute('data-status');
+
+                if (filterType === 'all') {
+                    row.style.display = '';
+                } else {
+                    row.style.display = (status === filterType) ? '' : 'none';
+                }
+            });
+
+            // アクティブなカードの視覚的フィードバック（オプション）
+            updateActiveCard(filterType);
+        }
+
+        function updateActiveCard(activeType) {
+            // すべてのカードからアクティブクラスとaria-pressed属性をリセット
+            document.querySelectorAll('[data-filter-card]').forEach(card => {
+                card.classList.remove('ring-2', 'ring-primary');
+                card.setAttribute('aria-pressed', 'false');
+            });
+
+            // クリックされたカードにアクティブクラスとaria-pressed属性を追加
+            const activeCard = document.querySelector(`[data-filter-card="${activeType}"]`);
+            if (activeCard) {
+                activeCard.classList.add('ring-2', 'ring-primary');
+                activeCard.setAttribute('aria-pressed', 'true');
+            }
+        }
+
+        // キーボードナビゲーションサポート
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('[data-filter-card]').forEach(card => {
+                card.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        const filterType = this.getAttribute('data-filter-card');
+                        filterTable(filterType);
+                    }
+                });
+            });
+        });
+
+        function openConfirmationModal(mode) {
+            const modal = document.getElementById('confirmation-modal');
+            const modeInput = document.getElementById('modalModeInput');
+            const modalTitle = document.getElementById('modal-title');
+
+            if (modeInput) {
+                modeInput.value = mode;
+            }
+
+            if (modalTitle) {
+                if (mode === 'strict') {
+                    modalTitle.textContent = '正常データのみ登録の確認';
+                } else {
+                    modalTitle.textContent = '登録内容の確認';
+                }
+            }
+
+            // Update Stats
+            const data = modalStats[mode];
+            if (data) {
+                // Insert
+                const insertCount = document.getElementById('modal-insert-count');
+                if (insertCount) insertCount.textContent = data.insertCount;
+                updateList('modal-insert-list', data.insertRows);
+
+                // Update
+                const updateCount = document.getElementById('modal-update-count');
+                if (updateCount) updateCount.textContent = data.updateCount;
+                updateList('modal-update-list', data.updateRows);
+
+                // Excluded
+                const excludedCount = document.getElementById('modal-excluded-count');
+                if (excludedCount) excludedCount.textContent = data.excludedCount;
+
+                // Excluded List (Rows)
+                updateList('modal-excluded-rows', data.excludedRows);
+
+                // Show/Hide Breakdown & Note
+
+                // Excluded Badge
+                const breakdown = document.getElementById('modal-excluded-breakdown');
+                const detailText = document.getElementById('modal-excluded-detail-text');
+
+                if (data.excludedCount > 0) {
+                    if (breakdown) breakdown.style.display = ''; // Show
+                    if (detailText) {
+                        detailText.innerHTML = `エラー <span>${data.errorCount}</span>件 / 警告 <span>${data.warningCount}</span>件`;
+                    }
+                    // Toggle note about exclusion
+                    const note = document.getElementById('modal-excluded-note');
+                    if (note) note.style.display = '';
+
+                } else {
+                    if (breakdown) breakdown.style.display = 'none'; // Hide if 0
+                    // Toggle note
+                    const note = document.getElementById('modal-excluded-note');
+                    if (note) note.style.display = 'none';
+                }
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function updateList(elementId, rows) {
+            const container = document.getElementById(elementId);
+            if (!container) return;
+
+            container.innerHTML = ''; // Clear
+
+            if (rows && rows.length > 0) {
+                // Use document fragment for performance
+                const frag = document.createDocumentFragment();
+                rows.forEach((rowNum, index) => {
+                    const span = document.createElement('span');
+                    span.textContent = rowNum + (index < rows.length - 1 ? ', ' : '');
+                    frag.appendChild(span);
+                });
+                container.appendChild(frag);
+            } else {
+                const span = document.createElement('span');
+                span.className = 'text-slate-500';
+                span.textContent = 'なし';
+                container.appendChild(span);
+            }
+        }
+    </script>
+</body>
+
+</html>

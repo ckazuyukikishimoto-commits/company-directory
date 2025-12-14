@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html class="dark" lang="ja" xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="utf-8"/>
+        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+        <title>企業一覧画面</title>
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+        <script>
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            "primary": "#137fec",
+                            "background-light": "#f6f7f8",
+                            "background-dark": "#111418",
+                        },
+                        fontFamily: {
+                            "display": ["Inter", "Noto Sans JP", "sans-serif"]
+                        },
+                        borderRadius: {
+                            "DEFAULT": "0.25rem",
+                            "lg": "0.5rem",
+                            "xl": "0.75rem",
+                            "full": "9999px"
+                        },
+                    },
+                },
+            }
+        </script>
+        <style>
+            body {
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+            }
+            .group:focus-within .group-focus-within\:block {
+                display: block;
+            }
+            .group:focus-within .group-focus-within\:opacity-100 {
+                opacity: 1;
+            }
+            .group:focus-within .group-focus-within\:pointer-events-auto {
+                pointer-events: auto;
+            }
+        </style>
+    </head>
+    <body class="font-display bg-background-light dark:bg-background-dark">
+
+        <!-- 成功メッセージ -->
+        <div th:if="${successMessage}" class="p-4 mb-4 text-green-800 rounded-lg bg-green-100">
+            <span th:text="${successMessage}"></span>
+        </div>
+
+        <!-- エラーメッセージ -->
+        <div th:if="${errorMessage}" class="p-4 mb-4 text-red-800 rounded-lg bg-red-100">
+            <span th:text="${errorMessage}"></span>
+        </div>
+
+        <div class="relative flex h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-hidden">
+            <div class="flex h-full grow flex-col">
+                <div class="px-4 sm:px-6 md:px-8 lg:px-10 flex flex-col h-full">
+                    <div class="layout-content-container flex flex-col w-full mx-auto max-w-[1400px] flex-1 h-full py-4">
+                        <div class="flex flex-col flex-1 h-full">
+                            <div class="flex flex-wrap justify-between items-center gap-4 pb-3">
+                                <h1 class="text-gray-800 dark:text-white text-2xl font-bold leading-tight tracking-[-0.033em]">企業一覧</h1>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <form th:action="@{companies/add}" method="get">
+                                        <button class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-9 px-3 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors">
+                                            <span class="material-symbols-outlined text-base">add_circle</span>
+                                            <span class="truncate">新規追加</span>
+                                        </button>
+                                    </form>
+                                    <form th:action="@{/companies/import}" method="get">
+                                        <button class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-9 px-3 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
+                                            <span class="material-symbols-outlined text-base">upload_file</span>
+                                            <span class="truncate">Excelインポート</span>
+                                        </button>
+                                    </form>
+                                    <form th:action="@{companies/export}" method="get">
+                                        <button class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-9 px-3 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
+                                            <span class="material-symbols-outlined text-base">download</span>
+                                            <span class="truncate">エクスポート</span>
+                                        </button>
+                                    </form>
+                                    <button class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-9 px-3 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
+                                        <span class="material-symbols-outlined text-base">description</span>
+                                        <span class="truncate">テンプレートDL</span>
+                                    </button>
+                                    <form th:action="@{companies/trash}" method="get">
+                                        <button class="flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
+                                            <span class="material-symbols-outlined text-xl">delete_history</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-3 pb-3">
+                                <div class="flex items-start gap-3">
+                                    <div class="flex-1">
+                                        <label class="flex flex-col min-w-40 h-10">
+                                            <div class="flex w-full flex-1 items-stretch rounded-lg h-full">
+                                                <div class="text-[#9dabb9] flex bg-white dark:bg-[#283039] items-center justify-center pl-4 rounded-l-lg border border-gray-300 dark:border-[#3b4754] border-r-0">
+                                                    <span class="material-symbols-outlined">search</span>
+                                                </div>
+                                                <input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-800 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary border-gray-300 dark:border-[#3b4754] bg-white dark:bg-[#283039] focus:border-primary/50 h-full placeholder:text-gray-400 dark:placeholder:text-[#9dabb9] px-4 rounded-l-none border-l-0 pl-2 text-base font-normal leading-normal" placeholder="キーワード検索..." value=""/>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    <div class="flex-1 relative">
+                                        <details class="w-full rounded-lg border border-gray-300 dark:border-[#3b4754] bg-white dark:bg-[#1c2127] group">
+                                            <summary class="flex cursor-pointer items-center gap-2 px-3 h-10 list-none">
+                                                <p class="text-gray-800 dark:text-white text-sm font-medium leading-normal">詳細検索</p>
+                                                <div class="ml-auto text-gray-600 dark:text-white group-open:rotate-180 transition-transform">
+                                                    <span class="material-symbols-outlined">expand_more</span>
+                                                </div>
+                                            </summary>
+                                            <div class="absolute top-full left-0 w-full mt-2 z-20">
+                                                <div class="border border-gray-300 dark:border-[#3b4754] p-4 bg-white dark:bg-[#1c2127] rounded-lg shadow-lg">
+                                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                        <div>
+                                                            <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">企業ID</label>
+                                                            <input class="form-input block w-full rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-primary focus:border-primary h-9 text-sm" placeholder="例: 0001" type="text"/>
+                                                        </div>
+                                                        <div>
+                                                            <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">企業名</label>
+                                                            <input class="form-input block w-full rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-primary focus:border-primary h-9 text-sm" placeholder="例: 株式会社未来テクノロジー" type="text"/>
+                                                        </div>
+                                                        <div>
+                                                            <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">住所</label>
+                                                            <input class="form-input block w-full rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-primary focus:border-primary h-9 text-sm" placeholder="例: 東京都千代田区" type="text"/>
+                                                        </div>
+                                                        <div>
+                                                            <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">郵便番号</label>
+                                                            <input class="form-input block w-full rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-primary focus:border-primary h-9 text-sm" placeholder="例: 100-0005" type="text"/>
+                                                        </div>
+                                                        <div class="md:col-span-2">
+                                                            <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">登録日</label>
+                                                            <div class="flex items-center gap-2">
+                                                                <input class="form-input block w-full rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] text-gray-800 dark:text-white focus:ring-primary focus:border-primary h-9 text-sm" type="date"/>
+                                                                <span class="text-gray-500 dark:text-gray-400">〜</span>
+                                                                <input class="form-input block w-full rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] text-gray-800 dark:text-white focus:ring-primary focus:border-primary h-9 text-sm" type="date"/>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex justify-end gap-2 mt-4">
+                                                        <button class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">クリア</button>
+                                                        <button class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors">検索</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </details>
+                                    </div>
+                                    <div class="group relative">
+                                        <button class="flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
+                                            <span class="material-symbols-outlined text-xl">settings</span>
+                                        </button>
+                                        <div class="hidden group-focus-within:block absolute top-full right-0 mt-2 w-64 bg-white dark:bg-[#283039] border border-gray-300 dark:border-[#3b4754] rounded-lg shadow-xl z-20">
+                                            <div class="p-4 border-b border-gray-200 dark:border-[#3b4754]">
+                                                <h3 class="text-sm font-bold text-gray-800 dark:text-white text-left">列の表示設定</h3>
+                                            </div>
+                                            <div class="p-4 space-y-3 text-sm text-left">
+                                                <label class="flex items-center gap-2 cursor-pointer text-gray-500 dark:text-gray-400">
+                                                    <input checked="" class="form-checkbox rounded text-primary focus:ring-primary/50 bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 cursor-not-allowed" disabled="" type="checkbox"/>
+                                                    <span class="opacity-75">企業名</span>
+                                                </label>
+                                                <label class="flex items-center gap-2 cursor-pointer text-gray-500 dark:text-gray-400">
+                                                    <input checked="" class="form-checkbox rounded text-primary focus:ring-primary/50 bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 cursor-not-allowed" disabled="" type="checkbox"/>
+                                                    <span class="opacity-75">住所</span>
+                                                </label>
+                                                <label class="flex items-center gap-2 cursor-pointer text-gray-500 dark:text-gray-400">
+                                                    <input checked="" class="form-checkbox rounded text-primary focus:ring-primary/50 bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 cursor-not-allowed" disabled="" type="checkbox"/>
+                                                    <span class="opacity-75">郵便番号</span>
+                                                </label>
+                                                <label class="flex items-center gap-2 cursor-pointer text-gray-800 dark:text-white">
+                                                    <input checked="" class="form-checkbox rounded text-primary focus:ring-primary/50 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600" type="checkbox"/>
+                                                    <span>企業ID</span>
+                                                </label>
+                                                <label class="flex items-center gap-2 cursor-pointer text-gray-800 dark:text-white">
+                                                    <input checked="" class="form-checkbox rounded text-primary focus:ring-primary/50 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600" type="checkbox"/>
+                                                    <span>登録日</span>
+                                                </label>
+                                                <label class="flex items-center gap-2 cursor-pointer text-gray-800 dark:text-white">
+                                                    <input checked="" class="form-checkbox rounded text-primary focus:ring-primary/50 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600" type="checkbox"/>
+                                                    <span>備考</span>
+                                                </label>
+                                                <label class="flex items-center gap-2 cursor-pointer text-gray-800 dark:text-white">
+                                                    <input checked="" class="form-checkbox rounded text-primary focus:ring-primary/50 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600" type="checkbox"/>
+                                                    <span>操作</span>
+                                                </label>
+                                            </div>
+                                            <div class="flex justify-end gap-2 p-3 bg-gray-50 dark:bg-[#1c2127] border-t border-gray-200 dark:border-[#3b4754]">
+                                                <button class="flex min-w-[70px] cursor-pointer items-center justify-center overflow-hidden rounded-md h-8 px-3 bg-gray-200 dark:bg-[#3b4754] text-gray-800 dark:text-white text-xs font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#4a5867] transition-colors">キャンセル</button>
+                                                <button class="flex min-w-[70px] cursor-pointer items-center justify-center overflow-hidden rounded-md h-8 px-3 bg-primary text-white text-xs font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors">適用</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex overflow-hidden rounded-lg border border-gray-300 dark:border-[#3b4754] bg-white dark:bg-background-dark flex-col flex-1">
+                                <div class="overflow-y-auto flex-1">
+                                    <table class="w-full min-w-[1200px] text-sm">
+                                        <thead class="sticky top-0 z-10">
+                                            <tr class="bg-gray-50 dark:bg-[#1c2127]">
+                                                <th class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[100px] font-medium leading-normal group cursor-pointer">
+                                                    <div class="flex items-center gap-1">企業ID <span class="material-symbols-outlined text-base opacity-50 group-hover:opacity-100">swap_vert</span></div>
+                                                </th>
+                                                <th class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[220px] font-medium leading-normal group cursor-pointer">
+                                                    <div class="flex items-center gap-1">企業名 <span class="material-symbols-outlined text-base opacity-50 group-hover:opacity-100">swap_vert</span></div>
+                                                </th>
+                                                <th class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[250px] font-medium leading-normal group cursor-pointer">
+                                                    <div class="flex items-center gap-1">住所 <span class="material-symbols-outlined text-base opacity-50 group-hover:opacity-100">swap_vert</span></div>
+                                                </th>
+                                                <th class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[120px] font-medium leading-normal group cursor-pointer">
+                                                    <div class="flex items-center gap-1">郵便番号 <span class="material-symbols-outlined text-base opacity-50 group-hover:opacity-100">swap_vert</span></div>
+                                                </th>
+                                                <th class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[140px] font-medium leading-normal group cursor-pointer">
+                                                    <div class="flex items-center gap-1">登録日 <span class="material-symbols-outlined text-base opacity-50 group-hover:opacity-100">swap_vert</span></div>
+                                                </th>
+                                                <th class="px-4 py-2.5 text-left text-gray-600 dark:text-white min-w-[200px] font-medium leading-normal">備考</th>
+                                                <th class="px-4 py-2.5 text-center text-gray-600 dark:text-white w-[120px] font-medium leading-normal">操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="company : ${companies}" class="border-t border-t-gray-200 dark:border-t-[#3b4754] hover:bg-gray-50 dark:hover:bg-[#1c2127]/50">
+                                                <td class="px-4 py-2 text-gray-500 dark:text-[#9dabb9] font-normal leading-normal">[[${company.companyId}]]</td>
+                                                <td class="px-4 py-2 text-gray-800 dark:text-white font-normal leading-normal">[[${company.companyName}]]</td>
+                                                <td class="px-4 py-2 text-gray-500 dark:text-[#9dabb9] font-normal leading-normal">[[${company.address}]]</td>
+                                                <td class="px-4 py-2 text-gray-500 dark:text-[#9dabb9] font-normal leading-normal">[[${company.zipCode}]]</td>
+                                                <td class="px-4 py-2 text-gray-500 dark:text-[#9dabb9] font-normal leading-normal">[[${company.registrationDate}]]</td>
+                                                <td class="px-4 py-2 text-gray-500 dark:text-[#9dabb9] font-normal leading-normal truncate max-w-xs">[[${company.remarks}]]</td>
+                                                <td class="px-4 py-2 w-60 text-center">
+                                                <div class="flex justify-center gap-2">
+                                                    <a th:href="@{/companies/edit/{id}(id=${company.companyId})}">
+                                                        <button class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">
+                                                            <span class="material-symbols-outlined text-xl">edit</span>
+                                                        </button>
+                                                    </a>
+                                                    <form th:action="@{/companies/delete/{id}(id=${company.companyId})}" method="post" onsubmit="return confirm('本当に削除しますか？');">
+                                                        <button class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">
+                                                            <span class="material-symbols-outlined text-xl">delete</span>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="flex flex-wrap items-center justify-between gap-4 p-3 border-t border-gray-200 dark:border-[#3b4754]">
+                                    <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                        <span>表示件数:</span>
+                                        <select class="form-select rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] focus:ring-primary focus:border-primary h-8 py-0 pl-2 pr-7 text-sm">
+                                            <option>10</option>
+                                            <option>20</option>
+                                            <option>50</option>
+                                            <option>100</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                        <span>1-10 of 123件</span>
+                                        <div class="flex gap-1">
+                                            <button class="h-8 w-8 rounded flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:pointer-events-none" disabled=""><span class="material-symbols-outlined text-xl">first_page</span></button>
+                                            <button class="h-8 w-8 rounded flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:pointer-events-none" disabled=""><span class="material-symbols-outlined text-xl">chevron_left</span></button>
+                                            <button class="h-8 w-8 rounded flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700"><span class="material-symbols-outlined text-xl">chevron_right</span></button>
+                                            <button class="h-8 w-8 rounded flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700"><span class="material-symbols-outlined text-xl">last_page</span></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

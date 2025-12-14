@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="ja">
+  <head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title th:text="${companyForm.id} != null ? '編集' : '新規登録'"></title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+          tailwind.config = {
+            darkMode: "class",
+            theme: {
+              extend: {
+                colors: {
+                  "primary": "#1717cf",
+                  "background-light": "#f6f6f8",
+                  "background-dark": "#111121",
+                },
+                fontFamily: {
+                  "display": ["Space Grotesk", "sans-serif"]
+                },
+                borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+              },
+            },
+          }
+    </script>
+    <style>
+          .material-symbols-outlined {
+            font-variation-settings:
+            'FILL' 0,
+            'wght' 300,
+            'GRAD' 0,
+            'opsz' 24
+          }
+    </style>
+    <style>
+        body {
+          min-height: max(884px, 100dvh);
+        }
+    </style>
+  </head>
+  <body class="font-display bg-background-light dark:bg-background-dark">     
+      <!-- 成功メッセージ -->
+      <div th:if="${successMessage}"
+        class="p-4 mb-4 text-green-800 rounded-lg bg-green-100">
+        <span th:text="${successMessage}"></span>
+      </div>
+      <!-- エラーメッセージ -->
+      <div th:if="${errorMessage}"
+        class="p-4 mb-4 text-red-800 rounded-lg bg-red-100">
+        <span th:text="${errorMessage}"></span>
+      </div>
+      <div class="relative flex h-auto min-h-screen w-full flex-col">
+        <header class="flex items-center p-4 pb-2 justify-between sticky top-0 z-10 bg-background-light dark:bg-background-dark/80 backdrop-blur-sm">
+            <form th:action="@{/companies}" method="get">
+              <button class="flex size-10 shrink-0 items-center justify-center rounded-full text-zinc-700 dark:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/5">
+                  <span class="material-symbols-outlined text-2xl">arrow_back_ios_new</span>
+              </button>
+            </form>
+          <h1 class="text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center text-zinc-900 dark:text-white" th:text="${companyForm.id} != null ? '編集' : '新規登録'"></h1>
+          <div class="w-10"></div>
+        </header>
+        <main class="flex-1 px-4 py-6">
+        <form class="flex flex-col gap-6" th:action="${companyForm.id} ? @{/companies/edit/{id}(id=*{id})} : @{/companies/add}" method="post" th:object="${companyForm}">
+            <input type="hidden" th:field="*{id}">
+            <label class="flex flex-col w-full">
+                <p class="text-base font-medium leading-normal pb-2 text-zinc-600 dark:text-zinc-300">
+                    企業名 <span class="text-red-500">*</span>
+                </p>
+                <div class="relative flex items-center">
+                    <span class="material-symbols-outlined absolute left-4 text-zinc-400 dark:text-zinc-500">apartment</span>
+                    <input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-zinc-300 dark:border-zinc-700 bg-white/50 dark:bg-zinc-800/50 h-14 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 pl-12 pr-4 text-base font-normal leading-normal text-zinc-900 dark:text-white" name="companyName" th:field="*{companyName}" placeholder="株式会社〇〇" required />
+                </div>
+            </label>
+            <div th:if="${#fields.hasErrors('companyName')}" th:errors="*{companyName}" class="text-red-500 text-sm mt-1"></div>
+            <label class="flex flex-col w-full">
+                <p class="text-base font-medium leading-normal pb-2 text-zinc-600 dark:text-zinc-300">
+                    郵便番号 <span class="text-red-500">*</span>
+                </p>
+                <div class="relative flex items-center">
+                    <span class="material-symbols-outlined absolute left-4 text-zinc-400 dark:text-zinc-500">markunread_mailbox</span>
+                    <input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-zinc-300 dark:border-zinc-700 bg-white/50 dark:bg-zinc-800/50 h-14 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 pl-12 pr-4 text-base font-normal leading-normal text-zinc-900 dark:text-white" placeholder="ハイフンありで入力（例: 123-4567）" name="zipCode" th:field="*{zipCode}" required />
+                </div>
+            </label>
+            <div th:if="${#fields.hasErrors('zipCode')}" th:errors="*{zipCode}" class="text-red-500 text-sm mt-1"></div>
+            <label class="flex flex-col w-full">
+                <p class="text-base font-medium leading-normal pb-2 text-zinc-600 dark:text-zinc-300">
+                    住所 <span class="text-red-500">*</span>
+                </p>
+                <div class="relative flex items-center">
+                    <span class="material-symbols-outlined absolute left-4 text-zinc-400 dark:text-zinc-500">home</span>
+                    <input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-zinc-300 dark:border-zinc-700 bg-zinc-200/50 dark:bg-zinc-900/50 h-14 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 pl-12 pr-4 text-base font-normal leading-normal text-zinc-900 dark:text-white" placeholder="郵便番号から自動入力されます" name="address" th:field="*{address}" required />
+                </div>
+            </label>
+            <div th:if="${#fields.hasErrors('address')}" th:errors="*{address}" class="text-red-500 text-sm mt-1"></div>
+            <label class="flex flex-col w-full">
+                <p class="text-base font-medium leading-normal pb-2 text-zinc-600 dark:text-zinc-300">備考</p>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute top-4 left-4 text-zinc-400 dark:text-zinc-500">edit_note</span>
+                    <textarea class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-zinc-300 dark:border-zinc-700 bg-white/50 dark:bg-zinc-800/50 min-h-36 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 pt-4 pl-12 pr-4 text-base font-normal leading-normal text-zinc-900 dark:text-white" placeholder="自由記述" name="remarks" th:field="*{remarks}"></textarea>
+                </div>
+            </label>
+            <div th:if="${#fields.hasErrors('remarks')}" th:errors="*{remarks}" class="text-red-500 text-sm mt-1"></div>
+            <div class="flex flex-col sm:flex-row gap-4 mt-8">
+                <button type="button" onclick="location.href='/companies'" class="flex items-center justify-center w-full h-14 px-6 text-base font-bold text-primary dark:text-white bg-primary/10 dark:bg-white/10 rounded-xl hover:bg-primary/20 dark:hover:bg-white/20 transition-colors">
+                    キャンセル
+                </button>
+                <button type="submit" class="flex items-center justify-center w-full h-14 px-6 text-base font-bold text-white bg-primary rounded-xl hover:bg-primary/90 transition-colors" th:text="${companyForm.id} != null ? '保存' : '登録'"></button>
+            </div>
+        </form>
+      </div>
+  </body>
+</html>
