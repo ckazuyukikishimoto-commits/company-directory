@@ -31,7 +31,7 @@ public class ExcelHelper {
     public static ByteArrayInputStream companiesToExcel(List<Company> companies) {
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("Companies");
-    
+
         // ----- ヘッダー行 -----
         XSSFRow hRow = sheet.createRow(0);
         hRow.createCell(0).setCellValue("企業ID");
@@ -40,7 +40,7 @@ public class ExcelHelper {
         hRow.createCell(3).setCellValue("郵便番号");
         hRow.createCell(4).setCellValue("登録日");
         hRow.createCell(5).setCellValue("備考");
-    
+
         // ----- データ行 -----
         int rNum = 1;
         for (Company company : companies) {
@@ -52,12 +52,12 @@ public class ExcelHelper {
             row.createCell(4).setCellValue(company.getRegistrationDate().toString());
             row.createCell(5).setCellValue(company.getRemarks());
         }
-    
+
         // ----- Excelファイルを ByteArray に書き込む -----
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
             workbook.write(bos);
             workbook.close();
-    
+
             return new ByteArrayInputStream(bos.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException("Excel作成でエラーが発生", e);
@@ -71,39 +71,38 @@ public class ExcelHelper {
         } catch (Exception e) {
             throw new RuntimeException(analyzeWorkbookCreationError(e), e);
         }
-        
-    
+
         List<ImportRowDto> rows = new ArrayList<>();
-    
+
         try (workbook) {
-    
+
             // --- シート存在チェック ---
             if (workbook.getNumberOfSheets() == 0) {
                 throw new RuntimeException("シートが存在しません。正しいテンプレートを使用してください。");
             }
-    
+
             Sheet sheet = workbook.getSheetAt(0);
             if (sheet == null) {
                 throw new RuntimeException("指定のシートが見つかりません。");
             }
-    
+
             // --- シート空チェック ---
             if (sheet.getPhysicalNumberOfRows() <= 1) {
                 throw new RuntimeException("シートにデータがありません。");
             }
-    
+
             // --- 行数制限（メモリ保護） ---
             if (sheet.getLastRowNum() > 50000) {
                 throw new RuntimeException("データ量が大きすぎて読み込めません。ファイルを分割してください。");
             }
-    
+
             DataFormatter formatter = new DataFormatter();
-    
+
             Iterator<Row> rowIterator = sheet.iterator();
             if (!rowIterator.hasNext()) {
                 throw new RuntimeException("ヘッダー行が存在しません。テンプレートを使用してください。");
             }
-    
+
             // --- ヘッダー読み取り ---
             Row header = rowIterator.next();
             Map<String, Integer> columnIndex = new HashMap<>();
@@ -112,14 +111,14 @@ public class ExcelHelper {
             if (lastCellNum <= 0) {
                 throw new RuntimeException("ヘッダー行が空です。テンプレートを確認してください。");
             }
-    
+
             for (int i = 0; i < header.getLastCellNum(); i++) {
                 String colName = formatter.formatCellValue(header.getCell(i)).trim();
                 if (!colName.isEmpty()) {
                     columnIndex.put(colName, i);
                 }
             }
-    
+
             // --- 必須列チェック ---
             String[] requiredColumns = { "企業名", "住所", "郵便番号" };
             for (String col : requiredColumns) {
@@ -127,15 +126,16 @@ public class ExcelHelper {
                     throw new RuntimeException("必須列が不足しています：" + col);
                 }
             }
-    
+
             int rowNum = 0;
-    
+
             while (rowIterator.hasNext()) {
                 Row row = rowIterator.next();
                 rowNum++;
-    
-                if (row == null) continue;
-    
+
+                if (row == null)
+                    continue;
+
                 // --- 空行判定 ---
                 boolean allEmpty = true;
                 for (int i = 0; i < header.getLastCellNum(); i++) {
@@ -145,29 +145,30 @@ public class ExcelHelper {
                         break;
                     }
                 }
-                if (allEmpty) continue;
-    
+                if (allEmpty)
+                    continue;
+
                 // --- DTO 作成 ---
                 ImportRowDto dto = new ImportRowDto();
                 dto.setRowNum(rowNum);
-    
+
                 dto.setCompanyId(getValue(row, columnIndex, "企業ID", formatter));
                 dto.setCompanyName(getValue(row, columnIndex, "企業名", formatter));
                 dto.setAddress(getValue(row, columnIndex, "住所", formatter));
                 dto.setZipCode(getValue(row, columnIndex, "郵便番号", formatter));
                 dto.setRegistrationDate(getValue(row, columnIndex, "登録日", formatter));
                 dto.setRemarks(getValue(row, columnIndex, "備考", formatter));
-    
+
                 rows.add(dto);
             }
-    
+
         } catch (Exception e) {
             throw new RuntimeException("Excel読み取り中にエラーが発生しました: " + e.getMessage(), e);
         }
-    
+
         return rows;
     }
-    
+
     private static String analyzeWorkbookCreationError(Exception e) {
         String message = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
 
@@ -188,44 +189,42 @@ public class ExcelHelper {
     private static String safeFormatCell(Row row, int index, DataFormatter formatter) {
         try {
             Cell cell = row.getCell(index, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
-    
+
             if (cell == null) {
                 return "";
             }
-    
+
             // ★ 修正ポイント：セルが日付の場合は LocalDate に変換して統一
             if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
                 LocalDate date = cell.getLocalDateTimeCellValue().toLocalDate();
                 return date.toString(); // 例: "2020-05-26"
             }
-    
+
             // 数値セル（整数、小数）もズレを避けるため専用処理
             if (cell.getCellType() == CellType.NUMERIC) {
                 return formatter.formatCellValue(cell);
             }
-    
+
             // 文字列は従来通り
             return formatter.formatCellValue(cell);
-    
+
         } catch (Exception ex) {
             throw new RuntimeException(
-                String.format("セル書式が破損しています。（行: %d, 列: %d）セル結合の解除や再保存を試してください。",
-                    row.getRowNum() + 1, index + 1)
-            );
+                    String.format("セル書式が破損しています。（行: %d, 列: %d）セル結合の解除や再保存を試してください。",
+                            row.getRowNum() + 1, index + 1));
         }
     }
-    
-    
+
     /** 列名が存在すれば取得 */
     private static String getValue(Row row, Map<String, Integer> columnIndex,
-                                   String columnName, DataFormatter formatter) {
+            String columnName, DataFormatter formatter) {
         if (!columnIndex.containsKey(columnName)) {
             return null;
         }
         int idx = columnIndex.get(columnName);
         return safeFormatCell(row, idx, formatter);
-    }   
-    
+    }
+
     // ExcelHelper.java
 
     public static ByteArrayInputStream dtosToExcel(List<ImportRowDto> rows) {
@@ -233,7 +232,7 @@ public class ExcelHelper {
         XSSFSheet sheet = workbook.createSheet("Errors_Warnings");
 
         // ヘッダー作成 (元のフォーマット + 理由列)
-        String[] headers = {"行番号","企業ID", "企業名", "住所", "郵便番号", "登録日", "備考", "エラー・警告内容"};
+        String[] headers = { "行番号", "企業ID", "企業名", "住所", "郵便番号", "登録日", "備考", "エラー・警告内容" };
         Row headerRow = sheet.createRow(0);
         for (int i = 0; i < headers.length; i++) {
             headerRow.createCell(i).setCellValue(headers[i]);
@@ -243,7 +242,7 @@ public class ExcelHelper {
         int rowIdx = 1;
         for (ImportRowDto dto : rows) {
             Row row = sheet.createRow(rowIdx++);
-            
+
             // 元のデータを出力
             row.createCell(0).setCellValue(dto.getRowNum());
             row.createCell(1).setCellValue(dto.getCompanyId());
@@ -255,9 +254,11 @@ public class ExcelHelper {
 
             // ★エラー・警告メッセージを結合して出力
             List<String> msgs = new ArrayList<>();
-            if (dto.getErrorMessages() != null) msgs.addAll(dto.getErrorMessages());
-            if (dto.getWarningMessages() != null) msgs.addAll(dto.getWarningMessages());
-            
+            if (dto.getErrorMessages() != null)
+                msgs.addAll(dto.getErrorMessages());
+            if (dto.getWarningMessages() != null)
+                msgs.addAll(dto.getWarningMessages());
+
             row.createCell(7).setCellValue(String.join(" / ", msgs));
         }
 
@@ -265,11 +266,40 @@ public class ExcelHelper {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
             workbook.write(bos);
             workbook.close();
-    
+
             return new ByteArrayInputStream(bos.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException("Excel作成でエラーが発生", e);
         }
     }
+
+    public static ByteArrayInputStream createTemplate() {
+    XSSFWorkbook workbook = new XSSFWorkbook();
+    XSSFSheet sheet = workbook.createSheet("インポート用テンプレート");
+
+    // ヘッダー行の作成
+    Row headerRow = sheet.createRow(0);
+    
+    // 必須および任意の列名（仕様書に合わせて定義）
+    String[] headers = {"企業ID", "企業名", "住所", "郵便番号", "登録日", "備考"};
+    
+    // スタイル設定（黄色い背景などで目立たせると親切ですが、まずは標準でOK）
+    for (int i = 0; i < headers.length; i++) {
+        headerRow.createCell(i).setCellValue(headers[i]);
+        // カラム幅を自動調整（データがないとうまく動かないこともありますが念のため）
+        sheet.setColumnWidth(i, 4000); 
+    }
+
+    // 入力例としてコメントを入れたり、2行目に例を入れるのもアリですが、
+    // まずは「ヘッダーのみ」で返します。
+
+    try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+        workbook.write(bos);
+        workbook.close();
+        return new ByteArrayInputStream(bos.toByteArray());
+    } catch (IOException e) {
+        throw new RuntimeException("テンプレート作成中にエラーが発生しました", e);
+    }
+}
 
 }
