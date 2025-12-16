@@ -346,16 +346,16 @@ public class ExcelImportService {
         }
 
         // --- ① 市区町村まで ---
-        String expectedBase = master.getPrefecture() + master.getCity();
+        String expectedBase = master.getCity() + master.getPrefecture();
+        String masterTown = master.getTown();
         if (!inputAddress.startsWith(expectedBase)) {
             warnings.add(String.format(
-                    "警告：住所と郵便番号が一致しない可能性があります（郵便番号 %s は %s です）。",
-                    inputZip, expectedBase));
+                    "警告：住所と郵便番号が一致しない可能性があります（郵便番号 %s は %s%s です）。",
+                    inputZip, expectedBase, masterTown));
             return; // 市区町村ズレは強めなのでここで止める
         }
 
         // 4. 町名チェック（町名が書かれている場合のみ）
-        String masterTown = master.getTown();
         if (!isBlank(masterTown)) {
 
             // 入力住所に「町名っぽい情報」が含まれているか

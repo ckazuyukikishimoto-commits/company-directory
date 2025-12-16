@@ -160,7 +160,10 @@ public class ExcelHelper {
             }
 
             for (int i = 0; i < header.getLastCellNum(); i++) {
-                String colName = formatter.formatCellValue(header.getCell(i)).trim();
+                // BOM除去と全角スペース対応（Java 11以降はstrip()推奨）
+                String rawValue = formatter.formatCellValue(header.getCell(i));
+                String colName = rawValue.replace("\uFEFF", "").strip();
+
                 if (!colName.isEmpty()) {
                     columnIndex.put(colName, i);
                 }
@@ -168,10 +171,19 @@ public class ExcelHelper {
 
             // --- 必須列チェック ---
             String[] requiredColumns = { "企業名", "住所", "郵便番号" };
+
+            List<String> missingColumns = new ArrayList<>();
+
             for (String col : requiredColumns) {
                 if (!columnIndex.containsKey(col)) {
-                    throw new RuntimeException("必須列が不足しています：" + col);
+                    missingColumns.add(col);
                 }
+            }
+
+            if (!missingColumns.isEmpty()) {
+                throw new RuntimeException(
+                        "必須列が不足しています：" + String.join("、", missingColumns) +
+                                " (検出された列名: " + String.join(", ", columnIndex.keySet()) + ")");
             }
 
             int rowNum = 0;
@@ -202,7 +214,11 @@ public class ExcelHelper {
                 dto.setCompanyId(getValue(row, columnIndex, "企業ID", formatter));
                 dto.setCompanyName(getValue(row, columnIndex, "企業名", formatter));
                 dto.setAddress(getValue(row, columnIndex, "住所", formatter));
-                dto.setZipCode(getValue(row, columnIndex, "郵便番号", formatter));
+
+                // 郵便番号の正規化（全角ハイフン対応）
+                String rawZip = getValue(row, columnIndex, "郵便番号", formatter);
+                dto.setZipCode(normalizeZipCode(rawZip));
+
                 dto.setRegistrationDate(getValue(row, columnIndex, "登録日", formatter));
                 dto.setRemarks(getValue(row, columnIndex, "備考", formatter));
 
@@ -347,6 +363,26 @@ public class ExcelHelper {
         } catch (IOException e) {
             throw new RuntimeException("テンプレート作成中にエラーが発生しました", e);
         }
+    }
+
+    /** 郵便番号の正規化（全角ハイフンを半角に、全角数字を半角に） */
+    private static String normalizeZipCode(String input) {
+        if (input == null)
+            return null;
+
+        // ハイフンの正規化
+        String normalized = input.replace("ー", "-").replace("－", "-");
+
+        // 全角数字を半角数字に変換
+        StringBuilder sb = new StringBuilder();
+        for (char c : normalized.toCharArray()) {
+            if (c >= '０' && c <= '９') {
+                sb.append((char) (c - '０' + '0'));
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
     }
 
 }
