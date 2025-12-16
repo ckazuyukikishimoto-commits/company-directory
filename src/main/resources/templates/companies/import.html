@@ -86,7 +86,7 @@
                         </div>
                     </div>
                     <div class="flex flex-col gap-8">
-                        <form id="uploadForm" action="/companies/import" method="post" enctype="multipart/form-data">
+                        <form id="uploadForm" th:action="@{/companies/import}" method="post" enctype="multipart/form-data">
                             <div class="flex flex-col items-center gap-6 rounded-xl border-2 border-dashed border-white/20 px-6 py-14 bg-white/5 hover:border-primary/80 transition-colors duration-300"
                                 id="dropZone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)"
                                 ondrop="handleDrop(event)">
