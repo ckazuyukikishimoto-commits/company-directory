@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class JpaPersistentTokenRepository implements PersistentTokenRepository {
 
     private final RememberMeTokenRepository tokenRepository;
@@ -43,13 +44,22 @@ public class JpaPersistentTokenRepository implements PersistentTokenRepository {
 
     @Override
     public PersistentRememberMeToken getTokenForSeries(String series) {
-        return tokenRepository.findById(series)
-                .map(token -> new PersistentRememberMeToken(
-                        token.getUsername(),
-                        token.getSeries(),
-                        token.getTokenValue(),
-                        toDate(token.getLastUsed())))
+        log.info("RememberMe DB Lookup: Series={}", series);
+        PersistentRememberMeToken token = tokenRepository.findById(series)
+                .map(t -> {
+                    log.info("RememberMe DB Hit: Token={}", t.getTokenValue());
+                    return new PersistentRememberMeToken(
+                            t.getUsername(),
+                            t.getSeries(),
+                            t.getTokenValue(),
+                            toDate(t.getLastUsed()));
+                })
                 .orElse(null);
+
+        if (token == null) {
+            log.info("RememberMe DB Miss: Series={}", series);
+        }
+        return token;
     }
 
     @Override

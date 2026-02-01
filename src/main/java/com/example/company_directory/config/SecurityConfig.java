@@ -18,49 +18,54 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
-    private final CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
-    private final PersistentTokenRepository persistentTokenRepository;
+        private final CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
+        private final CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
+        private final PersistentTokenRepository persistentTokenRepository;
+        private final com.example.company_directory.filter.RememberMeLoggingFilter rememberMeLoggingFilter;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/css/**", "/js/**", "/maintenance").permitAll()
-                        .anyRequest().authenticated())
-                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        .loginProcessingUrl("/login")
-                        .usernameParameter("username")
-                        .passwordParameter("password")
-                        .defaultSuccessUrl("/companies", true)
-                        .successHandler(customAuthenticationSuccessHandler)
-                        .failureHandler(customAuthenticationFailureHandler))
-                .rememberMe(rm -> rm
-                        .tokenRepository(persistentTokenRepository)
-                        .tokenValiditySeconds(30 * 24 * 60 * 60) // 30日
-                        .rememberMeParameter("remember-me"))
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login?logout=true")
-                        .deleteCookies("JSESSIONID", "remember-me")
-                        .invalidateHttpSession(true))
-                .sessionManagement(session -> session
-                        .sessionFixation().changeSessionId()
-                        .maximumSessions(1))
-                .httpBasic(httpBasic -> httpBasic.disable());
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                http
+                                .addFilterBefore(rememberMeLoggingFilter,
+                                                org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter.class)
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers("/login", "/css/**", "/js/**", "/maintenance",
+                                                                "/error")
+                                                .permitAll()
+                                                .anyRequest().authenticated())
+                                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
+                                .formLogin(form -> form
+                                                .loginPage("/login")
+                                                .loginProcessingUrl("/login")
+                                                .usernameParameter("username")
+                                                .passwordParameter("password")
+                                                .defaultSuccessUrl("/companies", true)
+                                                .successHandler(customAuthenticationSuccessHandler)
+                                                .failureHandler(customAuthenticationFailureHandler))
+                                .rememberMe(rm -> rm
+                                                .tokenRepository(persistentTokenRepository)
+                                                .tokenValiditySeconds(30 * 24 * 60 * 60) // 30日
+                                                .rememberMeParameter("remember-me"))
+                                .logout(logout -> logout
+                                                .logoutUrl("/logout")
+                                                .logoutSuccessUrl("/login?logout=true")
+                                                .deleteCookies("JSESSIONID", "remember-me")
+                                                .invalidateHttpSession(true))
+                                .sessionManagement(session -> session
+                                                .sessionFixation().changeSessionId()
+                                                .maximumSessions(1))
+                                .httpBasic(httpBasic -> httpBasic.disable());
 
-        return http.build();
-    }
+                return http.build();
+        }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+                return new BCryptPasswordEncoder();
+        }
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
-    }
+        @Bean
+        public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+                return config.getAuthenticationManager();
+        }
 }
