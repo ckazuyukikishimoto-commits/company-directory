@@ -41,18 +41,21 @@ public class ExcelImportService {
     }
 
     // Excel検証結果を返す
-    // ファイル構造チェック→データエラーチェック→データ警告チェック
     public ImportResultDto importExcel(InputStream inputStream) {
-
         List<ImportRowDto> rows = ExcelHelper.parseExcel(inputStream);
+        return validateRows(rows);
+    }
 
+    /**
+     * 複数の行データを一括バリデーションする（Excel/Web画面共通）
+     */
+    public ImportResultDto validateRows(List<ImportRowDto> rows) {
         ImportResultDto result = new ImportResultDto();
 
-        // --- Excel 内の同名企業 / 同住所チェック用 ---
+        // --- 同名企業 / 同住所チェック用マッピング ---
         Map<String, List<Integer>> nameToRows = new HashMap<>();
         Map<String, List<Integer>> addressToRows = new HashMap<>();
 
-        // まず全件スキャンしてカウント
         for (ImportRowDto r : rows) {
             String name = normalizeString(r.getCompanyName());
             String addr = normalizeString(r.getAddress());
@@ -69,33 +72,33 @@ public class ExcelImportService {
         Set<String> dbCompanyIdSet = companyRepository.findAllIds();
 
         int success = 0;
-        int worning = 0;
+        int warning = 0;
         int error = 0;
 
         for (ImportRowDto row : rows) {
+            // 初期化（再検証時に前回の結果が残らないようにする）
+            row.setErrorMessages(new ArrayList<>());
+            row.setWarningMessages(new ArrayList<>());
+            row.setHasError(false);
+            row.setHasWarning(false);
+            row.setValid(true);
+
             List<String> errs = validateRow(row, excelCompanyIdSet, dbCompanyIdSet);
 
             result.getTotalList().add(row);
 
             if (errs.isEmpty()) {
-
-                // 3. ★追加: 新規・更新の判定
+                // 新規・更新の判定
                 if (row.getCompanyId() != null && !row.getCompanyId().isBlank()) {
                     try {
                         Integer id = Integer.parseInt(row.getCompanyId());
-                        // DBにIDが存在すれば「更新」、なければ「新規(ID指定)」
-                        boolean exists = companyRepository.existsById(id);
-                        row.setUpdate(exists);
+                        row.setUpdate(companyRepository.existsById(id));
                     } catch (NumberFormatException e) {
-                        // IDが数値でない場合はバリデーションで弾かれているはずだが念のため
                         row.setUpdate(false);
                     }
                 } else {
-                    // IDなしなら「新規(自動採番)」
                     row.setUpdate(false);
                 }
-
-                row.setValid(true);
 
                 List<String> warns = checkWarning(row, nameToRows, addressToRows);
 
@@ -106,7 +109,7 @@ public class ExcelImportService {
                     row.setWarningMessages(warns);
                     row.setHasWarning(true);
                     result.getWarningList().add(new ImportWorningDto(row.getRowNum(), warns));
-                    worning++;
+                    warning++;
                 }
             } else {
                 row.setErrorMessages(errs);
@@ -119,7 +122,7 @@ public class ExcelImportService {
 
         result.setTotalCount(rows.size());
         result.setSuccessCount(success);
-        result.setWarningCount(worning);
+        result.setWarningCount(warning);
         result.setErrorCount(error);
 
         return result;

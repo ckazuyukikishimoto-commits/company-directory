@@ -28,15 +28,22 @@ import com.example.company_directory.form.CompanyForm;
 import com.example.company_directory.form.CompanySearchForm;
 import com.example.company_directory.form.ExportForm;
 import com.example.company_directory.service.CompanyService;
+import com.example.company_directory.service.ExcelImportService;
+import com.example.company_directory.dto.ImportResultDto;
+import com.example.company_directory.dto.ImportRowDto;
+import java.util.List;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @Controller
 @RequestMapping("/companies")
 public class CompanyController {
 
     private final CompanyService companyService;
+    private final ExcelImportService excelImportService;
 
-    public CompanyController(CompanyService companyService) {
+    public CompanyController(CompanyService companyService, ExcelImportService excelImportService) {
         this.companyService = companyService;
+        this.excelImportService = excelImportService;
     }
 
     @GetMapping
@@ -59,6 +66,14 @@ public class CompanyController {
     public String form(Model model) {
         model.addAttribute("companyForm", new CompanyForm());
         return "companies/form";
+    }
+
+    /**
+     * まとめて登録画面を表示
+     */
+    @GetMapping("/batch")
+    public String batchForm() {
+        return "companies/batch";
     }
 
     @PostMapping("/add")
@@ -201,5 +216,37 @@ public class CompanyController {
             return ResponseEntity.internalServerError().build();
         }
 
+    }
+
+    /**
+     * まとめて登録を実行
+     */
+    @PostMapping("/batch/execute")
+    public String executeBatch(@RequestParam(name = "mode", defaultValue = "all") String mode,
+            @RequestBody List<ImportRowDto> rows,
+            RedirectAttributes redirectAttributes) {
+
+        // 1. 再バリデーションと登録対象の選定
+        ImportResultDto result = excelImportService.validateRows(rows);
+
+        List<ImportRowDto> targetList;
+        if ("strict".equals(mode)) {
+            targetList = result.getSuccessList();
+        } else {
+            targetList = result.getTotalList().stream()
+                    .filter(row -> !row.isHasError())
+                    .toList();
+        }
+
+        if (targetList.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "登録対象のデータがありません。");
+            return "redirect:/companies/batch";
+        }
+
+        // 2. 保存
+        excelImportService.saveValidData(targetList);
+
+        redirectAttributes.addFlashAttribute("successMessage", targetList.size() + "件の企業を登録しました。");
+        return "redirect:/companies";
     }
 }

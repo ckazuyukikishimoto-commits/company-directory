@@ -78,10 +78,15 @@
                                 企業一覧</h1>
                             <div class="flex flex-wrap items-center gap-2">
                                 <form method="get" class="flex flex-wrap items-center gap-2">
-                                    <button th:formaction="@{companies/add}"
+                                    <button th:formaction="@{/companies/add}"
                                         class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-9 px-3 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors">
                                         <span class="material-symbols-outlined text-base">add_circle</span>
                                         <span class="truncate">新規追加</span>
+                                    </button>
+                                    <button th:formaction="@{/companies/batch}"
+                                        class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-9 px-3 bg-green-600 text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-green-700 transition-colors">
+                                        <span class="material-symbols-outlined text-base">grid_on</span>
+                                        <span class="truncate">まとめて追加</span>
                                     </button>
                                     <button th:formaction="@{/companies/import}"
                                         class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-9 px-3 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">

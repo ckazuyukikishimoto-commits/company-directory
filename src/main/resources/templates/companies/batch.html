@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html class="dark" lang="ja" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>まとめて登録 - 企業名簿アプリ</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#111418",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "Noto Sans JP", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .grid-input {
+            background-color: transparent !important;
+            border: none !important;
+            width: 100% !important;
+            height: 100% !important;
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+            outline: none !important;
+            font-size: 0.875rem !important;
+            line-height: 1.25rem !important;
+            color: #1f2937 !important;
+            /* ライトモード：濃いグレー */
+        }
+
+        .dark .grid-input {
+            color: #ffffff !important;
+            /* ダークモード：白 */
+        }
+
+        /* 背景色が反映されない問題の対策 */
+        .dark .bg-white {
+            background-color: #1c2126 !important;
+        }
+
+        .dark .bg-gray-50 {
+            background-color: #283039 !important;
+        }
+
+        .grid-input:focus {
+            box-shadow: 0 0 0 2px #137fec !important;
+        }
+
+        .row-error {
+            background-color: #fee2e2;
+        }
+
+        .dark .row-error {
+            background-color: rgba(127, 29, 29, 0.3);
+        }
+
+        .row-warning {
+            background-color: #fef9c3;
+        }
+
+        .dark .row-warning {
+            background-color: rgba(113, 63, 18, 0.3);
+        }
+
+        .row-success {
+            background-color: #f0fdf4;
+        }
+
+        .dark .row-success {
+            background-color: rgba(20, 83, 45, 0.1);
+        }
+    </style>
+</head>
+
+<body class="font-display bg-background-light dark:bg-background-dark min-h-screen">
+    <div class="flex flex-col min-h-screen">
+        <!-- Header Area -->
+        <header
+            class="flex items-center justify-between border-b border-[#e7e9eb] dark:border-[#283039] px-6 py-3 bg-white dark:bg-background-dark">
+            <h1 class="text-xl font-bold dark:text-white">まとめて企業登録</h1>
+            <div class="flex items-center gap-3">
+                <button id="validateBtn"
+                    class="flex items-center gap-2 rounded-md h-9 px-4 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
+                    <span class="material-symbols-outlined text-sm">spellcheck</span>
+                    バリデーションチェック
+                </button>
+                <button id="registerBtn" disabled
+                    class="flex items-center gap-2 rounded-md h-9 px-4 bg-primary text-white text-sm font-bold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    <span class="material-symbols-outlined text-sm">save</span>
+                    登録する
+                </button>
+                <a th:href="@{/companies}"
+                    class="flex items-center gap-2 rounded-md h-9 px-4 bg-white dark:bg-transparent border border-gray-300 dark:border-[#283039] text-gray-800 dark:text-white text-sm font-bold hover:bg-gray-100 dark:hover:bg-[#283039] transition-colors">
+                    キャンセル
+                </a>
+            </div>
+        </header>
+
+        <!-- Tooltip/Message Area -->
+        <div id="statusMessage"
+            class="hidden px-6 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-200 text-sm border-b border-blue-100 dark:border-blue-800">
+            <!-- Dynamic Message Here -->
+        </div>
+
+        <!-- Main Grid Area -->
+        <main class="flex-1 overflow-auto p-4">
+            <div
+                class="bg-white dark:bg-[#1c2126] rounded-xl border border-[#e7e9eb] dark:border-[#283039] shadow-sm overflow-hidden min-w-[1000px]">
+                <table class="w-full border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 dark:bg-[#283039] border-b border-[#e7e9eb] dark:border-[#3b4754]">
+                            <th
+                                class="w-12 py-3 px-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                No</th>
+                            <th class="py-3 px-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">企業名
+                                <span class="text-red-500">*</span>
+                            </th>
+                            <th
+                                class="w-32 py-3 px-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                郵便番号 <span class="text-red-500">*</span></th>
+                            <th class="py-3 px-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">住所
+                                <span class="text-red-500">*</span>
+                            </th>
+                            <th class="py-3 px-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">備考
+                            </th>
+                            <th
+                                class="w-32 py-3 px-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="batchTableBody" class="divide-y divide-[#e7e9eb] dark:divide-[#283039]">
+                        <!-- Dynamic Rows Here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer Help Area -->
+            <div class="mt-4 flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+                <p>※ Tabキーで移動、末尾の行でEnterキーを押すと新しい行を追加します。最大100行まで。</p>
+                <button type="button" id="addBottomBtn"
+                    class="flex items-center gap-1 text-primary hover:underline font-bold">
+                    <span class="material-symbols-outlined text-sm">add_circle</span>
+                    行を追加する
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog"
+        aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-black/60 transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div
+                class="inline-block align-bottom bg-white dark:bg-background-dark rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-200 dark:border-[#283039]">
+                <div class="p-6">
+                    <div class="flex items-start">
+                        <div
+                            class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                            <span class="material-symbols-outlined">info</span>
+                        </div>
+                        <div class="ml-4 text-left">
+                            <h3 class="text-lg leading-6 font-bold text-gray-900 dark:text-white" id="modal-title">登録の確認
+                            </h3>
+                            <div class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                <p id="modalDescription">読み込み中...</p>
+                                <div id="modalWarnings"
+                                    class="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-200 rounded-md hidden">
+                                    <p class="font-bold flex items-center gap-1"><span
+                                            class="material-symbols-outlined text-sm">warning</span> 警告があります</p>
+                                    <div class="flex flex-col gap-2 mt-2">
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" name="registerMode" value="all" checked
+                                                class="text-primary focus:ring-primary h-4 w-4 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                                            <span>警告データを含めてすべて登録する</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" name="registerMode" value="strict"
+                                                class="text-primary focus:ring-primary h-4 w-4 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                                            <span>正常なデータのみ登録する</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-[#1c2126] px-6 py-4 flex flex-row-reverse gap-3">
+                    <button type="button" id="modalConfirmBtn"
+                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-bold text-white hover:bg-primary/90 sm:w-auto sm:text-sm">
+                        実行する
+                    </button>
+                    <button type="button" id="modalCancelBtn"
+                        class="w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-[#283039] shadow-sm px-4 py-2 bg-white dark:bg-transparent text-base font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#283039] sm:w-auto sm:text-sm">
+                        戻る
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CSRF Token -->
+    <input type="hidden" id="csrfToken" th:value="${_csrf.token}" />
+    <input type="hidden" id="csrfHeader" th:value="${_csrf.headerName}" />
+
+    <script th:inline="javascript">
+        const tableBody = document.getElementById('batchTableBody');
+        const validateBtn = document.getElementById('validateBtn');
+        const registerBtn = document.getElementById('registerBtn');
+        const addBottomBtn = document.getElementById('addBottomBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const confirmModal = document.getElementById('confirmModal');
+
+        let rowCount = 0;
+        let lastValidationResult = null;
+
+        // 行のHTML生成
+        function createRowHtml(index, data = {}) {
+            rowCount++;
+            const rowId = `row-${rowCount}`;
+            return `
+                <tr id="${rowId}" class="group hover:bg-gray-50 dark:hover:bg-[#283039]/50 transition-colors">
+                    <td class="py-2 px-2 text-xs text-gray-400 font-mono row-no text-center">${index}</td>
+                    <td class="px-1"><input type="text" class="grid-input col-name" placeholder="株式会社〇〇" value="${data.companyName || ''}"></td>
+                    <td class="px-1"><input type="text" class="grid-input col-zip" placeholder="000-0000" maxlength="8" value="${data.zipCode || ''}"></td>
+                    <td class="px-1"><input type="text" class="grid-input col-address" placeholder="東京都..." value="${data.address || ''}"></td>
+                    <td class="px-1"><input type="text" class="grid-input col-remarks" placeholder="メモ" value="${data.remarks || ''}"></td>
+                    <td class="py-2 px-2">
+                        <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button type="button" class="insert-above p-1 hover:text-primary dark:text-gray-400" title="上に挿入"><span class="material-symbols-outlined text-lg">add_box</span></button>
+                            <button type="button" class="insert-below p-1 hover:text-primary dark:text-gray-400" title="下に挿入"><span class="material-symbols-outlined text-lg">add_circle</span></button>
+                            <button type="button" class="delete-row p-1 hover:text-red-500 dark:text-gray-400" title="削除"><span class="material-symbols-outlined text-lg">delete</span></button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        function updateNo() {
+            const rows = tableBody.querySelectorAll('tr');
+            rows.forEach((row, i) => {
+                row.querySelector('.row-no').textContent = i + 1;
+            });
+            // 100件制限
+            addBottomBtn.disabled = rows.length >= 100;
+        }
+
+        function addRow(targetRow = null, position = 'afterend') {
+            if (tableBody.querySelectorAll('tr').length >= 100) return;
+
+            const tempDiv = document.createElement('tbody'); // Use tbody to ensure tr is parsed correctly
+            tempDiv.innerHTML = createRowHtml(0);
+            const newRow = tempDiv.firstElementChild; // Get the tr directly
+
+            if (targetRow && targetRow instanceof Node) {
+                targetRow.insertAdjacentElement(position, newRow);
+            } else {
+                tableBody.appendChild(newRow);
+            }
+            updateNo();
+            bindRowEvents(newRow);
+            return newRow;
+        }
+
+        function bindRowEvents(row) {
+            // 削除
+            row.querySelector('.delete-row').onclick = () => {
+                if (tableBody.querySelectorAll('tr').length <= 1) {
+                    alert('これ以上削除できません');
+                    return;
+                }
+                const inputs = row.querySelectorAll('input');
+                const hasValue = Array.from(inputs).some(i => i.value.trim() !== '');
+                if (!hasValue || confirm('この行を削除しますか？')) {
+                    row.remove();
+                    updateNo();
+                    validateBtn.click(); // 行削除時は再チェックを促すor自動で行う
+                }
+            };
+            // 挿入
+            row.querySelector('.insert-above').onclick = () => addRow(row, 'beforebegin');
+            row.querySelector('.insert-below').onclick = () => addRow(row, 'afterend');
+
+            // 郵便番号補完
+            const zipInput = row.querySelector('.col-zip');
+            zipInput.onblur = async () => {
+                const zip = zipInput.value.replace(/-/g, '');
+                if (zip.length === 7) {
+                    try {
+                        const res = await fetch(`/api/zip/${zip}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            row.querySelector('.col-address').value = data.prefecture + data.city + data.town;
+                        }
+                    } catch (e) { }
+                }
+            };
+
+            // Enterキーで行追加
+            const remarksInput = row.querySelector('.col-remarks');
+            remarksInput.onkeydown = (e) => {
+                if (e.key === 'Enter' && !row.nextElementSibling) {
+                    const newRow = addRow();
+                    newRow.querySelector('.col-name').focus();
+                    e.preventDefault();
+                }
+            };
+        }
+
+        // データの収集
+        function collectData() {
+            return Array.from(tableBody.querySelectorAll('tr')).map((row, i) => ({
+                rowNum: i + 1,
+                companyId: null, // ID列削除のため常にnull（新規扱い）
+                companyName: row.querySelector('.col-name').value.trim(),
+                zipCode: row.querySelector('.col-zip').value.trim(),
+                address: row.querySelector('.col-address').value.trim(),
+                registrationDate: null, // 日付列削除のためnull（サーバー側で当日日付補完）
+                remarks: row.querySelector('.col-remarks').value.trim()
+            }));
+        }
+
+        // バリデーションチェック
+        validateBtn.onclick = async (e) => {
+            let rows = collectData();
+
+            // 完全に空の行を除外
+            rows = rows.filter(r => r.companyName || r.zipCode || r.address || r.remarks);
+
+            if (rows.length === 0) {
+                if (e && e.isTrusted) alert('入力されたデータがありません。');
+                statusMessage.classList.add('hidden');
+                registerBtn.disabled = true;
+                // 色をリセット
+                applyValidationResults({ totalList: [] });
+                return;
+            }
+
+            validateBtn.disabled = true;
+            validateBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">sync</span> チェック中...';
+
+            try {
+                const res = await fetch('/api/batch/validate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        [document.getElementById('csrfHeader').value]: document.getElementById('csrfToken').value
+                    },
+                    body: JSON.stringify(rows)
+                });
+
+                if (res.ok) {
+                    const result = await res.json();
+                    lastValidationResult = result;
+                    applyValidationResults(result);
+
+                    // ステータスメッセージの更新
+                    statusMessage.classList.remove('hidden');
+                    statusMessage.innerHTML = `
+                        チェック完了: 
+                        <span class="font-bold text-green-600">正常 ${result.successList.length} 件</span>, 
+                        <span class="font-bold text-yellow-600">警告 ${result.warningList.length} 件</span>, 
+                        <span class="font-bold text-red-600">エラー ${result.errorList.length} 件</span>
+                    `;
+
+                    // 登録ボタンの活性化
+                    registerBtn.disabled = result.errorCount > 0 || result.totalCount === 0;
+
+                } else {
+                    alert('バリデーション中にエラーが発生しました');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('通信エラーが発生しました');
+            } finally {
+                validateBtn.disabled = false;
+                validateBtn.innerHTML = '<span class="material-symbols-outlined text-sm">spellcheck</span> バリデーションチェック';
+            }
+        };
+
+        function applyValidationResults(result) {
+            const trs = tableBody.querySelectorAll('tr');
+            trs.forEach(tr => {
+                tr.classList.remove('row-error', 'row-warning', 'row-success');
+                tr.title = '';
+            });
+
+            result.totalList.forEach((rowDto) => {
+                const tr = trs[rowDto.rowNum - 1];
+                if (!tr) return;
+
+                if (rowDto.hasError) {
+                    tr.classList.add('row-error');
+                    tr.title = rowDto.errorMessages.join('\n');
+                } else if (rowDto.hasWarning) {
+                    tr.classList.add('row-warning');
+                    tr.title = rowDto.warningMessages.join('\n');
+                } else {
+                    tr.classList.add('row-success');
+                }
+            });
+        }
+
+        // 登録モーダル
+        registerBtn.onclick = () => {
+            if (!lastValidationResult) return;
+
+            confirmModal.classList.remove('hidden');
+            const desc = document.getElementById('modalDescription');
+            const warnings = document.getElementById('modalWarnings');
+
+            const total = lastValidationResult.totalCount;
+            const success = lastValidationResult.successCount;
+            const warning = lastValidationResult.warningCount;
+
+            desc.innerHTML = `合計 <strong>${total}</strong> 件のデータを登録します。`;
+
+            if (warning > 0) {
+                warnings.classList.remove('hidden');
+            } else {
+                warnings.classList.add('hidden');
+            }
+        };
+
+        document.getElementById('modalCancelBtn').onclick = () => confirmModal.classList.add('hidden');
+
+        document.getElementById('modalConfirmBtn').onclick = async () => {
+            const mode = document.querySelector('input[name="registerMode"]:checked')?.value || 'all';
+            const rows = collectData();
+
+            document.getElementById('modalConfirmBtn').disabled = true;
+            document.getElementById('modalConfirmBtn').textContent = '登録中...';
+
+            try {
+                const res = await fetch(`/companies/batch/execute?mode=${mode}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        [document.getElementById('csrfHeader').value]: document.getElementById('csrfToken').value
+                    },
+                    body: JSON.stringify(rows)
+                });
+
+                if (res.redirected) {
+                    window.location.href = res.url;
+                } else {
+                    alert('登録に失敗しました');
+                    document.getElementById('modalConfirmBtn').disabled = false;
+                    document.getElementById('modalConfirmBtn').textContent = '実行する';
+                }
+            } catch (e) {
+                alert('通信に失敗しました');
+                document.getElementById('modalConfirmBtn').disabled = false;
+                document.getElementById('modalConfirmBtn').textContent = '実行する';
+            }
+        };
+
+        addBottomBtn.onclick = () => addRow();
+
+        // 初期表示
+        window.onload = () => {
+            for (let i = 0; i < 5; i++) {
+                addRow();
+            }
+        };
+
+        // 離脱警告
+        window.onbeforeunload = (e) => {
+            const hasData = Array.from(tableBody.querySelectorAll('input')).some(i => i.value.trim() !== '');
+            if (hasData) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+
+    </script>
+</body>
+
+</html>

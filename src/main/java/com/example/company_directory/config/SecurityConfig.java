@@ -9,7 +9,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
+
+import com.example.company_directory.security.CustomPersistentTokenBasedRememberMeServices;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,6 +25,7 @@ public class SecurityConfig {
         private final CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
         private final PersistentTokenRepository persistentTokenRepository;
         private final com.example.company_directory.filter.RememberMeLoggingFilter rememberMeLoggingFilter;
+        private final UserDetailsService userDetailsService;
 
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -43,9 +47,7 @@ public class SecurityConfig {
                                                 .successHandler(customAuthenticationSuccessHandler)
                                                 .failureHandler(customAuthenticationFailureHandler))
                                 .rememberMe(rm -> rm
-                                                .tokenRepository(persistentTokenRepository)
-                                                .tokenValiditySeconds(30 * 24 * 60 * 60) // 30日
-                                                .rememberMeParameter("remember-me"))
+                                                .rememberMeServices(rememberMeServices()))
                                 .logout(logout -> logout
                                                 .logoutUrl("/logout")
                                                 .logoutSuccessUrl("/login?logout=true")
@@ -67,5 +69,15 @@ public class SecurityConfig {
         @Bean
         public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
                 return config.getAuthenticationManager();
+        }
+
+        @Bean
+        public CustomPersistentTokenBasedRememberMeServices rememberMeServices() {
+                String rememberMeKey = "company-directory-remember-me-key";
+                CustomPersistentTokenBasedRememberMeServices services = new CustomPersistentTokenBasedRememberMeServices(
+                                rememberMeKey, userDetailsService, persistentTokenRepository);
+                services.setTokenValiditySeconds(30 * 24 * 60 * 60); // 30 days
+                services.setParameter("remember-me");
+                return services;
         }
 }
