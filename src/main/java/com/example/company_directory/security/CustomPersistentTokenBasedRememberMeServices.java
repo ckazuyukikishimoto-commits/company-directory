@@ -13,6 +13,9 @@ import org.springframework.security.web.authentication.rememberme.PersistentToke
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationException;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -33,8 +36,19 @@ public class CustomPersistentTokenBasedRememberMeServices extends PersistentToke
     }
 
     @Override
+    @Transactional
+    public Authentication autoLogin(HttpServletRequest request, HttpServletResponse response) {
+        return super.autoLogin(request, response);
+    }
+
+    @Override
     protected UserDetails processAutoLoginCookie(String[] cookieTokens, HttpServletRequest request,
             HttpServletResponse response) {
+
+        if (request.getMethod().equals("HEAD")) {
+            log.info("Remember-me processing skipped for HEAD request");
+            throw new RememberMeAuthenticationException("HEAD requests are excluded from remember-me processing");
+        }
 
         if (cookieTokens.length != 2) {
             throw new RememberMeAuthenticationException("Cookie token did not contain 2" +

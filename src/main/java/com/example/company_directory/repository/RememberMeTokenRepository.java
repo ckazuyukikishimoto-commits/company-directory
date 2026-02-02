@@ -8,4 +8,7 @@ import org.springframework.stereotype.Repository;
 public interface RememberMeTokenRepository extends JpaRepository<RememberMeToken, String> {
 
     void deleteByUsername(String username);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    java.util.Optional<RememberMeToken> findBySeries(String series);
 }

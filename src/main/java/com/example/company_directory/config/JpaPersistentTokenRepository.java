@@ -43,9 +43,10 @@ public class JpaPersistentTokenRepository implements PersistentTokenRepository {
     }
 
     @Override
+    @Transactional
     public PersistentRememberMeToken getTokenForSeries(String series) {
         log.info("RememberMe DB Lookup: Series={}", series);
-        PersistentRememberMeToken token = tokenRepository.findById(series)
+        PersistentRememberMeToken token = tokenRepository.findBySeries(series)
                 .map(t -> {
                     log.info("RememberMe DB Hit: Token={}", t.getTokenValue());
                     return new PersistentRememberMeToken(
