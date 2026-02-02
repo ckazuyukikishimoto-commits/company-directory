@@ -45,11 +45,6 @@ public class CustomPersistentTokenBasedRememberMeServices extends PersistentToke
     protected UserDetails processAutoLoginCookie(String[] cookieTokens, HttpServletRequest request,
             HttpServletResponse response) {
 
-        if (request.getMethod().equals("HEAD")) {
-            log.info("Remember-me processing skipped for HEAD request");
-            throw new RememberMeAuthenticationException("HEAD requests are excluded from remember-me processing");
-        }
-
         if (cookieTokens.length != 2) {
             throw new RememberMeAuthenticationException("Cookie token did not contain 2" +
                     " tokens, but contained '" + Arrays.asList(cookieTokens) + "'");
@@ -103,17 +98,24 @@ public class CustomPersistentTokenBasedRememberMeServices extends PersistentToke
                     + token.getUsername() + "', series '" + token.getSeries() + "'");
         }
 
-        PersistentRememberMeToken newToken = new PersistentRememberMeToken(
-                token.getUsername(), token.getSeries(), generateTokenValue(), new Date());
+        // For HEAD requests, we skip token rotation (update) but still return
+        // UserDetails
+        // to complete authentication.
+        if (!request.getMethod().equals("HEAD")) {
+            PersistentRememberMeToken newToken = new PersistentRememberMeToken(
+                    token.getUsername(), token.getSeries(), generateTokenValue(), new Date());
 
-        try {
-            tokenRepository.updateToken(newToken.getSeries(), newToken.getTokenValue(),
-                    newToken.getDate());
-            setCookie(new String[] { newToken.getSeries(), newToken.getTokenValue() },
-                    getTokenValiditySeconds(), request, response);
-        } catch (Exception e) {
-            log.error("Failed to update token: ", e);
-            throw new RememberMeAuthenticationException("Autologin failed due to data access problem");
+            try {
+                tokenRepository.updateToken(newToken.getSeries(), newToken.getTokenValue(),
+                        newToken.getDate());
+                setCookie(new String[] { newToken.getSeries(), newToken.getTokenValue() },
+                        getTokenValiditySeconds(), request, response);
+            } catch (Exception e) {
+                log.error("Failed to update token: ", e);
+                throw new RememberMeAuthenticationException("Autologin failed due to data access problem");
+            }
+        } else {
+            log.debug("Skipping Remember-Me token rotation for HEAD request");
         }
 
         return myUserDetailsService.loadUserByUsername(token.getUsername());
