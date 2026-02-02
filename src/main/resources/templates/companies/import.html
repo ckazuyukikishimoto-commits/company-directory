@@ -86,7 +86,8 @@
                         </div>
                     </div>
                     <div class="flex flex-col gap-8">
-                        <form id="uploadForm" th:action="@{/companies/import}" method="post" enctype="multipart/form-data">
+                        <form id="uploadForm" th:action="@{/companies/import}" method="post"
+                            enctype="multipart/form-data">
                             <div class="flex flex-col items-center gap-6 rounded-xl border-2 border-dashed border-white/20 px-6 py-14 bg-white/5 hover:border-primary/80 transition-colors duration-300"
                                 id="dropZone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)"
                                 ondrop="handleDrop(event)">
@@ -276,7 +277,7 @@
                     <div
                         class="sticky bottom-0 mt-8 py-6 bg-background-dark/80 backdrop-blur-sm border-t border-white/10">
                         <div class="flex flex-col sm:flex-row justify-end items-center gap-4 max-w-7xl mx-auto">
-                            <a href="/companies"
+                            <a href="/companies" id="cancelImportBtn"
                                 class="flex w-full sm:w-auto min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-red-500/20 text-red-400 text-base font-bold leading-normal tracking-[0.015em] hover:bg-red-500/30 transition-colors">
                                 <span class="truncate">プロセスを中止</span>
                             </a>
@@ -752,6 +753,20 @@
                 container.appendChild(span);
             }
         }
+
+        // --- Back Button Logic (State Persistence) ---
+        (function () {
+            const cancelBtn = document.getElementById('cancelImportBtn');
+            const DEFAULT_URL = '/companies';
+            const lastUrl = sessionStorage.getItem('lastListUrl') || DEFAULT_URL;
+
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.location.href = lastUrl;
+                });
+            }
+        })();
     </script>
 </body>
 

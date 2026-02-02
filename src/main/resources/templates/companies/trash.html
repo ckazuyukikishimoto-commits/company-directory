@@ -80,7 +80,7 @@
                                 廃棄データ・アーカイブ</h1>
                             <div class="flex flex-wrap items-center gap-2">
                                 <form th:action="@{/companies}" method="get">
-                                    <button
+                                    <button id="backToListBtn"
                                         class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-9 px-3 bg-gray-200 dark:bg-archive-dark-panel text-gray-800 dark:text-archive-text text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-archive-dark-border transition-colors">
                                         <span class="material-symbols-outlined text-base">arrow_back</span>
                                         <span class="truncate">一覧へ戻る</span>
@@ -468,6 +468,20 @@
                         e.stopPropagation();
                     });
                 }
+
+                // --- Back Button Logic (State Persistence) ---
+                (function () {
+                    const backBtn = document.getElementById('backToListBtn');
+                    const DEFAULT_URL = '/companies';
+                    const lastUrl = sessionStorage.getItem('lastListUrl') || DEFAULT_URL;
+
+                    if (backBtn) {
+                        backBtn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            window.location.href = lastUrl;
+                        });
+                    }
+                })();
             })();
     </script>
 </body>

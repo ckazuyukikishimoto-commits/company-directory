@@ -109,7 +109,7 @@
                     <span class="material-symbols-outlined text-sm">save</span>
                     登録する
                 </button>
-                <a th:href="@{/companies}"
+                <a th:href="@{/companies}" id="cancelBtn"
                     class="flex items-center gap-2 rounded-md h-9 px-4 bg-white dark:bg-transparent border border-gray-300 dark:border-[#283039] text-gray-800 dark:text-white text-sm font-bold hover:bg-gray-100 dark:hover:bg-[#283039] transition-colors">
                     キャンセル
                 </a>
@@ -512,25 +512,35 @@
                     const data = JSON.parse(saved);
                     if (Array.isArray(data) && data.length > 0) {
                         data.forEach(item => {
-                            addRow(null, 'beforeend', item); // Modify addRow signature
+                            addRow(null, 'beforeend', item);
                         });
-                        // Ensure at least 5 rows
-                        const currentLen = tableBody.querySelectorAll('tr').length;
-                        for (let i = currentLen; i < 5; i++) {
-                            addRow();
-                        }
-                        return true;
                     }
                 } catch (e) {
                     console.error('Failed to parse draft', e);
                 }
             }
-            return false;
+            // 常に最低5行は表示する
+            const currentLen = tableBody.querySelectorAll('tr').length;
+            for (let i = currentLen; i < 5; i++) {
+                addRow();
+            }
         }
 
+        restoreDraft();
 
+        // --- Back Button Logic (State Persistence) ---
+        (function () {
+            const cancelBtn = document.getElementById('cancelBtn');
+            const DEFAULT_URL = '/companies';
+            const lastUrl = sessionStorage.getItem('lastListUrl') || DEFAULT_URL;
 
-
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.location.href = lastUrl;
+                });
+            }
+        })();
     </script>
 </body>
 
