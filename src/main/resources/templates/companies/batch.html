@@ -266,11 +266,12 @@
             addBottomBtn.disabled = rows.length >= 100;
         }
 
-        function addRow(targetRow = null, position = 'afterend') {
+        function addRow(targetRow = null, position = 'afterend', data = {}) {
             if (tableBody.querySelectorAll('tr').length >= 100) return;
 
             const tempDiv = document.createElement('tbody'); // Use tbody to ensure tr is parsed correctly
-            tempDiv.innerHTML = createRowHtml(0);
+            // Note: createRowHtml uses rowCount which is global, index 0 is placeholder
+            tempDiv.innerHTML = createRowHtml(0, data);
             const newRow = tempDiv.firstElementChild; // Get the tr directly
 
             if (targetRow && targetRow instanceof Node) {
@@ -284,6 +285,9 @@
         }
 
         function bindRowEvents(row) {
+            // Auto-save on input
+            row.addEventListener('input', saveDraft);
+
             // 削除
             row.querySelector('.delete-row').onclick = () => {
                 if (tableBody.querySelectorAll('tr').length <= 1) {
@@ -295,12 +299,13 @@
                 if (!hasValue || confirm('この行を削除しますか？')) {
                     row.remove();
                     updateNo();
+                    saveDraft();
                     validateBtn.click(); // 行削除時は再チェックを促すor自動で行う
                 }
             };
             // 挿入
-            row.querySelector('.insert-above').onclick = () => addRow(row, 'beforebegin');
-            row.querySelector('.insert-below').onclick = () => addRow(row, 'afterend');
+            row.querySelector('.insert-above').onclick = () => { addRow(row, 'beforebegin'); saveDraft(); };
+            row.querySelector('.insert-below').onclick = () => { addRow(row, 'afterend'); saveDraft(); };
 
             // 郵便番号補完
             const zipInput = row.querySelector('.col-zip');
@@ -312,6 +317,7 @@
                         if (res.ok) {
                             const data = await res.json();
                             row.querySelector('.col-address').value = data.prefecture + data.city + data.town;
+                            saveDraft();
                         }
                     } catch (e) { }
                 }
@@ -323,6 +329,7 @@
                 if (e.key === 'Enter' && !row.nextElementSibling) {
                     const newRow = addRow();
                     newRow.querySelector('.col-name').focus();
+                    saveDraft();
                     e.preventDefault();
                 }
             };
@@ -463,6 +470,8 @@
                 });
 
                 if (res.redirected) {
+                    // Success! Clear draft
+                    sessionStorage.removeItem('batchDraft');
                     window.location.href = res.url;
                 } else {
                     alert('登録に失敗しました');
@@ -478,21 +487,49 @@
 
         addBottomBtn.onclick = () => addRow();
 
-        // 初期表示
-        window.onload = () => {
-            for (let i = 0; i < 5; i++) {
-                addRow();
-            }
-        };
+        // --- Persistence Logic ---
+        const DRAFT_KEY = 'batchDraft';
 
-        // 離脱警告
-        window.onbeforeunload = (e) => {
-            const hasData = Array.from(tableBody.querySelectorAll('input')).some(i => i.value.trim() !== '');
-            if (hasData) {
-                e.preventDefault();
-                e.returnValue = '';
+        function saveDraft() {
+            const rows = collectData();
+            // Filter out completely empty rows to save space, but keep at least 5 forstructure if wanted
+            // Actually, we should save everything effectively to restore exact state
+            // But if we have 100 empty rows, maybe don't save all.
+            // Let's just save valid data + index
+            const dataToSave = rows.filter(r => r.companyName || r.zipCode || r.address || r.remarks);
+            if (dataToSave.length > 0) {
+                sessionStorage.setItem(DRAFT_KEY, JSON.stringify(dataToSave));
+                console.log('Draft saved');
+            } else {
+                sessionStorage.removeItem(DRAFT_KEY);
             }
-        };
+        }
+
+        function restoreDraft() {
+            const saved = sessionStorage.getItem(DRAFT_KEY);
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    if (Array.isArray(data) && data.length > 0) {
+                        data.forEach(item => {
+                            addRow(null, 'beforeend', item); // Modify addRow signature
+                        });
+                        // Ensure at least 5 rows
+                        const currentLen = tableBody.querySelectorAll('tr').length;
+                        for (let i = currentLen; i < 5; i++) {
+                            addRow();
+                        }
+                        return true;
+                    }
+                } catch (e) {
+                    console.error('Failed to parse draft', e);
+                }
+            }
+            return false;
+        }
+
+
+
 
     </script>
 </body>

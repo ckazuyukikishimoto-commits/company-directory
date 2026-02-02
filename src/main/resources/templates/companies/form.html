@@ -77,12 +77,10 @@
   <div class="relative flex h-auto min-h-screen w-full flex-col">
     <header
       class="flex items-center p-4 pb-2 justify-between sticky top-0 z-10 bg-background-light dark:bg-background-dark/80 backdrop-blur-sm">
-      <form th:action="@{/companies}" method="get">
-        <button
-          class="flex size-10 shrink-0 items-center justify-center rounded-full text-zinc-700 dark:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/5">
-          <span class="material-symbols-outlined text-2xl">arrow_back_ios_new</span>
-        </button>
-      </form>
+      <button type="button" id="headerBackBtn"
+        class="flex size-10 shrink-0 items-center justify-center rounded-full text-zinc-700 dark:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/5">
+        <span class="material-symbols-outlined text-2xl">arrow_back_ios_new</span>
+      </button>
       <h1 class="text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center text-zinc-900 dark:text-white"
         th:text="${companyForm.id} != null ? '編集' : '新規登録'"></h1>
       <div class="w-10"></div>
@@ -163,7 +161,7 @@
 
         <!-- アクションボタン -->
         <div class="flex flex-col sm:flex-row gap-4 mt-8">
-          <button type="button" onclick="location.href='/companies'"
+          <button type="button" id="footerCancelBtn"
             class="flex items-center justify-center w-full h-14 px-6 text-base font-bold text-primary dark:text-white bg-primary/10 dark:bg-white/10 rounded-xl hover:bg-primary/20 dark:hover:bg-white/20 transition-colors">
             キャンセル
           </button>
@@ -212,6 +210,23 @@
   </div>
 
   <script>
+      // --- 0. Back Button Logic (State Persistence) ---
+      (function () {
+        const backBtn = document.getElementById('headerBackBtn');
+        const cancelBtn = document.getElementById('footerCancelBtn');
+        const DEFAULT_URL = '/companies';
+
+        // Retrieve last URL from session, fallback to default
+        const lastUrl = sessionStorage.getItem('lastListUrl') || DEFAULT_URL;
+
+        function goBack() {
+          window.location.href = lastUrl;
+        }
+
+        if (backBtn) backBtn.addEventListener('click', goBack);
+        if (cancelBtn) cancelBtn.addEventListener('click', goBack);
+      })();
+
     // --- 1. 郵便番号から住所を自動入力 ---
     const zipInput = document.getElementById('zipCode');
     const btnSearch = document.getElementById('btnZipSearch');

@@ -282,34 +282,39 @@
                                         class="px-4 py-2.5 text-center text-gray-600 dark:text-white w-[60px] font-medium leading-normal">
                                         No.
                                     </th>
-                                    <th data-col="companyId"
-                                        class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[100px] font-medium leading-normal group cursor-pointer">
+                                    <th data-col="companyId" onclick="applySort('companyId')"
+                                        class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[100px] font-medium leading-normal group cursor-pointer hover:bg-gray-100 dark:hover:bg-[#283039] transition-colors">
                                         <div class="flex items-center gap-1">企業ID <span
-                                                class="material-symbols-outlined text-base opacity-50 group-hover:opacity-100">swap_vert</span>
+                                                class="sort-icon material-symbols-outlined text-base opacity-30"
+                                                data-col="companyId">swap_vert</span>
                                         </div>
                                     </th>
-                                    <th data-col="companyName"
-                                        class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[220px] font-medium leading-normal group cursor-pointer">
+                                    <th data-col="companyName" onclick="applySort('companyName')"
+                                        class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[220px] font-medium leading-normal group cursor-pointer hover:bg-gray-100 dark:hover:bg-[#283039] transition-colors">
                                         <div class="flex items-center gap-1">企業名 <span
-                                                class="material-symbols-outlined text-base opacity-50 group-hover:opacity-100">swap_vert</span>
+                                                class="sort-icon material-symbols-outlined text-base opacity-30"
+                                                data-col="companyName">swap_vert</span>
                                         </div>
                                     </th>
-                                    <th data-col="address"
-                                        class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[250px] font-medium leading-normal group cursor-pointer">
+                                    <th data-col="address" onclick="applySort('address')"
+                                        class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[250px] font-medium leading-normal group cursor-pointer hover:bg-gray-100 dark:hover:bg-[#283039] transition-colors">
                                         <div class="flex items-center gap-1">住所 <span
-                                                class="material-symbols-outlined text-base opacity-50 group-hover:opacity-100">swap_vert</span>
+                                                class="sort-icon material-symbols-outlined text-base opacity-30"
+                                                data-col="address">swap_vert</span>
                                         </div>
                                     </th>
-                                    <th data-col="zipCode"
-                                        class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[120px] font-medium leading-normal group cursor-pointer">
+                                    <th data-col="zipCode" onclick="applySort('zipCode')"
+                                        class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[120px] font-medium leading-normal group cursor-pointer hover:bg-gray-100 dark:hover:bg-[#283039] transition-colors">
                                         <div class="flex items-center gap-1">郵便番号 <span
-                                                class="material-symbols-outlined text-base opacity-50 group-hover:opacity-100">swap_vert</span>
+                                                class="sort-icon material-symbols-outlined text-base opacity-30"
+                                                data-col="zipCode">swap_vert</span>
                                         </div>
                                     </th>
-                                    <th data-col="registrationDate"
-                                        class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[140px] font-medium leading-normal group cursor-pointer">
+                                    <th data-col="registrationDate" onclick="applySort('registrationDate')"
+                                        class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[140px] font-medium leading-normal group cursor-pointer hover:bg-gray-100 dark:hover:bg-[#283039] transition-colors">
                                         <div class="flex items-center gap-1">登録日 <span
-                                                class="material-symbols-outlined text-base opacity-50 group-hover:opacity-100">swap_vert</span>
+                                                class="sort-icon material-symbols-outlined text-base opacity-30"
+                                                data-col="registrationDate">swap_vert</span>
                                         </div>
                                     </th>
                                     <th data-col="remarks"
@@ -384,6 +389,8 @@
                                 <input type="hidden" name="zipCode" th:value="${searchForm?.zipCode}" />
                                 <input type="hidden" name="dateFrom" th:value="${searchForm?.dateFrom}" />
                                 <input type="hidden" name="dateTo" th:value="${searchForm?.dateTo}" />
+                                <input type="hidden" name="sort" th:value="${#request.getParameter('sort')}"
+                                    th:if="${#request.getParameter('sort') != null}" />
                                 <select name="size" onchange="document.getElementById('pageSizeForm').submit()"
                                     class="form-select rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] focus:ring-primary focus:border-primary h-8 py-0 pl-2 pr-7 text-sm">
                                     <option value="5" th:selected="${page.size == 5}">5</option>
@@ -401,25 +408,25 @@
                                 of 123件</span>
                             <div class="flex gap-1">
                                 <!-- 最初のページへ -->
-                                <a th:href="@{/companies(page=0, size=${page.size}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo})}"
+                                <a th:href="@{/companies(page=0, size=${page.size}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo}, sort=${#request.getParameter('sort')})}"
                                     th:classappend="${page.first} ? 'disabled:opacity-50 disabled:pointer-events-none' : ''"
                                     class="h-8 w-8 rounded flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700">
                                     <span class="material-symbols-outlined text-xl">first_page</span>
                                 </a>
                                 <!-- 前のページへ -->
-                                <a th:href="@{/companies(page=${page.number - 1}, size=${page.size}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo})}"
+                                <a th:href="@{/companies(page=${page.number - 1}, size=${page.size}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo}, sort=${#request.getParameter('sort')})}"
                                     th:classappend="${page.first} ? 'disabled:opacity-50 disabled:pointer-events-none' : ''"
                                     class="h-8 w-8 rounded flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700">
                                     <span class="material-symbols-outlined text-xl">chevron_left</span>
                                 </a>
                                 <!-- 次のページへ -->
-                                <a th:href="@{/companies(page=${page.number + 1}, size=${page.size}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo})}"
+                                <a th:href="@{/companies(page=${page.number + 1}, size=${page.size}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo}, sort=${#request.getParameter('sort')})}"
                                     th:classappend="${page.last} ? 'disabled:opacity-50 disabled:pointer-events-none' : ''"
                                     class="h-8 w-8 rounded flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700">
                                     <span class="material-symbols-outlined text-xl">chevron_right</span>
                                 </a>
                                 <!-- 最後のページへ -->
-                                <a th:href="@{/companies(page=${page.totalPages - 1}, size=${page.size}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo})}"
+                                <a th:href="@{/companies(page=${page.totalPages - 1}, size=${page.size}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo}, sort=${#request.getParameter('sort')})}"
                                     th:classappend="${page.last} ? 'disabled:opacity-50 disabled:pointer-events-none' : ''"
                                     class="h-8 w-8 rounded flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700">
                                     <span class="material-symbols-outlined text-xl">last_page</span>
@@ -683,6 +690,50 @@
                     });
                 }
             })();
+
+        // State Persistence & Sorting Logic
+        (function () {
+            // 1. Save current URL as "Last List URL"
+            // We do this immediately on load to capture the exact state
+            sessionStorage.setItem('lastListUrl', window.location.href);
+            console.log('Saved lastListUrl:', window.location.href);
+
+            // 2. Initialize Sort Icons
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentSort = urlParams.get('sort'); // e.g. "companyName,desc"
+
+            if (currentSort) {
+                const [sortCol, sortDir] = currentSort.split(',');
+                const icon = document.querySelector(`.sort-icon[data-col="${sortCol}"]`);
+                if (icon) {
+                    icon.classList.remove('opacity-30', 'text-base');
+                    icon.classList.add('opacity-100', 'text-brand-blue'); // Highlight
+                    // arrow_upward (ASC), arrow_downward (DESC)
+                    icon.textContent = (sortDir && sortDir.toLowerCase() === 'desc') ? 'arrow_downward' : 'arrow_upward';
+                }
+            }
+
+            // 3. Define Global Sort Function
+            window.applySort = function (column) {
+                const params = new URLSearchParams(window.location.search);
+                const currentSort = params.get('sort');
+                let newDir = 'asc';
+
+                if (currentSort) {
+                    const [currCol, currDir] = currentSort.split(',');
+                    if (currCol === column) {
+                        // Toggle
+                        newDir = (currDir === 'asc') ? 'desc' : 'asc';
+                    }
+                }
+
+                params.set('sort', `${column},${newDir}`);
+                // Start from page 0 on sort change
+                if (params.has('page')) params.set('page', 0);
+
+                window.location.href = window.location.pathname + '?' + params.toString();
+            };
+        })();
 
         // Export & Select Mode Logic
         (function () {
