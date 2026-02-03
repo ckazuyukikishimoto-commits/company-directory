@@ -169,26 +169,31 @@
                                         <span class="truncate">まとめて追加</span>
                                     </button>
                                     <button th:formaction="@{/companies/import}"
+                                        title="Excelファイル(.xlsx)から企業データを一括インポート"
                                         class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-9 px-3 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
                                         <span class="material-symbols-outlined text-base">upload_file</span>
                                         <span class="truncate">Excelインポート</span>
                                     </button>
                                     <button type="button" id="toggleSelectModeBtn"
+                                        title="複数の企業を選択してエクスポート"
                                         class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-9 px-3 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
                                         <span class="material-symbols-outlined text-base">check_box</span>
                                         <span class="truncate">選択モード</span>
                                     </button>
                                     <button type="button" id="openExportModalBtn"
+                                        title="企業データをExcelファイルとして出力"
                                         class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-9 px-3 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
                                         <span class="material-symbols-outlined text-base">download</span>
                                         <span class="truncate">エクスポート</span>
                                     </button>
                                     <button th:formaction="@{companies/template}"
+                                        title="インポート用のExcelテンプレートをダウンロード"
                                         class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-9 px-3 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
                                         <span class="material-symbols-outlined text-base">description</span>
                                         <span class="truncate">テンプレートDL</span>
                                     </button>
                                     <button th:formaction="@{companies/trash}"
+                                        title="削除した企業の履歴を表示"
                                         class="flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
                                         <span class="material-symbols-outlined text-xl">delete_history</span>
                                     </button>
@@ -362,45 +367,54 @@
                                         class="px-4 py-2.5 text-center text-gray-600 dark:text-white w-[60px] font-medium leading-normal">
                                         No.
                                     </th>
-                                    <th data-col="companyId"
+                                    <th data-col="companyId" data-sort-type="number"
                                         class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[100px] font-medium leading-normal group cursor-pointer">
-                                        <div class="flex items-center gap-1">企業ID <span
-                                                class="material-symbols-outlined text-base opacity-50 group-hover:opacity-100">swap_vert</span>
+                                        <div class="flex items-center gap-2">企業ID <span
+                                                class="sort-icon text-xs text-gray-400 group-hover:text-gray-600 dark:text-gray-400">↕</span>
                                         </div>
                                     </th>
-                                    <th data-col="companyName"
+                                    <th data-col="companyName" data-sort-type="text"
                                         class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[220px] font-medium leading-normal group cursor-pointer">
-                                        <div class="flex items-center gap-1">企業名 <span
-                                                class="material-symbols-outlined text-base opacity-50 group-hover:opacity-100">swap_vert</span>
+                                        <div class="flex items-center gap-2">企業名 <span
+                                                class="sort-icon text-xs text-gray-400 group-hover:text-gray-600 dark:text-gray-400">↕</span>
                                         </div>
                                     </th>
-                                    <th data-col="address"
+                                    <th data-col="address" data-sort-type="text"
                                         class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[250px] font-medium leading-normal group cursor-pointer">
-                                        <div class="flex items-center gap-1">住所 <span
-                                                class="material-symbols-outlined text-base opacity-50 group-hover:opacity-100">swap_vert</span>
+                                        <div class="flex items-center gap-2">住所 <span
+                                                class="sort-icon text-xs text-gray-400 group-hover:text-gray-600 dark:text-gray-400">↕</span>
                                         </div>
                                     </th>
-                                    <th data-col="zipCode"
+                                    <th data-col="zipCode" data-sort-type="text"
                                         class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[120px] font-medium leading-normal group cursor-pointer">
-                                        <div class="flex items-center gap-1">郵便番号 <span
-                                                class="material-symbols-outlined text-base opacity-50 group-hover:opacity-100">swap_vert</span>
+                                        <div class="flex items-center gap-2">郵便番号 <span
+                                                class="sort-icon text-xs text-gray-400 group-hover:text-gray-600 dark:text-gray-400">↕</span>
                                         </div>
                                     </th>
-                                    <th data-col="registrationDate"
+                                    <th data-col="registrationDate" data-sort-type="date"
                                         class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[140px] font-medium leading-normal group cursor-pointer">
-                                        <div class="flex items-center gap-1">登録日 <span
-                                                class="material-symbols-outlined text-base opacity-50 group-hover:opacity-100">swap_vert</span>
+                                        <div class="flex items-center gap-2">登録日 <span
+                                                class="sort-icon text-xs text-gray-400 group-hover:text-gray-600 dark:text-gray-400">↕</span>
                                         </div>
                                     </th>
-                                    <th data-col="remarks"
-                                        class="px-4 py-2.5 text-left text-gray-600 dark:text-white min-w-[200px] font-medium leading-normal">
-                                        備考</th>
+                                    <th data-col="remarks" data-sort-type="text"
+                                        class="px-4 py-2.5 text-left text-gray-600 dark:text-white min-w-[200px] font-medium leading-normal group cursor-pointer">
+                                        <div class="flex items-center gap-2">備考 <span
+                                                class="sort-icon text-xs text-gray-400 group-hover:text-gray-600 dark:text-gray-400">↕</span>
+                                        </div>
+                                    </th>
                                     <th data-col="actions"
                                         class="px-4 py-2.5 text-center text-gray-600 dark:text-white w-[120px] font-medium leading-normal">
                                         操作</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                <tr th:if="${page.totalElements == 0}" class="js-empty-row">
+                                    <td colspan="9"
+                                        class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
+                                        該当データがありません
+                                    </td>
+                                </tr>
                                 <tr th:each="company, iterStat : ${companies}"
                                     class="border-t border-t-gray-200 dark:border-t-[#3b4754] hover:bg-gray-50 dark:hover:bg-[#1c2127]/50">
                                     <td class="select-checkbox-col hidden px-4 py-2 text-center">
@@ -431,7 +445,8 @@
                                         [[${company.remarks}]]</td>
                                     <td data-col="actions" class="px-4 py-2 w-60 text-center">
                                         <div class="flex justify-center gap-2">
-                                            <a th:href="@{/companies/edit/{id}(id=${company.companyId})}">
+                                            <a data-edit-link
+                                                th:href="@{/companies/edit/{id}(id=${company.companyId})}">
                                                 <button
                                                     class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">
                                                     <span class="material-symbols-outlined text-xl">edit</span>
@@ -480,25 +495,25 @@
                             <div class="flex gap-1">
                                 <!-- 最初のページへ -->
                                 <a th:href="@{/companies(page=0, size=${page.size}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo})}"
-                                    th:classappend="${page.first} ? 'disabled:opacity-50 disabled:pointer-events-none' : ''"
+                                    th:classappend="${page.first or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''"
                                     class="h-8 w-8 rounded flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700">
                                     <span class="material-symbols-outlined text-xl">first_page</span>
                                 </a>
                                 <!-- 前のページへ -->
                                 <a th:href="@{/companies(page=${page.number - 1}, size=${page.size}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo})}"
-                                    th:classappend="${page.first} ? 'disabled:opacity-50 disabled:pointer-events-none' : ''"
+                                    th:classappend="${page.first or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''"
                                     class="h-8 w-8 rounded flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700">
                                     <span class="material-symbols-outlined text-xl">chevron_left</span>
                                 </a>
                                 <!-- 次のページへ -->
                                 <a th:href="@{/companies(page=${page.number + 1}, size=${page.size}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo})}"
-                                    th:classappend="${page.last} ? 'disabled:opacity-50 disabled:pointer-events-none' : ''"
+                                    th:classappend="${page.last or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''"
                                     class="h-8 w-8 rounded flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700">
                                     <span class="material-symbols-outlined text-xl">chevron_right</span>
                                 </a>
                                 <!-- 最後のページへ -->
                                 <a th:href="@{/companies(page=${page.totalPages - 1}, size=${page.size}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo})}"
-                                    th:classappend="${page.last} ? 'disabled:opacity-50 disabled:pointer-events-none' : ''"
+                                    th:classappend="${page.last or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''"
                                     class="h-8 w-8 rounded flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700">
                                     <span class="material-symbols-outlined text-xl">last_page</span>
                                 </a>
@@ -732,9 +747,15 @@
 
                     // State Persistence Logic
                     (function () {
-                        // Save current URL as "Last List URL"
-                        sessionStorage.setItem('lastListUrl', window.location.href);
-                        console.log('Saved lastListUrl:', window.location.href);
+                        const currentUrl = window.location.href;
+                        const lastUrl = sessionStorage.getItem('lastListUrl');
+
+                        if (!window.location.search && lastUrl && lastUrl !== currentUrl) {
+                            window.location.replace(lastUrl);
+                            return;
+                        }
+
+                        sessionStorage.setItem('lastListUrl', currentUrl);
                     })();
 
                     // DOMContentLoaded後に実行
@@ -767,6 +788,86 @@
                         });
                     }
                 })();
+
+            (function () {
+                const lastUrl = sessionStorage.getItem('lastListUrl');
+                if (!lastUrl) return;
+
+                document.querySelectorAll('a[data-edit-link]').forEach(link => {
+                    const linkUrl = new URL(link.getAttribute('href'), window.location.origin);
+                    linkUrl.searchParams.set('returnUrl', lastUrl);
+                    link.setAttribute('href', `${linkUrl.pathname}?${linkUrl.searchParams.toString()}`);
+                });
+            })();
+
+            // Table Sort Logic
+            (function () {
+                const table = document.querySelector('table');
+                const tbody = table ? table.querySelector('tbody') : null;
+                const headers = table ? table.querySelectorAll('thead th[data-col]') : [];
+                const state = { column: null, direction: 'asc' };
+
+                if (!table || !tbody || headers.length === 0) return;
+
+                function parseValue(value, type) {
+                    if (type === 'number') {
+                        const num = parseFloat(value.replace(/[^0-9.-]/g, ''));
+                        return Number.isNaN(num) ? null : num;
+                    }
+                    if (type === 'date') {
+                        const date = Date.parse(value);
+                        return Number.isNaN(date) ? null : date;
+                    }
+                    return value.toLowerCase();
+                }
+
+                function updateIcons(activeCol, direction) {
+                    headers.forEach(header => {
+                        const icon = header.querySelector('.sort-icon');
+                        if (!icon) return;
+                        if (header.dataset.col === activeCol) {
+                            icon.textContent = direction === 'asc' ? '↑' : '↓';
+                        } else {
+                            icon.textContent = '↕';
+                        }
+                    });
+                }
+
+                function sortRows(column, type, direction) {
+                    const rows = Array.from(tbody.querySelectorAll('tr'))
+                        .filter(row => !row.classList.contains('js-empty-row'));
+
+                    rows.sort((a, b) => {
+                        const aCell = a.querySelector(`[data-col="${column}"]`);
+                        const bCell = b.querySelector(`[data-col="${column}"]`);
+                        const aValue = parseValue(aCell ? aCell.textContent.trim() : '', type);
+                        const bValue = parseValue(bCell ? bCell.textContent.trim() : '', type);
+
+                        if (aValue === null && bValue === null) return 0;
+                        if (aValue === null) return 1;
+                        if (bValue === null) return -1;
+
+                        if (aValue < bValue) return direction === 'asc' ? -1 : 1;
+                        if (aValue > bValue) return direction === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+
+                    rows.forEach(row => tbody.appendChild(row));
+                }
+
+                headers.forEach(header => {
+                    if (header.dataset.col === 'actions') return;
+                    header.addEventListener('click', () => {
+                        const column = header.dataset.col;
+                        const type = header.dataset.sortType || 'text';
+                        const isSame = state.column === column;
+                        state.direction = isSame && state.direction === 'asc' ? 'desc' : 'asc';
+                        state.column = column;
+                        sortRows(column, type, state.direction);
+                        updateIcons(column, state.direction);
+                    });
+                });
+            })();
 
             // Export & Select Mode Logic
             (function () {

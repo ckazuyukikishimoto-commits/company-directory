@@ -90,6 +90,7 @@
         th:action="${companyForm.id} ? @{/companies/edit/{id}(id=*{id})} : @{/companies/add}" method="post"
         th:object="${companyForm}">
         <input type="hidden" th:field="*{id}">
+        <input type="hidden" name="returnUrl" id="returnUrl">
 
         <!-- 企業名 -->
         <label class="flex flex-col w-full">
@@ -214,10 +215,17 @@
       (function () {
         const backBtn = document.getElementById('headerBackBtn');
         const cancelBtn = document.getElementById('footerCancelBtn');
+        const returnUrlInput = document.getElementById('returnUrl');
         const DEFAULT_URL = '/companies';
 
-        // Retrieve last URL from session, fallback to default
-        const lastUrl = sessionStorage.getItem('lastListUrl') || DEFAULT_URL;
+        // Retrieve last URL from query param or session, fallback to default
+        const urlParams = new URLSearchParams(window.location.search);
+        const paramReturnUrl = urlParams.get('returnUrl');
+        const lastUrl = paramReturnUrl || sessionStorage.getItem('lastListUrl') || DEFAULT_URL;
+
+        if (returnUrlInput) {
+          returnUrlInput.value = lastUrl;
+        }
 
         function goBack() {
           window.location.href = lastUrl;
