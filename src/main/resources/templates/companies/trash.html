@@ -88,6 +88,10 @@
                                 </form>
                             </div>
                         </div>
+                        <div
+                            class="mb-4 rounded-lg border border-amber-400/40 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
+                            削除したデータは30日後に自動的に完全削除されます。
+                        </div>
                         <form th:action="@{/companies/trash}" method="get" th:object="${searchForm}">
                             <input type="hidden" name="size" th:value="${page?.size} ?: 5" />
                             <div class="flex flex-col gap-3 pb-3">
@@ -234,28 +238,28 @@
                                             <th
                                                 class="px-4 py-2.5 text-center text-archive-text w-[60px] font-medium leading-normal">
                                                 No.</th>
-                                            <th data-col="companyId"
+                                            <th data-col="companyId" data-sort-type="number"
                                                 class="px-4 py-2.5 text-left text-archive-text w-[120px] font-medium leading-normal group cursor-pointer">
-                                                <div class="flex items-center gap-1">企業ID <span
-                                                        class="material-symbols-outlined text-base opacity-50 group-hover:opacity-100">swap_vert</span>
+                                                <div class="flex items-center gap-2">企業ID <span
+                                                        class="sort-icon text-xs text-archive-text-dim group-hover:text-archive-text">↕</span>
                                                 </div>
                                             </th>
-                                            <th data-col="companyName"
+                                            <th data-col="companyName" data-sort-type="text"
                                                 class="px-4 py-2.5 text-left text-archive-text min-w-[200px] font-medium leading-normal group cursor-pointer">
-                                                <div class="flex items-center gap-1">企業名 <span
-                                                        class="material-symbols-outlined text-base opacity-50 group-hover:opacity-100">swap_vert</span>
+                                                <div class="flex items-center gap-2">企業名 <span
+                                                        class="sort-icon text-xs text-archive-text-dim group-hover:text-archive-text">↕</span>
                                                 </div>
                                             </th>
-                                            <th data-col="deletedAt"
+                                            <th data-col="deletedAt" data-sort-type="date"
                                                 class="px-4 py-2.5 text-left text-archive-text w-[200px] font-bold leading-normal group cursor-pointer text-amber-300">
-                                                <div class="flex items-center gap-1">削除日時 <span
-                                                        class="material-symbols-outlined text-base text-amber-300">south</span>
+                                                <div class="flex items-center gap-2">削除日時 <span
+                                                        class="sort-icon text-xs text-archive-text-dim group-hover:text-archive-text">↕</span>
                                                 </div>
                                             </th>
-                                            <th data-col="deletedBy"
+                                            <th data-col="deletedBy" data-sort-type="text"
                                                 class="px-4 py-2.5 text-left text-archive-text w-[180px] font-bold leading-normal group cursor-pointer text-amber-300">
-                                                <div class="flex items-center gap-1">削除実行者 <span
-                                                        class="material-symbols-outlined text-base opacity-50 group-hover:opacity-100">swap_vert</span>
+                                                <div class="flex items-center gap-2">削除実行者 <span
+                                                        class="sort-icon text-xs text-archive-text-dim group-hover:text-archive-text">↕</span>
                                                 </div>
                                             </th>
                                             <th data-col="actions"
@@ -264,6 +268,12 @@
                                         </tr>
                                     </thead>
                                     <tbody>
+                                        <tr th:if="${page.totalElements == 0}" class="js-empty-row">
+                                            <td colspan="6"
+                                                class="px-4 py-10 text-center text-archive-text-dim">
+                                                該当データがありません
+                                            </td>
+                                        </tr>
                                         <tr th:each="company, iterStat : ${trashCompanies}"
                                             class="border-t border-t-archive-dark-border hover:bg-archive-dark-panel/50">
                                             <td
@@ -287,6 +297,8 @@
                                                     <form
                                                         th:action="@{/companies/trash/restore/{id}(id=${company.companyId})}"
                                                         method="post">
+                                                        <input type="hidden" name="returnUrl"
+                                                            class="return-url-input" />
                                                         <button
                                                             class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-8 px-3 bg-teal-600 text-white text-xs font-bold leading-normal tracking-[0.015em] hover:bg-teal-500 transition-colors">
                                                             <span
@@ -329,8 +341,8 @@
                                     <div class="flex gap-1 text-archive-text">
                                         <!-- First Page -->
                                         <a th:href="@{/companies/trash(page=0, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
-                                            th:classappend="${page.first} ? 'pointer-events-none opacity-50' : ''">
-                                            <button th:disabled="${page.first}"
+                                            th:classappend="${page.first or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''">
+                                            <button th:disabled="${page.first or page.totalElements == 0}"
                                                 class="h-8 w-8 rounded flex items-center justify-center hover:bg-archive-dark-panel disabled:opacity-50">
                                                 <span class="material-symbols-outlined text-xl">first_page</span>
                                             </button>
@@ -338,8 +350,8 @@
 
                                         <!-- Previous Page -->
                                         <a th:href="@{/companies/trash(page=${page.number - 1}, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
-                                            th:classappend="${page.first} ? 'pointer-events-none opacity-50' : ''">
-                                            <button th:disabled="${page.first}"
+                                            th:classappend="${page.first or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''">
+                                            <button th:disabled="${page.first or page.totalElements == 0}"
                                                 class="h-8 w-8 rounded flex items-center justify-center hover:bg-archive-dark-panel disabled:opacity-50">
                                                 <span class="material-symbols-outlined text-xl">chevron_left</span>
                                             </button>
@@ -347,8 +359,8 @@
 
                                         <!-- Next Page -->
                                         <a th:href="@{/companies/trash(page=${page.number + 1}, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
-                                            th:classappend="${page.last} ? 'pointer-events-none opacity-50' : ''">
-                                            <button th:disabled="${page.last}"
+                                            th:classappend="${page.last or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''">
+                                            <button th:disabled="${page.last or page.totalElements == 0}"
                                                 class="h-8 w-8 rounded flex items-center justify-center hover:bg-archive-dark-panel disabled:opacity-50">
                                                 <span class="material-symbols-outlined text-xl">chevron_right</span>
                                             </button>
@@ -356,8 +368,8 @@
 
                                         <!-- Last Page -->
                                         <a th:href="@{/companies/trash(page=${page.totalPages - 1}, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
-                                            th:classappend="${page.last} ? 'pointer-events-none opacity-50' : ''">
-                                            <button th:disabled="${page.last}"
+                                            th:classappend="${page.last or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''">
+                                            <button th:disabled="${page.last or page.totalElements == 0}"
                                                 class="h-8 w-8 rounded flex items-center justify-center hover:bg-archive-dark-panel disabled:opacity-50">
                                                 <span class="material-symbols-outlined text-xl">last_page</span>
                                             </button>
@@ -374,6 +386,19 @@
 
     <script>
             (function () {
+                // State Persistence Logic
+                (function () {
+                    const currentUrl = window.location.href;
+                    const lastUrl = sessionStorage.getItem('lastTrashUrl');
+
+                    if (!window.location.search && lastUrl && lastUrl !== currentUrl) {
+                        window.location.replace(lastUrl);
+                        return;
+                    }
+
+                    sessionStorage.setItem('lastTrashUrl', currentUrl);
+                })();
+
                 const STORAGE_KEY = 'trashListVisibleColumns';
 
                 // デフォルトの表示設定
@@ -481,6 +506,83 @@
                             window.location.href = lastUrl;
                         });
                     }
+                })();
+
+                (function () {
+                    const inputs = document.querySelectorAll('.return-url-input');
+                    const lastTrashUrl = sessionStorage.getItem('lastTrashUrl') || '/companies/trash';
+                    inputs.forEach(input => {
+                        input.value = lastTrashUrl;
+                    });
+                })();
+
+                // Table Sort Logic
+                (function () {
+                    const table = document.querySelector('table');
+                    const tbody = table ? table.querySelector('tbody') : null;
+                    const headers = table ? table.querySelectorAll('thead th[data-col]') : [];
+                    const state = { column: null, direction: 'asc' };
+
+                    if (!table || !tbody || headers.length === 0) return;
+
+                    function parseValue(value, type) {
+                        if (type === 'number') {
+                            const num = parseFloat(value.replace(/[^0-9.-]/g, ''));
+                            return Number.isNaN(num) ? null : num;
+                        }
+                        if (type === 'date') {
+                            const date = Date.parse(value);
+                            return Number.isNaN(date) ? null : date;
+                        }
+                        return value.toLowerCase();
+                    }
+
+                    function updateIcons(activeCol, direction) {
+                        headers.forEach(header => {
+                            const icon = header.querySelector('.sort-icon');
+                            if (!icon) return;
+                            if (header.dataset.col === activeCol) {
+                                icon.textContent = direction === 'asc' ? '↑' : '↓';
+                            } else {
+                                icon.textContent = '↕';
+                            }
+                        });
+                    }
+
+                    function sortRows(column, type, direction) {
+                        const rows = Array.from(tbody.querySelectorAll('tr'))
+                            .filter(row => !row.classList.contains('js-empty-row'));
+
+                        rows.sort((a, b) => {
+                            const aCell = a.querySelector(`[data-col="${column}"]`);
+                            const bCell = b.querySelector(`[data-col="${column}"]`);
+                            const aValue = parseValue(aCell ? aCell.textContent.trim() : '', type);
+                            const bValue = parseValue(bCell ? bCell.textContent.trim() : '', type);
+
+                            if (aValue === null && bValue === null) return 0;
+                            if (aValue === null) return 1;
+                            if (bValue === null) return -1;
+
+                            if (aValue < bValue) return direction === 'asc' ? -1 : 1;
+                            if (aValue > bValue) return direction === 'asc' ? 1 : -1;
+                            return 0;
+                        });
+
+                        rows.forEach(row => tbody.appendChild(row));
+                    }
+
+                    headers.forEach(header => {
+                        if (header.dataset.col === 'actions') return;
+                        header.addEventListener('click', () => {
+                            const column = header.dataset.col;
+                            const type = header.dataset.sortType || 'text';
+                            const isSame = state.column === column;
+                            state.direction = isSame && state.direction === 'asc' ? 'desc' : 'asc';
+                            state.column = column;
+                            sortRows(column, type, state.direction);
+                            updateIcons(column, state.direction);
+                        });
+                    });
                 })();
             })();
     </script>

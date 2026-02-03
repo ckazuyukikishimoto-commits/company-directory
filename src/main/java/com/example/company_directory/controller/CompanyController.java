@@ -77,7 +77,7 @@ public class CompanyController {
 
     @PostMapping("/add")
     public String create(@Validated CompanyForm form, BindingResult result, RedirectAttributes redirectAttributes,
-            Model model) {
+            @RequestParam(required = false) String returnUrl, Model model) {
         if (result.hasErrors()) {
             model.addAttribute("companyForm", form);
             return "companies/form";
@@ -85,7 +85,7 @@ public class CompanyController {
         try {
             companyService.save(form);
             redirectAttributes.addFlashAttribute("successMessage", "企業を登録しました。");
-            return "redirect:/companies";
+            return resolveReturnUrl(returnUrl, "/companies");
         } catch (DataIntegrityViolationException e) {
             model.addAttribute("companyForm", form);
             result.rejectValue("companyName", "duplicate", "既に登録されている企業です。");
@@ -115,7 +115,7 @@ public class CompanyController {
 
     @PostMapping("/edit/{id}")
     public String update(@Validated CompanyForm form, BindingResult result, RedirectAttributes redirectAttributes,
-            Model model) {
+            @RequestParam(required = false) String returnUrl, Model model) {
         if (result.hasErrors()) {
             model.addAttribute("companyForm", form);
             return "companies/form";
@@ -123,7 +123,7 @@ public class CompanyController {
         try {
             companyService.update(form);
             redirectAttributes.addFlashAttribute("successMessage", "企業情報を更新しました。");
-            return "redirect:/companies";
+            return resolveReturnUrl(returnUrl, "/companies");
 
         } catch (DataIntegrityViolationException e) {
             // 例えば企業名の重複など
@@ -140,21 +140,22 @@ public class CompanyController {
     }
 
     @PostMapping("/delete/{id}")
-    public String delete(@PathVariable Integer id, RedirectAttributes redirectAttributes, Model model) {
+    public String delete(@PathVariable Integer id, RedirectAttributes redirectAttributes,
+            @RequestParam(required = false) String returnUrl, Model model) {
         try {
             companyService.delete(id);
             redirectAttributes.addFlashAttribute("successMessage", "企業情報を削除しました。");
-            return "redirect:/companies";
+            return resolveReturnUrl(returnUrl, "/companies");
 
         } catch (DataIntegrityViolationException e) {
             // 参照関係（他テーブルで使われていて削除できないケース）
             redirectAttributes.addFlashAttribute("errorMessage", "関連データが存在するため削除できません。");
-            return "redirect:/companies";
+            return resolveReturnUrl(returnUrl, "/companies");
 
         } catch (Exception e) {
             // 想定外のエラー
             redirectAttributes.addFlashAttribute("errorMessage", "予期せぬエラーが発生しました。");
-            return "redirect:/companies";
+            return resolveReturnUrl(returnUrl, "/companies");
         }
     }
 
@@ -173,20 +174,28 @@ public class CompanyController {
     }
 
     @PostMapping("/trash/restore/{id}")
-    public String restore(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
+    public String restore(@PathVariable Integer id, RedirectAttributes redirectAttributes,
+            @RequestParam(required = false) String returnUrl) {
         try {
             companyService.restore(id);
             redirectAttributes.addFlashAttribute("successMessage", "企業情報を復元しました。");
-            return "redirect:/companies";
+            return resolveReturnUrl(returnUrl, "/companies/trash");
 
         } catch (DataIntegrityViolationException e) {
             redirectAttributes.addFlashAttribute("errorMessage", "関連データが存在するため復元できません。");
-            return "redirect:/companies";
+            return resolveReturnUrl(returnUrl, "/companies/trash");
 
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "予期せぬエラーが発生しました。");
-            return "redirect:/companies";
+            return resolveReturnUrl(returnUrl, "/companies/trash");
         }
+    }
+
+    private String resolveReturnUrl(String returnUrl, String fallback) {
+        if (returnUrl != null && !returnUrl.isBlank() && returnUrl.startsWith("/companies")) {
+            return "redirect:" + returnUrl;
+        }
+        return "redirect:" + fallback;
     }
 
     @PostMapping("/export")
