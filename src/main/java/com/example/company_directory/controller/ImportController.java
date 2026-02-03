@@ -144,7 +144,7 @@ public class ImportController {
 
             // ここはモーダルウィンドウで結果表示をする
             // 5. 完了画面（または一覧）へリダイレクト
-            redirectAttributes.addFlashAttribute("message", targetList.size() + "件のデータを登録しました。");
+            redirectAttributes.addFlashAttribute("successMessage", targetList.size() + "件のデータを登録しました。");
             return "redirect:/companies";
 
             // 後でエラー処理を追加

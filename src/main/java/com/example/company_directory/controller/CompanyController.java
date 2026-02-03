@@ -32,7 +32,6 @@ import com.example.company_directory.service.ExcelImportService;
 import com.example.company_directory.dto.ImportResultDto;
 import com.example.company_directory.dto.ImportRowDto;
 import java.util.List;
-import org.springframework.web.bind.annotation.RequestBody;
 
 @Controller
 @RequestMapping("/companies")
@@ -223,8 +222,14 @@ public class CompanyController {
      */
     @PostMapping("/batch/execute")
     public String executeBatch(@RequestParam(name = "mode", defaultValue = "all") String mode,
-            @RequestBody List<ImportRowDto> rows,
+            CompanyForm form,
             RedirectAttributes redirectAttributes) {
+
+        List<ImportRowDto> rows = form.getRows();
+        if (rows == null || rows.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "登録対象のデータがありません。");
+            return "redirect:/companies/batch";
+        }
 
         // 1. 再バリデーションと登録対象の選定
         ImportResultDto result = excelImportService.validateRows(rows);

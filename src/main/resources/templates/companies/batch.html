@@ -99,16 +99,39 @@
             class="flex items-center justify-between border-b border-[#e7e9eb] dark:border-[#283039] px-6 py-3 bg-white dark:bg-background-dark">
             <h1 class="text-xl font-bold dark:text-white">まとめて企業登録</h1>
             <div class="flex items-center gap-3">
-                <button id="validateBtn"
-                    class="flex items-center gap-2 rounded-md h-9 px-4 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
-                    <span class="material-symbols-outlined text-sm">spellcheck</span>
-                    バリデーションチェック
-                </button>
-                <button id="registerBtn" disabled
-                    class="flex items-center gap-2 rounded-md h-9 px-4 bg-primary text-white text-sm font-bold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                    <span class="material-symbols-outlined text-sm">save</span>
-                    登録する
-                </button>
+                <!-- バリデーションチェックボタンのコンテナ（ツールチップ用） -->
+                <div class="relative group">
+                    <button id="validateBtn" disabled
+                        class="flex items-center gap-2 rounded-md h-9 px-4 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold hover:bg-gray-300 dark:hover:bg-[#3b4754] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                        <span class="material-symbols-outlined text-sm">spellcheck</span>
+                        バリデーションチェック
+                        <span class="text-xs opacity-60">(Ctrl+Enter)</span>
+                    </button>
+                    <!-- 無効時のツールチップ -->
+                    <div id="validateBtnTooltip"
+                        class="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                        <div
+                            class="absolute -top-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900 dark:border-b-gray-700">
+                        </div>
+                        <span id="validateBtnTooltipText">入力されたデータがありません</span>
+                    </div>
+                </div>
+                <!-- 登録ボタンのコンテナ（ツールチップ用） -->
+                <div class="relative group">
+                    <button id="registerBtn" disabled
+                        class="flex items-center gap-2 rounded-md h-9 px-4 bg-primary text-white text-sm font-bold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                        <span class="material-symbols-outlined text-sm">save</span>
+                        登録する
+                    </button>
+                    <!-- 無効時のツールチップ -->
+                    <div id="registerBtnTooltip"
+                        class="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                        <div
+                            class="absolute -top-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900 dark:border-b-gray-700">
+                        </div>
+                        <span id="registerBtnTooltipText">先にバリデーションチェックを実行してください</span>
+                    </div>
+                </div>
                 <a th:href="@{/companies}" id="cancelBtn"
                     class="flex items-center gap-2 rounded-md h-9 px-4 bg-white dark:bg-transparent border border-gray-300 dark:border-[#283039] text-gray-800 dark:text-white text-sm font-bold hover:bg-gray-100 dark:hover:bg-[#283039] transition-colors">
                     キャンセル
@@ -122,6 +145,13 @@
             <!-- Dynamic Message Here -->
         </div>
 
+        <!-- バリデーションボタン用ヘルプテキスト -->
+        <div id="validateBtnHelpText"
+            class="px-6 py-2 bg-gray-50 dark:bg-gray-900/20 text-gray-700 dark:text-gray-300 text-xs border-b border-gray-100 dark:border-gray-800">
+            <span class="material-symbols-outlined text-sm align-middle mr-1">info</span>
+            データを入力後、バリデーションチェックを実行してください。
+        </div>
+
         <!-- Main Grid Area -->
         <main class="flex-1 overflow-auto p-4">
             <div
@@ -132,6 +162,9 @@
                             <th
                                 class="w-12 py-3 px-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                                 No</th>
+                            <th
+                                class="w-24 py-3 px-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                ステータス</th>
                             <th class="py-3 px-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">企業名
                                 <span class="text-red-500">*</span>
                             </th>
@@ -144,7 +177,10 @@
                             <th class="py-3 px-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">備考
                             </th>
                             <th
-                                class="w-32 py-3 px-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                class="w-48 py-3 px-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                エラー詳細</th>
+                            <th
+                                class="w-28 py-3 px-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
                                 操作</th>
                         </tr>
                     </thead>
@@ -155,8 +191,14 @@
             </div>
 
             <!-- Footer Help Area -->
+            <!-- 登録ボタン無効時の説明 -->
+            <div id="registerBtnHelpText"
+                class="mt-4 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-200 text-xs rounded-md border border-blue-100 dark:border-blue-800">
+                <span class="material-symbols-outlined text-sm align-middle mr-1">info</span>
+                事前に「バリデーションチェック」を実行し、エラーが0件の場合のみ登録できます。
+            </div>
             <div class="mt-4 flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
-                <p>※ Tabキーで移動、末尾の行でEnterキーを押すと新しい行を追加します。最大100行まで。</p>
+                <p>※ Tabキーで移動、末尾の行でEnterキーを押すと新しい行を追加します。Ctrl+Enterでバリデーションチェック。最大100行まで。</p>
                 <button type="button" id="addBottomBtn"
                     class="flex items-center gap-1 text-primary hover:underline font-bold">
                     <span class="material-symbols-outlined text-sm">add_circle</span>
@@ -224,6 +266,13 @@
     <input type="hidden" id="csrfToken" th:value="${_csrf.token}" />
     <input type="hidden" id="csrfHeader" th:value="${_csrf.headerName}" />
 
+    <!-- Registration Form (Hidden) -->
+    <form id="batchExecuteForm" th:action="@{/companies/batch/execute}" method="post" style="display:none;">
+        <input type="hidden" name="mode" id="batchExecuteMode">
+        <input type="hidden" name="rowsJson" id="batchExecuteRows">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+    </form>
+
     <script th:inline="javascript">
         const tableBody = document.getElementById('batchTableBody');
         const validateBtn = document.getElementById('validateBtn');
@@ -242,12 +291,19 @@
             return `
                 <tr id="${rowId}" class="group hover:bg-gray-50 dark:hover:bg-[#283039]/50 transition-colors">
                     <td class="py-2 px-2 text-xs text-gray-400 font-mono row-no text-center">${index}</td>
+                    <td class="py-2 px-2 text-center col-status">
+                        <span class="inline-flex items-center gap-1 text-xs text-gray-400">
+                            <span class="h-2 w-2 rounded-full bg-gray-300 dark:bg-gray-600"></span>
+                            <span class="status-text">未検証</span>
+                        </span>
+                    </td>
                     <td class="px-1"><input type="text" class="grid-input col-name" placeholder="株式会社〇〇" value="${data.companyName || ''}"></td>
                     <td class="px-1"><input type="text" class="grid-input col-zip" placeholder="000-0000" maxlength="8" value="${data.zipCode || ''}"></td>
                     <td class="px-1"><input type="text" class="grid-input col-address" placeholder="東京都..." value="${data.address || ''}"></td>
                     <td class="px-1"><input type="text" class="grid-input col-remarks" placeholder="メモ" value="${data.remarks || ''}"></td>
+                    <td class="py-2 px-2 text-xs col-error-detail text-gray-400">-</td>
                     <td class="py-2 px-2">
-                        <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div class="flex items-center justify-center gap-1">
                             <button type="button" class="insert-above p-1 hover:text-primary dark:text-gray-400" title="上に挿入"><span class="material-symbols-outlined text-lg">add_box</span></button>
                             <button type="button" class="insert-below p-1 hover:text-primary dark:text-gray-400" title="下に挿入"><span class="material-symbols-outlined text-lg">add_circle</span></button>
                             <button type="button" class="delete-row p-1 hover:text-red-500 dark:text-gray-400" title="削除"><span class="material-symbols-outlined text-lg">delete</span></button>
@@ -285,8 +341,11 @@
         }
 
         function bindRowEvents(row) {
-            // Auto-save on input
-            row.addEventListener('input', saveDraft);
+            // Auto-save on input and update validation button state
+            row.addEventListener('input', () => {
+                saveDraft();
+                updateValidateButtonState();
+            });
 
             // 削除
             row.querySelector('.delete-row').onclick = () => {
@@ -300,12 +359,12 @@
                     row.remove();
                     updateNo();
                     saveDraft();
-                    validateBtn.click(); // 行削除時は再チェックを促すor自動で行う
+                    updateValidateButtonState();
                 }
             };
             // 挿入
-            row.querySelector('.insert-above').onclick = () => { addRow(row, 'beforebegin'); saveDraft(); };
-            row.querySelector('.insert-below').onclick = () => { addRow(row, 'afterend'); saveDraft(); };
+            row.querySelector('.insert-above').onclick = () => { addRow(row, 'beforebegin'); saveDraft(); updateValidateButtonState(); };
+            row.querySelector('.insert-below').onclick = () => { addRow(row, 'afterend'); saveDraft(); updateValidateButtonState(); };
 
             // 郵便番号補完
             const zipInput = row.querySelector('.col-zip');
@@ -346,6 +405,39 @@
                 registrationDate: null, // 日付列削除のためnull（サーバー側で当日日付補完）
                 remarks: row.querySelector('.col-remarks').value.trim()
             }));
+        }
+
+        // バリデーションボタンの状態を更新
+        function updateValidateButtonState() {
+            const rows = collectData();
+            const hasData = rows.some(r => r.companyName || r.zipCode || r.address || r.remarks);
+
+            const tooltip = document.getElementById('validateBtnTooltip');
+            const tooltipText = document.getElementById('validateBtnTooltipText');
+            const helpText = document.getElementById('validateBtnHelpText');
+
+            if (hasData) {
+                validateBtn.disabled = false;
+                if (tooltip) tooltip.classList.add('hidden');
+                if (helpText) {
+                    helpText.innerHTML = `
+                        <span class="material-symbols-outlined text-sm align-middle mr-1">check_circle</span>
+                        データが入力されています。バリデーションチェックを実行してください。
+                    `;
+                    helpText.className = 'px-6 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-200 text-xs border-b border-blue-100 dark:border-blue-800';
+                }
+            } else {
+                validateBtn.disabled = true;
+                if (tooltipText) tooltipText.textContent = '入力されたデータがありません';
+                if (tooltip) tooltip.classList.remove('hidden');
+                if (helpText) {
+                    helpText.innerHTML = `
+                        <span class="material-symbols-outlined text-sm align-middle mr-1">info</span>
+                        データを入力後、バリデーションチェックを実行してください。
+                    `;
+                    helpText.className = 'px-6 py-2 bg-gray-50 dark:bg-gray-900/20 text-gray-700 dark:text-gray-300 text-xs border-b border-gray-100 dark:border-gray-800';
+                }
+            }
         }
 
         // バリデーションチェック
@@ -394,6 +486,16 @@
                     // 登録ボタンの活性化
                     registerBtn.disabled = result.errorCount > 0 || result.totalCount === 0;
 
+                    // バリデーションボタンのヘルプテキストを更新
+                    const validateHelpText = document.getElementById('validateBtnHelpText');
+                    if (validateHelpText) {
+                        validateHelpText.innerHTML = `
+                            <span class="material-symbols-outlined text-sm align-middle mr-1">check_circle</span>
+                            バリデーションチェックが完了しました。データを修正した場合は、再度バリデーションチェックを実行してください。
+                        `;
+                        validateHelpText.className = 'px-6 py-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-200 text-xs border-b border-green-100 dark:border-green-800';
+                    }
+
                 } else {
                     alert('バリデーション中にエラーが発生しました');
                 }
@@ -402,7 +504,7 @@
                 alert('通信エラーが発生しました');
             } finally {
                 validateBtn.disabled = false;
-                validateBtn.innerHTML = '<span class="material-symbols-outlined text-sm">spellcheck</span> バリデーションチェック';
+                validateBtn.innerHTML = '<span class="material-symbols-outlined text-sm">spellcheck</span> バリデーションチェック <span class="text-xs opacity-60">(Ctrl+Enter)</span>';
             }
         };
 
@@ -411,22 +513,120 @@
             trs.forEach(tr => {
                 tr.classList.remove('row-error', 'row-warning', 'row-success');
                 tr.title = '';
+                // ステータス列とエラー詳細列をリセット
+                const statusCell = tr.querySelector('.col-status');
+                const errorDetailCell = tr.querySelector('.col-error-detail');
+                if (statusCell) {
+                    statusCell.innerHTML = `
+                        <span class="inline-flex items-center gap-1 text-xs text-gray-400">
+                            <span class="h-2 w-2 rounded-full bg-gray-300 dark:bg-gray-600"></span>
+                            <span class="status-text">未検証</span>
+                        </span>
+                    `;
+                }
+                if (errorDetailCell) {
+                    errorDetailCell.innerHTML = '-';
+                    errorDetailCell.className = 'py-2 px-2 text-xs col-error-detail text-gray-400';
+                }
             });
 
             result.totalList.forEach((rowDto) => {
                 const tr = trs[rowDto.rowNum - 1];
                 if (!tr) return;
 
+                const statusCell = tr.querySelector('.col-status');
+                const errorDetailCell = tr.querySelector('.col-error-detail');
+
                 if (rowDto.hasError) {
                     tr.classList.add('row-error');
                     tr.title = rowDto.errorMessages.join('\n');
+                    // ステータス列を更新
+                    if (statusCell) {
+                        statusCell.innerHTML = `
+                            <span class="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                                <span class="h-2 w-2 rounded-full bg-red-500"></span>
+                                <span class="status-text font-bold">エラー</span>
+                            </span>
+                        `;
+                    }
+                    // エラー詳細列を更新
+                    if (errorDetailCell) {
+                        errorDetailCell.innerHTML = rowDto.errorMessages.map(msg => `<div>${msg}</div>`).join('');
+                        errorDetailCell.className = 'py-2 px-2 text-xs col-error-detail text-red-600 dark:text-red-400';
+                    }
                 } else if (rowDto.hasWarning) {
                     tr.classList.add('row-warning');
                     tr.title = rowDto.warningMessages.join('\n');
+                    // ステータス列を更新
+                    if (statusCell) {
+                        statusCell.innerHTML = `
+                            <span class="inline-flex items-center gap-1 text-xs text-yellow-600 dark:text-yellow-400">
+                                <span class="h-2 w-2 rounded-full bg-yellow-500"></span>
+                                <span class="status-text font-bold">警告</span>
+                            </span>
+                        `;
+                    }
+                    // 警告詳細列を更新
+                    if (errorDetailCell) {
+                        errorDetailCell.innerHTML = rowDto.warningMessages.map(msg => `<div>${msg}</div>`).join('');
+                        errorDetailCell.className = 'py-2 px-2 text-xs col-error-detail text-yellow-600 dark:text-yellow-400';
+                    }
                 } else {
                     tr.classList.add('row-success');
+                    // ステータス列を更新
+                    if (statusCell) {
+                        statusCell.innerHTML = `
+                            <span class="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                                <span class="h-2 w-2 rounded-full bg-green-500"></span>
+                                <span class="status-text font-bold">OK</span>
+                            </span>
+                        `;
+                    }
+                    // エラー詳細列を更新
+                    if (errorDetailCell) {
+                        errorDetailCell.innerHTML = '-';
+                        errorDetailCell.className = 'py-2 px-2 text-xs col-error-detail text-gray-400';
+                    }
                 }
             });
+
+            // 登録ボタンのツールチップを更新
+            updateRegisterButtonState(result);
+        }
+
+        // 登録ボタンの状態とツールチップを更新
+        function updateRegisterButtonState(result) {
+            const tooltip = document.getElementById('registerBtnTooltip');
+            const tooltipText = document.getElementById('registerBtnTooltipText');
+            const helpText = document.getElementById('registerBtnHelpText');
+
+            if (!result || result.totalCount === 0) {
+                registerBtn.disabled = true;
+                if (tooltipText) tooltipText.textContent = '先にバリデーションチェックを実行してください';
+                if (tooltip) tooltip.classList.remove('hidden');
+                if (helpText) helpText.classList.remove('hidden');
+            } else if (result.errorCount > 0) {
+                registerBtn.disabled = true;
+                if (tooltipText) tooltipText.textContent = `エラーが ${result.errorCount} 件残っているため登録できません`;
+                if (tooltip) tooltip.classList.remove('hidden');
+                if (helpText) {
+                    helpText.innerHTML = `
+                        <span class="material-symbols-outlined text-sm align-middle mr-1">error</span>
+                        エラーが ${result.errorCount} 件残っています。エラーを修正してから再度バリデーションチェックを実行してください。
+                    `;
+                    helpText.className = 'mt-4 px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-200 text-xs rounded-md border border-red-100 dark:border-red-800';
+                }
+            } else {
+                registerBtn.disabled = false;
+                if (tooltip) tooltip.classList.add('hidden');
+                if (helpText) {
+                    helpText.innerHTML = `
+                        <span class="material-symbols-outlined text-sm align-middle mr-1">check_circle</span>
+                        バリデーションチェックが完了しました。登録ボタンをクリックして登録を実行できます。
+                    `;
+                    helpText.className = 'mt-4 px-3 py-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-200 text-xs rounded-md border border-green-100 dark:border-green-800';
+                }
+            }
         }
 
         // 登録モーダル
@@ -452,37 +652,38 @@
 
         document.getElementById('modalCancelBtn').onclick = () => confirmModal.classList.add('hidden');
 
-        document.getElementById('modalConfirmBtn').onclick = async () => {
+        document.getElementById('modalConfirmBtn').onclick = () => {
             const mode = document.querySelector('input[name="registerMode"]:checked')?.value || 'all';
-            const rows = collectData();
+            const rows = collectData().filter(r => r.companyName || r.zipCode || r.address || r.remarks);
 
             document.getElementById('modalConfirmBtn').disabled = true;
             document.getElementById('modalConfirmBtn').textContent = '登録中...';
 
-            try {
-                const res = await fetch(`/companies/batch/execute?mode=${mode}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        [document.getElementById('csrfHeader').value]: document.getElementById('csrfToken').value
-                    },
-                    body: JSON.stringify(rows)
-                });
+            // Clear draft before submission
+            sessionStorage.removeItem('batchDraft');
 
-                if (res.redirected) {
-                    // Success! Clear draft
-                    sessionStorage.removeItem('batchDraft');
-                    window.location.href = res.url;
-                } else {
-                    alert('登録に失敗しました');
-                    document.getElementById('modalConfirmBtn').disabled = false;
-                    document.getElementById('modalConfirmBtn').textContent = '実行する';
-                }
-            } catch (e) {
-                alert('通信に失敗しました');
-                document.getElementById('modalConfirmBtn').disabled = false;
-                document.getElementById('modalConfirmBtn').textContent = '実行する';
-            }
+            // Use standard form submission to allow flash attributes to work on redirect
+            const form = document.getElementById('batchExecuteForm');
+            document.getElementById('batchExecuteMode').value = mode;
+
+            // Clear previous hidden row inputs if any
+            form.querySelectorAll('.row-data-input').forEach(el => el.remove());
+
+            // Create individual hidden inputs for each row/field
+            // Spring can bind this to a List<ImportRowDto> if named correctly: rows[0].companyName, etc.
+            rows.forEach((row, index) => {
+                const fields = ['companyName', 'zipCode', 'address', 'remarks'];
+                fields.forEach(field => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = `rows[${index}].${field}`; // Fixed: Index must be sequential
+                    input.value = row[field] || '';
+                    input.className = 'row-data-input';
+                    form.appendChild(input);
+                });
+            });
+
+            form.submit();
         };
 
         addBottomBtn.onclick = () => addRow();
@@ -527,6 +728,8 @@
         }
 
         restoreDraft();
+        // 初期状態のバリデーションボタン状態を更新
+        updateValidateButtonState();
 
         // --- Back Button Logic (State Persistence) ---
         (function () {
@@ -541,6 +744,15 @@
                 });
             }
         })();
+
+        // --- Keyboard Shortcuts ---
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+Enter でバリデーションチェックを実行
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                validateBtn.click();
+            }
+        });
     </script>
 </body>
 

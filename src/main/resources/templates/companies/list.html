@@ -52,19 +52,99 @@
             pointer-events: auto;
         }
     </style>
+
+    <!-- CSRF Meta Tags for AJAX -->
+    <meta th:if="${_csrf}" name="_csrf" th:content="${_csrf.token}" />
+    <meta th:if="${_csrf}" name="_csrf_header" th:content="${_csrf.headerName}" />
+
+    <style>
+        /* Toast Styles */
+        #toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .toast {
+            background-color: #1c2127;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+            min-width: 350px;
+            animation: slideIn 0.3s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast.hiding {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .toast-undo-btn {
+            color: #137fec;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            transition: background-color 0.2s;
+        }
+
+        .toast-undo-btn:hover {
+            background-color: rgba(19, 127, 236, 0.1);
+        }
+
+        .toast-close-btn {
+            color: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.25rem;
+            margin-right: -0.5rem;
+        }
+
+        .toast-close-btn:hover {
+            color: white;
+        }
+    </style>
 </head>
 
 <body class="font-display bg-background-light dark:bg-background-dark">
-
-    <!-- 成功メッセージ -->
-    <div th:if="${successMessage}" class="p-4 mb-4 text-green-800 rounded-lg bg-green-100">
-        <span th:text="${successMessage}"></span>
-    </div>
-
-    <!-- エラーメッセージ -->
-    <div th:if="${errorMessage}" class="p-4 mb-4 text-red-800 rounded-lg bg-red-100">
-        <span th:text="${errorMessage}"></span>
-    </div>
 
     <div
         class="relative flex h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-hidden">
@@ -357,13 +437,11 @@
                                                     <span class="material-symbols-outlined text-xl">edit</span>
                                                 </button>
                                             </a>
-                                            <form th:action="@{/companies/delete/{id}(id=${company.companyId})}"
-                                                method="post" onsubmit="return confirm('本当に削除しますか？');">
-                                                <button
-                                                    class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">
-                                                    <span class="material-symbols-outlined text-xl">delete</span>
-                                                </button>
-                                            </form>
+                                            <button type="button" th:data-id="${company.companyId}"
+                                                th:data-name="${company.companyName}" onclick="deleteCompany(this)"
+                                                class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">
+                                                <span class="material-symbols-outlined text-xl">delete</span>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -430,388 +508,537 @@
                 </div>
             </div>
         </div>
-    </div>
-    </div>
-    </div>
 
-    <!-- Export Modal -->
-    <div id="exportModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog"
-        aria-modal="true">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <!-- Background overlay -->
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"
-                onclick="document.getElementById('exportModal').classList.add('hidden')"></div>
+        <!-- Export Modal -->
+        <div id="exportModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title"
+            role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <!-- Background overlay -->
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"
+                    onclick="document.getElementById('exportModal').classList.add('hidden')"></div>
 
-            <!-- Modal panel -->
-            <div
-                class="inline-block align-bottom bg-white dark:bg-[#1c2127] rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
-                <form id="exportForm" th:action="@{/companies/export}" method="post">
-                    <!-- Hidden fields for search params (copied via JS) -->
-                    <input type="hidden" name="keyword" />
-                    <input type="hidden" name="companyId" />
-                    <input type="hidden" name="companyName" />
-                    <input type="hidden" name="address" />
-                    <input type="hidden" name="zipCode" />
-                    <input type="hidden" name="dateFrom" />
-                    <input type="hidden" name="dateTo" />
-                    <!-- Selected IDs -->
-                    <input type="hidden" name="selectedIds" id="exportSelectedIds" />
+                <!-- Modal panel -->
+                <div
+                    class="inline-block align-bottom bg-white dark:bg-[#1c2127] rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+                    <form id="exportForm" th:action="@{/companies/export}" method="post">
+                        <!-- Hidden fields for search params (copied via JS) -->
+                        <input type="hidden" name="keyword" />
+                        <input type="hidden" name="companyId" />
+                        <input type="hidden" name="companyName" />
+                        <input type="hidden" name="address" />
+                        <input type="hidden" name="zipCode" />
+                        <input type="hidden" name="dateFrom" />
+                        <input type="hidden" name="dateTo" />
+                        <!-- Selected IDs -->
+                        <input type="hidden" name="selectedIds" id="exportSelectedIds" />
 
-                    <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
-                            エクスポート設定
-                        </h3>
-                        <div class="mt-4 space-y-4">
-                            <!-- Output Scope -->
-                            <div>
-                                <label
-                                    class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">対象データ</label>
-                                <div class="space-y-2">
-                                    <label class="flex items-center space-x-3 cursor-pointer">
-                                        <input type="radio" name="scope" value="SEARCH" checked
-                                            class="form-radio h-4 w-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
-                                        <span class="text-gray-700 dark:text-gray-300">現在の検索結果 <span id="searchCountStr"
-                                                class="text-xs text-gray-500"></span></span>
-                                    </label>
-                                    <label class="flex items-center space-x-3 cursor-pointer">
-                                        <input type="radio" name="scope" value="ALL"
-                                            class="form-radio h-4 w-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
-                                        <span class="text-gray-700 dark:text-gray-300">全データ</span>
-                                    </label>
-                                    <label class="flex items-center space-x-3 cursor-pointer">
-                                        <input type="radio" name="scope" value="SELECTION" id="scopeSelection" disabled
-                                            class="form-radio h-4 w-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                                        <span class="text-gray-700 dark:text-gray-300"
-                                            id="selectionLabel">選択したデータのみ</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- Columns -->
-                            <div>
-                                <label
-                                    class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">出力カラム設定</label>
-                                <div class="grid grid-cols-2 gap-2 text-sm">
-                                    <label class="flex items-center space-x-2">
-                                        <input type="checkbox" name="columns" value="companyId" checked
-                                            class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
-                                        <span class="text-gray-700 dark:text-gray-300">企業ID</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2">
-                                        <input type="checkbox" name="columns" value="companyName" checked
-                                            class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
-                                        <span class="text-gray-700 dark:text-gray-300">企業名</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2">
-                                        <input type="checkbox" name="columns" value="address" checked
-                                            class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
-                                        <span class="text-gray-700 dark:text-gray-300">住所</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2">
-                                        <input type="checkbox" name="columns" value="zipCode" checked
-                                            class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
-                                        <span class="text-gray-700 dark:text-gray-300">郵便番号</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2">
-                                        <input type="checkbox" name="columns" value="registrationDate" checked
-                                            class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
-                                        <span class="text-gray-700 dark:text-gray-300">登録日</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2">
-                                        <input type="checkbox" name="columns" value="remarks" checked
-                                            class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
-                                        <span class="text-gray-700 dark:text-gray-300">備考</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- Sort Settings -->
-                            <div class="grid grid-cols-2 gap-4">
+                        <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
+                                エクスポート設定
+                            </h3>
+                            <div class="mt-4 space-y-4">
+                                <!-- Output Scope -->
                                 <div>
                                     <label
-                                        class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">並び替え基準</label>
-                                    <select name="sortBy" id="exportSortBy"
-                                        class="form-select block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white h-9 text-sm">
-                                        <option value="companyId">企業ID</option>
-                                        <option value="companyName">企業名</option>
-                                        <option value="address">住所</option>
-                                        <option value="zipCode">郵便番号</option>
-                                        <option value="registrationDate">登録日</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label
-                                        class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">順序</label>
-                                    <div class="flex items-center h-9 space-x-4">
-                                        <label class="flex items-center space-x-2 cursor-pointer">
-                                            <input type="radio" name="sortOrder" value="ASC" checked
+                                        class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">対象データ</label>
+                                    <div class="space-y-2">
+                                        <label class="flex items-center space-x-3 cursor-pointer">
+                                            <input type="radio" name="scope" value="SEARCH" checked
                                                 class="form-radio h-4 w-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
-                                            <span class="text-gray-700 dark:text-gray-300 text-sm">昇順</span>
+                                            <span class="text-gray-700 dark:text-gray-300">現在の検索結果 <span
+                                                    id="searchCountStr" class="text-xs text-gray-500"></span></span>
                                         </label>
-                                        <label class="flex items-center space-x-2 cursor-pointer">
-                                            <input type="radio" name="sortOrder" value="DESC"
+                                        <label class="flex items-center space-x-3 cursor-pointer">
+                                            <input type="radio" name="scope" value="ALL"
                                                 class="form-radio h-4 w-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
-                                            <span class="text-gray-700 dark:text-gray-300 text-sm">降順</span>
+                                            <span class="text-gray-700 dark:text-gray-300">全データ</span>
+                                        </label>
+                                        <label class="flex items-center space-x-3 cursor-pointer">
+                                            <input type="radio" name="scope" value="SELECTION" id="scopeSelection"
+                                                disabled
+                                                class="form-radio h-4 w-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            <span class="text-gray-700 dark:text-gray-300"
+                                                id="selectionLabel">選択したデータのみ</span>
                                         </label>
                                     </div>
                                 </div>
-                            </div>
-                            <!-- Filename -->
-                            <div>
-                                <label
-                                    class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">ファイル名</label>
-                                <div class="flex items-center">
-                                    <input type="text" name="fileName" value="companies"
-                                        class="form-input block w-full rounded-l-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white h-9 sm:text-sm">
-                                    <span
-                                        class="inline-flex items-center px-3 h-9 rounded-r-md border border-l-0 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-sm">
-                                        .xlsx
-                                    </span>
+
+                                <!-- Columns -->
+                                <div>
+                                    <label
+                                        class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">出力カラム設定</label>
+                                    <div class="grid grid-cols-2 gap-2 text-sm">
+                                        <label class="flex items-center space-x-2">
+                                            <input type="checkbox" name="columns" value="companyId" checked
+                                                class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                                            <span class="text-gray-700 dark:text-gray-300">企業ID</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2">
+                                            <input type="checkbox" name="columns" value="companyName" checked
+                                                class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                                            <span class="text-gray-700 dark:text-gray-300">企業名</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2">
+                                            <input type="checkbox" name="columns" value="address" checked
+                                                class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                                            <span class="text-gray-700 dark:text-gray-300">住所</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2">
+                                            <input type="checkbox" name="columns" value="zipCode" checked
+                                                class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                                            <span class="text-gray-700 dark:text-gray-300">郵便番号</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2">
+                                            <input type="checkbox" name="columns" value="registrationDate" checked
+                                                class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                                            <span class="text-gray-700 dark:text-gray-300">登録日</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2">
+                                            <input type="checkbox" name="columns" value="remarks" checked
+                                                class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                                            <span class="text-gray-700 dark:text-gray-300">備考</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Sort Settings -->
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label
+                                            class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">並び替え基準</label>
+                                        <select name="sortBy" id="exportSortBy"
+                                            class="form-select block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white h-9 text-sm">
+                                            <option value="companyId">企業ID</option>
+                                            <option value="companyName">企業名</option>
+                                            <option value="address">住所</option>
+                                            <option value="zipCode">郵便番号</option>
+                                            <option value="registrationDate">登録日</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">順序</label>
+                                        <div class="flex items-center h-9 space-x-4">
+                                            <label class="flex items-center space-x-2 cursor-pointer">
+                                                <input type="radio" name="sortOrder" value="ASC" checked
+                                                    class="form-radio h-4 w-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                                                <span class="text-gray-700 dark:text-gray-300 text-sm">昇順</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2 cursor-pointer">
+                                                <input type="radio" name="sortOrder" value="DESC"
+                                                    class="form-radio h-4 w-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                                                <span class="text-gray-700 dark:text-gray-300 text-sm">降順</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Filename -->
+                                <div>
+                                    <label
+                                        class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">ファイル名</label>
+                                    <div class="flex items-center">
+                                        <input type="text" name="fileName" value="companies"
+                                            class="form-input block w-full rounded-l-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white h-9 sm:text-sm">
+                                        <span
+                                            class="inline-flex items-center px-3 h-9 rounded-r-md border border-l-0 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-sm">
+                                            .xlsx
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="bg-gray-50 dark:bg-[#283039] px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                        <button type="submit"
-                            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:ml-3 sm:w-auto sm:text-sm">
-                            ダウンロード
-                        </button>
-                        <button type="button" onclick="document.getElementById('exportModal').classList.add('hidden')"
-                            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-                            キャンセル
-                        </button>
-                    </div>
-                </form>
+                        <div class="bg-gray-50 dark:bg-[#283039] px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                            <button type="submit"
+                                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:ml-3 sm:w-auto sm:text-sm">
+                                ダウンロード
+                            </button>
+                            <button type="button"
+                                onclick="document.getElementById('exportModal').classList.add('hidden')"
+                                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                                キャンセル
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
-    </div>
-    <script>
-            (function () {
-                const STORAGE_KEY = 'companyListVisibleColumns';
-
-                // デフォルトの表示設定（全て表示）
-                const defaultSettings = {
-                    companyId: false,
-                    companyName: true,
-                    address: true,
-                    zipCode: true,
-                    registrationDate: true,
-                    remarks: true
-                };
-
-                // localStorageから設定を読み込む
-                function loadSettings() {
-                    try {
-                        const saved = localStorage.getItem(STORAGE_KEY);
-                        return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
-                    } catch (e) {
-                        return defaultSettings;
-                    }
-                }
-
-                // localStorageに設定を保存
-                function saveSettings(settings) {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-                }
-
-                // 列の表示/非表示を適用（テーブル内のth, tdのみ対象）
-                function applyColumnVisibility(settings) {
-                    Object.keys(settings).forEach(col => {
-                        const cells = document.querySelectorAll(`table [data-col="${col}"]`);
-                        cells.forEach(cell => {
-                            cell.style.display = settings[col] ? '' : 'none';
-                        });
-                    });
-                }
-
-                // チェックボックスの状態を設定に反映
-                function syncCheckboxes(settings) {
-                    const checkboxes = document.querySelectorAll('#columnSettings input[type="checkbox"]');
-                    checkboxes.forEach(cb => {
-                        const col = cb.dataset.col;
-                        if (col && settings[col] !== undefined) {
-                            cb.checked = settings[col];
-                        }
-                    });
-                }
-
-                // 初期化
-                function init() {
-                    const settings = loadSettings();
-                    syncCheckboxes(settings);
-                    applyColumnVisibility(settings);
-
-                    // チェックボックスの変更イベント（リアルタイム反映）
-                    const checkboxes = document.querySelectorAll('#columnSettings input[type="checkbox"]:not(:disabled)');
-                    checkboxes.forEach(cb => {
-                        cb.addEventListener('change', function () {
-                            const col = this.dataset.col;
-                            settings[col] = this.checked;
-                            applyColumnVisibility(settings);
-                            saveSettings(settings);
-                        });
-                    });
-                }
-
-                // State Persistence Logic
+        <script>
                 (function () {
-                    // Save current URL as "Last List URL"
-                    sessionStorage.setItem('lastListUrl', window.location.href);
-                    console.log('Saved lastListUrl:', window.location.href);
+                    const STORAGE_KEY = 'companyListVisibleColumns';
+
+                    // デフォルトの表示設定（全て表示）
+                    const defaultSettings = {
+                        companyId: false,
+                        companyName: true,
+                        address: true,
+                        zipCode: true,
+                        registrationDate: true,
+                        remarks: true
+                    };
+
+                    // localStorageから設定を読み込む
+                    function loadSettings() {
+                        try {
+                            const saved = localStorage.getItem(STORAGE_KEY);
+                            return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
+                        } catch (e) {
+                            return defaultSettings;
+                        }
+                    }
+
+                    // localStorageに設定を保存
+                    function saveSettings(settings) {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+                    }
+
+                    // 列の表示/非表示を適用（テーブル内のth, tdのみ対象）
+                    function applyColumnVisibility(settings) {
+                        Object.keys(settings).forEach(col => {
+                            const cells = document.querySelectorAll(`table [data-col="${col}"]`);
+                            cells.forEach(cell => {
+                                cell.style.display = settings[col] ? '' : 'none';
+                            });
+                        });
+                    }
+
+                    // チェックボックスの状態を設定に反映
+                    function syncCheckboxes(settings) {
+                        const checkboxes = document.querySelectorAll('#columnSettings input[type="checkbox"]');
+                        checkboxes.forEach(cb => {
+                            const col = cb.dataset.col;
+                            if (col && settings[col] !== undefined) {
+                                cb.checked = settings[col];
+                            }
+                        });
+                    }
+
+                    // 初期化
+                    function init() {
+                        const settings = loadSettings();
+                        syncCheckboxes(settings);
+                        applyColumnVisibility(settings);
+
+                        // チェックボックスの変更イベント（リアルタイム反映）
+                        const checkboxes = document.querySelectorAll('#columnSettings input[type="checkbox"]:not(:disabled)');
+                        checkboxes.forEach(cb => {
+                            cb.addEventListener('change', function () {
+                                const col = this.dataset.col;
+                                settings[col] = this.checked;
+                                applyColumnVisibility(settings);
+                                saveSettings(settings);
+                            });
+                        });
+                    }
+
+                    // State Persistence Logic
+                    (function () {
+                        // Save current URL as "Last List URL"
+                        sessionStorage.setItem('lastListUrl', window.location.href);
+                        console.log('Saved lastListUrl:', window.location.href);
+                    })();
+
+                    // DOMContentLoaded後に実行
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', init);
+                    } else {
+                        init();
+                    }
+
+                    // 設定メニューの表示切り替え
+                    const settingsButton = document.getElementById('settingsButton');
+                    const settingsDropdown = document.getElementById('settingsDropdown');
+
+                    if (settingsButton && settingsDropdown) {
+                        settingsButton.addEventListener('click', function (e) {
+                            e.stopPropagation();
+                            settingsDropdown.classList.toggle('hidden');
+                        });
+
+                        // メニュー外クリックで閉じる
+                        document.addEventListener('click', function (e) {
+                            if (!settingsDropdown.contains(e.target) && !settingsButton.contains(e.target)) {
+                                settingsDropdown.classList.add('hidden');
+                            }
+                        });
+
+                        // メニュー内のクリックイベント伝播を止める（チェックボックス操作で閉じないようにするため）
+                        settingsDropdown.addEventListener('click', function (e) {
+                            e.stopPropagation();
+                        });
+                    }
                 })();
 
-                // DOMContentLoaded後に実行
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', init);
-                } else {
-                    init();
-                }
+            // Export & Select Mode Logic
+            (function () {
+                const toggleBtn = document.getElementById('toggleSelectModeBtn');
+                const exportBtn = document.getElementById('openExportModalBtn');
+                const modal = document.getElementById('exportModal');
+                const selectAllCb = document.getElementById('selectAllCheckbox');
+                const rowCbs = document.getElementsByName('rowCheckbox');
 
-                // 設定メニューの表示切り替え
-                const settingsButton = document.getElementById('settingsButton');
-                const settingsDropdown = document.getElementById('settingsDropdown');
+                let isSelectMode = false;
 
-                if (settingsButton && settingsDropdown) {
-                    settingsButton.addEventListener('click', function (e) {
-                        e.stopPropagation();
-                        settingsDropdown.classList.toggle('hidden');
-                    });
+                // Toggle Select Mode
+                if (toggleBtn) {
+                    toggleBtn.addEventListener('click', function () {
+                        isSelectMode = !isSelectMode;
+                        const cols = document.querySelectorAll('.select-checkbox-col');
+                        cols.forEach(el => {
+                            if (isSelectMode) el.classList.remove('hidden');
+                            else el.classList.add('hidden');
+                        });
 
-                    // メニュー外クリックで閉じる
-                    document.addEventListener('click', function (e) {
-                        if (!settingsDropdown.contains(e.target) && !settingsButton.contains(e.target)) {
-                            settingsDropdown.classList.add('hidden');
+                        // Icon change
+                        const icon = toggleBtn.querySelector('.material-symbols-outlined');
+                        if (isSelectMode) {
+                            toggleBtn.classList.add('bg-primary', 'text-white');
+                            toggleBtn.classList.remove('bg-gray-200', 'text-gray-800', 'dark:bg-[#283039]', 'dark:text-white');
+                            if (icon) icon.innerText = 'check_box';
+                        } else {
+                            toggleBtn.classList.remove('bg-primary', 'text-white');
+                            toggleBtn.classList.add('bg-gray-200', 'text-gray-800', 'dark:bg-[#283039]', 'dark:text-white');
+                            if (icon) icon.innerText = 'check_box_outline_blank'; // or check_box
                         }
                     });
+                }
 
-                    // メニュー内のクリックイベント伝播を止める（チェックボックス操作で閉じないようにするため）
-                    settingsDropdown.addEventListener('click', function (e) {
-                        e.stopPropagation();
+                // Select All
+                if (selectAllCb) {
+                    selectAllCb.addEventListener('change', function () {
+                        const checked = this.checked;
+                        rowCbs.forEach(cb => cb.checked = checked);
+                    });
+                }
+
+                // Open Modal logic
+                if (exportBtn && modal) {
+                    exportBtn.addEventListener('click', function () {
+                        // 1. Copy Search Params
+                        // Assuming the main search form inputs have unique names or we select them from the document
+                        // Using document.getElementsByName to find source inputs (first one found usually main form)
+                        const fields = ['keyword', 'companyId', 'companyName', 'address', 'zipCode', 'dateFrom', 'dateTo'];
+                        const modalForm = document.getElementById('exportForm');
+
+                        fields.forEach(name => {
+                            const src = document.querySelector(`form:not(#exportForm) input[name="${name}"]`);
+                            const dest = modalForm.querySelector(`input[name="${name}"]`);
+                            if (src && dest) dest.value = src.value;
+                        });
+
+                        // 2. Identify Selected rows
+                        const selectedIds = Array.from(rowCbs)
+                            .filter(cb => cb.checked)
+                            .map(cb => cb.value);
+
+                        document.getElementById('exportSelectedIds').value = selectedIds.join(',');
+
+                        // 2.5 Populate Search Count
+                        const pageInfo = document.querySelector('.flex.items-center.gap-2.text-sm span');
+                        if (pageInfo) {
+                            const text = pageInfo.innerText;
+                            // Extract total count, e.g. "1-10 of 123件" -> "123"
+                            const match = text.match(/of\s+(\d+)件/);
+                            if (match) {
+                                const searchCountStr = document.getElementById('searchCountStr');
+                                if (searchCountStr) searchCountStr.innerText = `(${match[1]}件)`;
+                            } else if (text.includes('件')) {
+                                // Single page case e.g. "5件"
+                                const searchCountStr = document.getElementById('searchCountStr');
+                                if (searchCountStr) searchCountStr.innerText = `(${text})`;
+                            }
+                        }
+
+                        // 3. Setup Scope Radios
+                        const scopeSelection = document.getElementById('scopeSelection');
+                        const selectionLabel = document.getElementById('selectionLabel');
+
+                        if (selectedIds.length > 0) {
+                            scopeSelection.disabled = false;
+                            scopeSelection.checked = true; // Default to selection if any selected
+                            selectionLabel.textContent = `選択したデータのみ (${selectedIds.length}件)`;
+                            selectionLabel.classList.remove('opacity-50');
+                        } else {
+                            scopeSelection.disabled = true;
+                            selectionLabel.textContent = `選択したデータのみ (0件)`;
+                            selectionLabel.classList.add('opacity-50');
+                            // Fallback to Search or All
+                            // Default to Search usually
+                            document.querySelector('input[name="scope"][value="SEARCH"]').checked = true;
+                        }
+
+                        // 4. Initialize Sort based on current URL
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const currentSort = urlParams.get('sort'); // e.g., "companyName,desc"
+                        if (currentSort) {
+                            const parts = currentSort.split(',');
+                            const sortBy = parts[0]; // field name
+                            const sortOrder = parts.length > 1 ? parts[1].toUpperCase() : 'ASC';
+
+                            const sortSelect = document.getElementById('exportSortBy');
+                            if (sortSelect && sortSelect.querySelector(`option[value="${sortBy}"]`)) {
+                                sortSelect.value = sortBy;
+                            }
+
+                            const orderRadio = document.querySelector(`input[name="sortOrder"][value="${sortOrder}"]`);
+                            if (orderRadio) orderRadio.checked = true;
+                        }
+
+                        // Show Modal
+                        modal.classList.remove('hidden');
                     });
                 }
             })();
+            // --- Deletion Toast with Undo Logic ---
+            function deleteCompany(btn) {
+                const id = btn.dataset.id;
+                const name = btn.dataset.name;
+                const row = btn.closest('tr');
 
-        // Export & Select Mode Logic
-        (function () {
-            const toggleBtn = document.getElementById('toggleSelectModeBtn');
-            const exportBtn = document.getElementById('openExportModalBtn');
-            const modal = document.getElementById('exportModal');
-            const selectAllCb = document.getElementById('selectAllCheckbox');
-            const rowCbs = document.getElementsByName('rowCheckbox');
+                const csrfMeta = document.querySelector('meta[name="_csrf"]');
+                const csrfHeaderMeta = document.querySelector('meta[name="_csrf_header"]');
 
-            let isSelectMode = false;
+                const headers = {};
+                if (csrfMeta && csrfHeaderMeta) {
+                    headers[csrfHeaderMeta.content] = csrfMeta.content;
+                }
 
-            // Toggle Select Mode
-            if (toggleBtn) {
-                toggleBtn.addEventListener('click', function () {
-                    isSelectMode = !isSelectMode;
-                    const cols = document.querySelectorAll('.select-checkbox-col');
-                    cols.forEach(el => {
-                        if (isSelectMode) el.classList.remove('hidden');
-                        else el.classList.add('hidden');
-                    });
+                // Perform soft-delete via AJAX
+                fetch(`/api/companies/delete/${id}`, {
+                    method: 'POST',
+                    headers: headers
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Immediately hide row
+                            row.style.transition = 'all 0.3s ease';
+                            row.style.opacity = '0';
+                            setTimeout(() => {
+                                row.style.display = 'none';
+                            }, 300);
 
-                    // Icon change
-                    const icon = toggleBtn.querySelector('.material-symbols-outlined');
-                    if (isSelectMode) {
-                        toggleBtn.classList.add('bg-primary', 'text-white');
-                        toggleBtn.classList.remove('bg-gray-200', 'text-gray-800', 'dark:bg-[#283039]', 'dark:text-white');
-                        if (icon) icon.innerText = 'check_box';
-                    } else {
-                        toggleBtn.classList.remove('bg-primary', 'text-white');
-                        toggleBtn.classList.add('bg-gray-200', 'text-gray-800', 'dark:bg-[#283039]', 'dark:text-white');
-                        if (icon) icon.innerText = 'check_box_outline_blank'; // or check_box
-                    }
-                });
-            }
-
-            // Select All
-            if (selectAllCb) {
-                selectAllCb.addEventListener('change', function () {
-                    const checked = this.checked;
-                    rowCbs.forEach(cb => cb.checked = checked);
-                });
-            }
-
-            // Open Modal logic
-            if (exportBtn && modal) {
-                exportBtn.addEventListener('click', function () {
-                    // 1. Copy Search Params
-                    // Assuming the main search form inputs have unique names or we select them from the document
-                    // Using document.getElementsByName to find source inputs (first one found usually main form)
-                    const fields = ['keyword', 'companyId', 'companyName', 'address', 'zipCode', 'dateFrom', 'dateTo'];
-                    const modalForm = document.getElementById('exportForm');
-
-                    fields.forEach(name => {
-                        const src = document.querySelector(`form:not(#exportForm) input[name="${name}"]`);
-                        const dest = modalForm.querySelector(`input[name="${name}"]`);
-                        if (src && dest) dest.value = src.value;
-                    });
-
-                    // 2. Identify Selected rows
-                    const selectedIds = Array.from(rowCbs)
-                        .filter(cb => cb.checked)
-                        .map(cb => cb.value);
-
-                    document.getElementById('exportSelectedIds').value = selectedIds.join(',');
-
-                    // 2.5 Populate Search Count
-                    const pageInfo = document.querySelector('.flex.items-center.gap-2.text-sm span');
-                    if (pageInfo) {
-                        const text = pageInfo.innerText;
-                        // Extract total count, e.g. "1-10 of 123件" -> "123"
-                        const match = text.match(/of\s+(\d+)件/);
-                        if (match) {
-                            const searchCountStr = document.getElementById('searchCountStr');
-                            if (searchCountStr) searchCountStr.innerText = `(${match[1]}件)`;
-                        } else if (text.includes('件')) {
-                            // Single page case e.g. "5件"
-                            const searchCountStr = document.getElementById('searchCountStr');
-                            if (searchCountStr) searchCountStr.innerText = `(${text})`;
+                            showToast(`${name} を削除しました`, 'success', () => {
+                                undoDelete(id, row);
+                            });
+                        } else {
+                            showToast('削除に失敗しました: ' + data.message, 'error');
                         }
-                    }
+                    })
+                    .catch(err => {
+                        console.error('Error deleting company:', err);
+                        showToast('エラーが発生しました', 'error');
+                    });
+            }
+            function undoDelete(id, row) {
+                const csrfMeta = document.querySelector('meta[name="_csrf"]');
+                const csrfHeaderMeta = document.querySelector('meta[name="_csrf_header"]');
 
-                    // 3. Setup Scope Radios
-                    const scopeSelection = document.getElementById('scopeSelection');
-                    const selectionLabel = document.getElementById('selectionLabel');
+                const headers = {};
+                if (csrfMeta && csrfHeaderMeta) {
+                    headers[csrfHeaderMeta.content] = csrfMeta.content;
+                }
 
-                    if (selectedIds.length > 0) {
-                        scopeSelection.disabled = false;
-                        scopeSelection.checked = true; // Default to selection if any selected
-                        selectionLabel.textContent = `選択したデータのみ (${selectedIds.length}件)`;
-                        selectionLabel.classList.remove('opacity-50');
-                    } else {
-                        scopeSelection.disabled = true;
-                        selectionLabel.textContent = `選択したデータのみ (0件)`;
-                        selectionLabel.classList.add('opacity-50');
-                        // Fallback to Search or All
-                        // Default to Search usually
-                        document.querySelector('input[name="scope"][value="SEARCH"]').checked = true;
-                    }
-
-                    // 4. Initialize Sort based on current URL
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const currentSort = urlParams.get('sort'); // e.g., "companyName,desc"
-                    if (currentSort) {
-                        const parts = currentSort.split(',');
-                        const sortBy = parts[0]; // field name
-                        const sortOrder = parts.length > 1 ? parts[1].toUpperCase() : 'ASC';
-
-                        const sortSelect = document.getElementById('exportSortBy');
-                        if (sortSelect && sortSelect.querySelector(`option[value="${sortBy}"]`)) {
-                            sortSelect.value = sortBy;
+                fetch(`/api/companies/restore/${id}`, {
+                    method: 'POST',
+                    headers: headers
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Restore row
+                            row.style.display = '';
+                            setTimeout(() => {
+                                row.style.opacity = '1';
+                            }, 10);
+                            showToast('復元しました', 'success');
+                        } else {
+                            showToast('復元に失敗しました: ' + data.message, 'error');
                         }
+                    })
+                    .catch(err => {
+                        console.error('Error restoring company:', err);
+                        showToast('エラーが発生しました', 'error');
+                    });
+            }
+            function showToast(message, type = 'list', undoAction = null) {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = 'toast';
 
-                        const orderRadio = document.querySelector(`input[name="sortOrder"][value="${sortOrder}"]`);
-                        if (orderRadio) orderRadio.checked = true;
-                    }
+                let icon = 'check_circle';
+                let iconColor = 'text-green-500';
+                if (type === 'error') {
+                    icon = 'error';
+                    iconColor = 'text-red-500';
+                }
 
-                    // Show Modal
-                    modal.classList.remove('hidden');
+                toast.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined ${iconColor}">${icon}</span>
+                    <span class="text-sm font-medium">${message}</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    ${undoAction ? '<button class="toast-undo-btn">元に戻す</button>' : ''}
+                    <button class="toast-close-btn">
+                        <span class="material-symbols-outlined text-base">close</span>
+                    </button>
+                </div>
+            `;
+
+                if (undoAction) {
+                    const undoBtn = toast.querySelector('.toast-undo-btn');
+                    undoBtn.onclick = () => {
+                        undoAction();
+                        hideToast(toast);
+                    };
+                }
+
+                const closeBtn = toast.querySelector('.toast-close-btn');
+                closeBtn.onclick = () => {
+                    hideToast(toast);
+                };
+
+                container.appendChild(toast);
+
+                // Auto-hide after 10 seconds
+                const timerId = setTimeout(() => {
+                    hideToast(toast);
+                }, 10000);
+
+                // Store timerId if needed to cancel it
+                toast.dataset.timerId = timerId;
+            }
+
+            function hideToast(toast) {
+                if (toast.classList.contains('hiding')) return;
+
+                clearTimeout(toast.dataset.timerId);
+                toast.classList.add('hiding');
+
+                toast.addEventListener('animationend', () => {
+                    toast.remove();
                 });
             }
-        })();
-    </script>
+
+            // --- Handle Server-side Messages via Toast ---
+            window.addEventListener('load', () => {
+                const successMsg = "[[${successMessage}]]";
+                const errorMsg = "[[${errorMessage}]]";
+
+                console.log('SuccessMsg:', successMsg);
+                console.log('ErrorMsg:', errorMsg);
+
+                if (successMsg && successMsg !== "null" && successMsg !== "") {
+                    showToast(successMsg, 'success');
+                }
+                if (errorMsg && errorMsg !== "null" && errorMsg !== "") {
+                    showToast(errorMsg, 'error');
+                }
+            });
+        </script>
+        <!-- Toast Container -->
+        <div id="toast-container"></div>
+
 </body>
 
 </html>
