@@ -45,6 +45,23 @@ public class CompanyService {
         return companyRepository.save(company);
     }
 
+    public boolean hasDeletedDuplicate(CompanyForm form) {
+        if (form == null) {
+            return false;
+        }
+        boolean hasDuplicate = false;
+        if (form.getCompanyName() != null && !form.getCompanyName().isBlank()) {
+            hasDuplicate = companyRepository.existsByCompanyNameAndIsDeletedTrue(form.getCompanyName());
+        }
+        if (!hasDuplicate && form.getAddress() != null && !form.getAddress().isBlank()) {
+            hasDuplicate = companyRepository.existsByAddressAndIsDeletedTrue(form.getAddress());
+        }
+        if (!hasDuplicate && form.getZipCode() != null && !form.getZipCode().isBlank()) {
+            hasDuplicate = companyRepository.existsByZipCodeAndIsDeletedTrue(form.getZipCode());
+        }
+        return hasDuplicate;
+    }
+
     public Company findById(Integer id) {
         return companyRepository.findById(id).orElseThrow(() -> new RuntimeException("Company not found"));
     }

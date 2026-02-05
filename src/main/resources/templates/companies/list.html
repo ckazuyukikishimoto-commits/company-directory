@@ -51,7 +51,34 @@
         .group:focus-within .group-focus-within\:pointer-events-auto {
             pointer-events: auto;
         }
+
+        html:not(.js-state-restored) .js-state-content {
+            visibility: hidden;
+        }
+
+        html:not(.js-state-restored) #page-loader {
+            display: flex;
+        }
+
+        #page-loader {
+            display: none;
+        }
     </style>
+
+    <script>
+        (function () {
+            const currentUrl = window.location.href;
+            const lastUrl = sessionStorage.getItem('lastListUrl');
+
+            if (!window.location.search && lastUrl && lastUrl !== currentUrl) {
+                window.location.replace(lastUrl);
+                return;
+            }
+
+            document.documentElement.classList.add('js-state-restored');
+            sessionStorage.setItem('lastListUrl', currentUrl);
+        })();
+    </script>
 
     <!-- CSRF Meta Tags for AJAX -->
     <meta th:if="${_csrf}" name="_csrf" th:content="${_csrf.token}" />
@@ -145,9 +172,16 @@
 </head>
 
 <body class="font-display bg-background-light dark:bg-background-dark">
+    <div id="page-loader"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-[#111418]/80">
+        <div class="flex items-center gap-3 rounded-lg bg-white/90 dark:bg-[#1c2127]/90 px-4 py-3 shadow">
+            <span class="material-symbols-outlined animate-spin text-primary">progress_activity</span>
+            <span class="text-sm text-gray-700 dark:text-gray-200">読み込み中...</span>
+        </div>
+    </div>
 
     <div
-        class="relative flex h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-hidden">
+        class="js-state-content relative flex h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-hidden">
         <div class="flex h-full grow flex-col">
             <div class="px-4 sm:px-6 md:px-8 lg:px-10 flex flex-col h-full">
                 <div class="layout-content-container flex flex-col w-full mx-auto max-w-[1400px] flex-1 h-full py-4">
@@ -492,6 +526,14 @@
                             <span
                                 th:text="|${page.number * page.size + 1}-${page.number * page.size + page.numberOfElements} of ${page.totalElements}件|">1-10
                                 of 123件</span>
+                            <div class="flex items-center gap-2">
+                                <span>ページ</span>
+                                <input id="pageJumpInput" type="number" min="1"
+                                    th:attr="max=${page.totalPages > 0 ? page.totalPages : 1}"
+                                    th:value="${page.totalPages == 0 ? 1 : page.number + 1}"
+                                    class="w-16 rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] focus:ring-primary focus:border-primary h-8 text-sm text-center" />
+                                <span th:text="|/ ${page.totalPages}|">/ 1</span>
+                            </div>
                             <div class="flex gap-1">
                                 <!-- 最初のページへ -->
                                 <a th:href="@{/companies(page=0, size=${page.size}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo})}"
@@ -745,19 +787,6 @@
                         });
                     }
 
-                    // State Persistence Logic
-                    (function () {
-                        const currentUrl = window.location.href;
-                        const lastUrl = sessionStorage.getItem('lastListUrl');
-
-                        if (!window.location.search && lastUrl && lastUrl !== currentUrl) {
-                            window.location.replace(lastUrl);
-                            return;
-                        }
-
-                        sessionStorage.setItem('lastListUrl', currentUrl);
-                    })();
-
                     // DOMContentLoaded後に実行
                     if (document.readyState === 'loading') {
                         document.addEventListener('DOMContentLoaded', init);
@@ -805,7 +834,8 @@
                 const table = document.querySelector('table');
                 const tbody = table ? table.querySelector('tbody') : null;
                 const headers = table ? table.querySelectorAll('thead th[data-col]') : [];
-                const state = { column: null, direction: 'asc' };
+                const state = { column: null, direction: null };
+                const originalRows = tbody ? Array.from(tbody.querySelectorAll('tr')) : [];
 
                 if (!table || !tbody || headers.length === 0) return;
 
@@ -825,12 +855,16 @@
                     headers.forEach(header => {
                         const icon = header.querySelector('.sort-icon');
                         if (!icon) return;
-                        if (header.dataset.col === activeCol) {
+                        if (header.dataset.col === activeCol && direction) {
                             icon.textContent = direction === 'asc' ? '↑' : '↓';
                         } else {
                             icon.textContent = '↕';
                         }
                     });
+                }
+
+                function resetRows() {
+                    originalRows.forEach(row => tbody.appendChild(row));
                 }
 
                 function sortRows(column, type, direction) {
@@ -861,11 +895,62 @@
                         const column = header.dataset.col;
                         const type = header.dataset.sortType || 'text';
                         const isSame = state.column === column;
-                        state.direction = isSame && state.direction === 'asc' ? 'desc' : 'asc';
-                        state.column = column;
-                        sortRows(column, type, state.direction);
-                        updateIcons(column, state.direction);
+                        let nextDirection = 'asc';
+
+                        if (isSame) {
+                            if (state.direction === 'asc') {
+                                nextDirection = 'desc';
+                            } else if (state.direction === 'desc') {
+                                nextDirection = null;
+                            }
+                        }
+
+                        if (nextDirection === null) {
+                            state.column = null;
+                            state.direction = null;
+                            resetRows();
+                            updateIcons(null, null);
+                        } else {
+                            state.column = column;
+                            state.direction = nextDirection;
+                            sortRows(column, type, nextDirection);
+                            updateIcons(column, nextDirection);
+                        }
                     });
+                });
+            })();
+
+            // Page Jump Logic
+            (function () {
+                const input = document.getElementById('pageJumpInput');
+                if (!input) return;
+
+                const max = parseInt(input.getAttribute('max') || '1', 10);
+                const clampPage = (value) => Math.min(Math.max(value, 1), max);
+
+                function jumpToPage(value) {
+                    const pageNumber = clampPage(value) - 1;
+                    const params = new URLSearchParams(window.location.search);
+                    params.set('page', pageNumber.toString());
+                    const query = params.toString();
+                    window.location.href = `${window.location.pathname}${query ? `?${query}` : ''}`;
+                }
+
+                input.addEventListener('change', () => {
+                    const value = parseInt(input.value || '1', 10);
+                    if (!Number.isNaN(value)) {
+                        jumpToPage(value);
+                    }
+                });
+
+                input.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        const value = parseInt(input.value || '1', 10);
+                        if (!Number.isNaN(value)) {
+                            jumpToPage(value);
+                        }
+                    }
                 });
             })();
 
@@ -1016,6 +1101,7 @@
                             row.style.opacity = '0';
                             setTimeout(() => {
                                 row.style.display = 'none';
+                                handleEmptyPageAfterDelete();
                             }, 300);
 
                             showToast(`${name} を削除しました`, 'success', () => {
@@ -1029,6 +1115,28 @@
                         console.error('Error deleting company:', err);
                         showToast('エラーが発生しました', 'error');
                     });
+            }
+
+            function handleEmptyPageAfterDelete() {
+                const rows = Array.from(document.querySelectorAll('tbody tr'))
+                    .filter(row => !row.classList.contains('js-empty-row'))
+                    .filter(row => row.style.display !== 'none');
+
+                if (rows.length > 0) {
+                    return;
+                }
+
+                const params = new URLSearchParams(window.location.search);
+                const currentPage = parseInt(params.get('page') || '0', 10);
+
+                if (currentPage > 0) {
+                    params.set('page', (currentPage - 1).toString());
+                } else {
+                    params.set('page', '0');
+                }
+
+                const query = params.toString();
+                window.location.href = `${window.location.pathname}${query ? `?${query}` : ''}`;
             }
             function undoDelete(id, row) {
                 const csrfMeta = document.querySelector('meta[name="_csrf"]');
@@ -1061,7 +1169,7 @@
                         showToast('エラーが発生しました', 'error');
                     });
             }
-            function showToast(message, type = 'list', undoAction = null) {
+            function showToast(message, type = 'success', undoAction = null) {
                 const container = document.getElementById('toast-container');
                 const toast = document.createElement('div');
                 toast.className = 'toast';
@@ -1071,6 +1179,9 @@
                 if (type === 'error') {
                     icon = 'error';
                     iconColor = 'text-red-500';
+                } else if (type === 'warning') {
+                    icon = 'warning';
+                    iconColor = 'text-amber-400';
                 }
 
                 toast.innerHTML = `
@@ -1125,15 +1236,16 @@
             window.addEventListener('load', () => {
                 const successMsg = "[[${successMessage}]]";
                 const errorMsg = "[[${errorMessage}]]";
-
-                console.log('SuccessMsg:', successMsg);
-                console.log('ErrorMsg:', errorMsg);
+                const warningMsg = "[[${warningMessage}]]";
 
                 if (successMsg && successMsg !== "null" && successMsg !== "") {
                     showToast(successMsg, 'success');
                 }
                 if (errorMsg && errorMsg !== "null" && errorMsg !== "") {
                     showToast(errorMsg, 'error');
+                }
+                if (warningMsg && warningMsg !== "null" && warningMsg !== "") {
+                    showToast(warningMsg, 'warning');
                 }
             });
         </script>

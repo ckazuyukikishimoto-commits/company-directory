@@ -26,6 +26,12 @@ public interface CompanyRepository extends JpaRepository<Company, Integer>, JpaS
 
     boolean existsByAddress(String address);
 
+    boolean existsByCompanyNameAndIsDeletedTrue(String companyName);
+
+    boolean existsByAddressAndIsDeletedTrue(String address);
+
+    boolean existsByZipCodeAndIsDeletedTrue(String zipCode);
+
     @Modifying
     @Query("DELETE FROM Company c WHERE c.isDeleted = true AND c.deletedAt < :threshold")
     int deleteByIsDeletedTrueAndDeletedAtBefore(@Param("threshold") LocalDateTime threshold);

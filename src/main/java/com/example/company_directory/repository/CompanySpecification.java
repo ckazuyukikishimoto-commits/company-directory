@@ -27,10 +27,11 @@ public class CompanySpecification {
                 return spec.toPredicate(root, query, cb);
             }
 
-            // 1. キーワード検索（企業名 OR 住所 OR 郵便番号 OR 備考）
+            // 1. キーワード検索（企業名 OR 住所 OR 郵便番号 OR 備考 OR 企業ID）
             if (StringUtils.hasText(form.getKeyword())) {
                 String pattern = "%" + form.getKeyword() + "%";
                 Specification<Company> keywordSpec = (r, q, c) -> c.or(
+                        c.like(r.get("companyId").as(String.class), pattern),
                         c.like(r.get("companyName"), pattern),
                         c.like(r.get("address"), pattern),
                         c.like(r.get("zipCode"), pattern),
