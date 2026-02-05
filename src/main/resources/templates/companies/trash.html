@@ -55,21 +55,114 @@
         .group:focus-within .group-focus-within\:pointer-events-auto {
             pointer-events: auto;
         }
+
+        html:not(.js-state-restored) .js-state-content {
+            visibility: hidden;
+        }
+
+        html:not(.js-state-restored) #page-loader {
+            display: flex;
+        }
+
+        #page-loader {
+            display: none;
+        }
+
+        #toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .toast {
+            background-color: #1c2127;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+            min-width: 350px;
+            animation: slideIn 0.3s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast.hiding {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .toast-close-btn {
+            color: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.25rem;
+            margin-right: -0.5rem;
+        }
+
+        .toast-close-btn:hover {
+            color: white;
+        }
     </style>
+
+    <script>
+        (function () {
+            const currentUrl = window.location.href;
+            const lastUrl = sessionStorage.getItem('lastTrashUrl');
+
+            if (!window.location.search && lastUrl && lastUrl !== currentUrl) {
+                window.location.replace(lastUrl);
+                return;
+            }
+
+            document.documentElement.classList.add('js-state-restored');
+            sessionStorage.setItem('lastTrashUrl', currentUrl);
+        })();
+    </script>
 </head>
 
 <body class="font-display bg-background-light dark:bg-archive-dark">
-    <!-- 成功メッセージ -->
-    <div th:if="${successMessage}" class="p-4 mb-4 text-green-800 rounded-lg bg-green-100">
-        <span th:text="${successMessage}"></span>
-    </div>
-
-    <!-- エラーメッセージ -->
-    <div th:if="${errorMessage}" class="p-4 mb-4 text-red-800 rounded-lg bg-red-100">
-        <span th:text="${errorMessage}"></span>
+    <div id="page-loader"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-[#1a1816]/80">
+        <div class="flex items-center gap-3 rounded-lg bg-white/90 dark:bg-[#2d2a27]/90 px-4 py-3 shadow">
+            <span class="material-symbols-outlined animate-spin text-primary">progress_activity</span>
+            <span class="text-sm text-archive-text">読み込み中...</span>
+        </div>
     </div>
     <div
-        class="relative flex h-screen w-full flex-col bg-background-light dark:bg-archive-dark group/design-root overflow-hidden">
+        class="js-state-content relative flex h-screen w-full flex-col bg-background-light dark:bg-archive-dark group/design-root overflow-hidden">
         <div class="flex h-full grow flex-col">
             <div class="px-4 sm:px-6 md:px-8 lg:px-10 flex flex-col h-full">
                 <div class="layout-content-container flex flex-col w-full mx-auto max-w-[1400px] flex-1 h-full py-4">
@@ -386,19 +479,6 @@
 
     <script>
             (function () {
-                // State Persistence Logic
-                (function () {
-                    const currentUrl = window.location.href;
-                    const lastUrl = sessionStorage.getItem('lastTrashUrl');
-
-                    if (!window.location.search && lastUrl && lastUrl !== currentUrl) {
-                        window.location.replace(lastUrl);
-                        return;
-                    }
-
-                    sessionStorage.setItem('lastTrashUrl', currentUrl);
-                })();
-
                 const STORAGE_KEY = 'trashListVisibleColumns';
 
                 // デフォルトの表示設定
@@ -521,7 +601,8 @@
                     const table = document.querySelector('table');
                     const tbody = table ? table.querySelector('tbody') : null;
                     const headers = table ? table.querySelectorAll('thead th[data-col]') : [];
-                    const state = { column: null, direction: 'asc' };
+                    const state = { column: null, direction: null };
+                    const originalRows = tbody ? Array.from(tbody.querySelectorAll('tr')) : [];
 
                     if (!table || !tbody || headers.length === 0) return;
 
@@ -541,12 +622,16 @@
                         headers.forEach(header => {
                             const icon = header.querySelector('.sort-icon');
                             if (!icon) return;
-                            if (header.dataset.col === activeCol) {
+                            if (header.dataset.col === activeCol && direction) {
                                 icon.textContent = direction === 'asc' ? '↑' : '↓';
                             } else {
                                 icon.textContent = '↕';
                             }
                         });
+                    }
+
+                    function resetRows() {
+                        originalRows.forEach(row => tbody.appendChild(row));
                     }
 
                     function sortRows(column, type, direction) {
@@ -577,15 +662,96 @@
                             const column = header.dataset.col;
                             const type = header.dataset.sortType || 'text';
                             const isSame = state.column === column;
-                            state.direction = isSame && state.direction === 'asc' ? 'desc' : 'asc';
-                            state.column = column;
-                            sortRows(column, type, state.direction);
-                            updateIcons(column, state.direction);
+                            let nextDirection = 'asc';
+
+                            if (isSame) {
+                                if (state.direction === 'asc') {
+                                    nextDirection = 'desc';
+                                } else if (state.direction === 'desc') {
+                                    nextDirection = null;
+                                }
+                            }
+
+                            if (nextDirection === null) {
+                                state.column = null;
+                                state.direction = null;
+                                resetRows();
+                                updateIcons(null, null);
+                            } else {
+                                state.column = column;
+                                state.direction = nextDirection;
+                                sortRows(column, type, nextDirection);
+                                updateIcons(column, nextDirection);
+                            }
                         });
                     });
                 })();
+
+                function showToast(message, type = 'success') {
+                    const container = document.getElementById('toast-container');
+                    if (!container) return;
+                    const toast = document.createElement('div');
+                    toast.className = 'toast';
+
+                    let icon = 'check_circle';
+                    let iconColor = 'text-green-500';
+                    if (type === 'error') {
+                        icon = 'error';
+                        iconColor = 'text-red-500';
+                    } else if (type === 'warning') {
+                        icon = 'warning';
+                        iconColor = 'text-amber-400';
+                    }
+
+                    toast.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined ${iconColor}">${icon}</span>
+                        <span class="text-sm font-medium">${message}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button class="toast-close-btn">
+                            <span class="material-symbols-outlined text-base">close</span>
+                        </button>
+                    </div>
+                `;
+
+                    const closeBtn = toast.querySelector('.toast-close-btn');
+                    closeBtn.onclick = () => {
+                        hideToast(toast);
+                    };
+
+                    container.appendChild(toast);
+
+                    const timerId = setTimeout(() => {
+                        hideToast(toast);
+                    }, 10000);
+
+                    toast.dataset.timerId = timerId;
+                }
+
+                function hideToast(toast) {
+                    if (toast.classList.contains('hiding')) return;
+                    clearTimeout(toast.dataset.timerId);
+                    toast.classList.add('hiding');
+                    toast.addEventListener('animationend', () => {
+                        toast.remove();
+                    });
+                }
+
+                window.addEventListener('load', () => {
+                    const successMsg = "[[${successMessage}]]";
+                    const errorMsg = "[[${errorMessage}]]";
+
+                    if (successMsg && successMsg !== "null" && successMsg !== "") {
+                        showToast(successMsg, 'success');
+                    }
+                    if (errorMsg && errorMsg !== "null" && errorMsg !== "") {
+                        showToast(errorMsg, 'error');
+                    }
+                });
             })();
     </script>
+    <div id="toast-container"></div>
 </body>
 
 </html>

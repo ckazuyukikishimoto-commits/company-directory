@@ -83,8 +83,13 @@ public class CompanyController {
             return "companies/form";
         }
         try {
+            boolean hasDeletedDuplicate = companyService.hasDeletedDuplicate(form);
             companyService.save(form);
             redirectAttributes.addFlashAttribute("successMessage", "企業を登録しました。");
+            if (hasDeletedDuplicate) {
+                redirectAttributes.addFlashAttribute("warningMessage",
+                        "【重複注意】削除履歴に同一データがあります。登録前に履歴画面を確認してください。");
+            }
             return resolveReturnUrl(returnUrl, "/companies");
         } catch (DataIntegrityViolationException e) {
             model.addAttribute("companyForm", form);
