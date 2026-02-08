@@ -5,6 +5,7 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>廃棄データ・アーカイブ</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/app-icon.svg}">
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap"
         rel="stylesheet" />
@@ -138,24 +139,23 @@
     </style>
 
     <script>
-        (function () {
-            const currentUrl = window.location.href;
-            const lastUrl = sessionStorage.getItem('lastTrashUrl');
+            (function () {
+                const currentUrl = window.location.href;
+                const lastUrl = sessionStorage.getItem('lastTrashUrl');
 
-            if (!window.location.search && lastUrl && lastUrl !== currentUrl) {
-                window.location.replace(lastUrl);
-                return;
-            }
+                if (!window.location.search && lastUrl && lastUrl !== currentUrl) {
+                    window.location.replace(lastUrl);
+                    return;
+                }
 
-            document.documentElement.classList.add('js-state-restored');
-            sessionStorage.setItem('lastTrashUrl', currentUrl);
-        })();
+                document.documentElement.classList.add('js-state-restored');
+                sessionStorage.setItem('lastTrashUrl', currentUrl);
+            })();
     </script>
 </head>
 
 <body class="font-display bg-background-light dark:bg-archive-dark">
-    <div id="page-loader"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-[#1a1816]/80">
+    <div id="page-loader" class="fixed inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-[#1a1816]/80">
         <div class="flex items-center gap-3 rounded-lg bg-white/90 dark:bg-[#2d2a27]/90 px-4 py-3 shadow">
             <span class="material-symbols-outlined animate-spin text-primary">progress_activity</span>
             <span class="text-sm text-archive-text">読み込み中...</span>
@@ -362,8 +362,7 @@
                                     </thead>
                                     <tbody>
                                         <tr th:if="${page.totalElements == 0}" class="js-empty-row">
-                                            <td colspan="6"
-                                                class="px-4 py-10 text-center text-archive-text-dim">
+                                            <td colspan="6" class="px-4 py-10 text-center text-archive-text-dim">
                                                 該当データがありません
                                             </td>
                                         </tr>
@@ -478,232 +477,232 @@
     </div>
 
     <script>
+        (function () {
+            const STORAGE_KEY = 'trashListVisibleColumns';
+
+            // デフォルトの表示設定
+            const defaultSettings = {
+                companyId: false,  // デフォルト非表示
+                companyName: true,
+                deletedAt: true,
+                deletedBy: true,
+                actions: true
+            };
+
+            // localStorageから設定を読み込む
+            function loadSettings() {
+                try {
+                    const saved = localStorage.getItem(STORAGE_KEY);
+                    return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
+                } catch (e) {
+                    return defaultSettings;
+                }
+            }
+
+            // localStorageに設定を保存
+            function saveSettings(settings) {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+            }
+
+            // 列の表示/非表示を適用（テーブル内のth, tdのみ対象）
+            function applyColumnVisibility(settings) {
+                Object.keys(settings).forEach(col => {
+                    const cells = document.querySelectorAll(`table [data-col="${col}"]`);
+                    cells.forEach(cell => {
+                        cell.style.display = settings[col] ? '' : 'none';
+                    });
+                });
+            }
+
+            // チェックボックスの状態を設定に反映
+            function syncCheckboxes(settings) {
+                const checkboxes = document.querySelectorAll('#columnSettings input[type="checkbox"]');
+                checkboxes.forEach(cb => {
+                    const col = cb.dataset.col;
+                    if (col && settings[col] !== undefined) {
+                        cb.checked = settings[col];
+                    }
+                });
+            }
+
+            // 初期化
+            function init() {
+                const settings = loadSettings();
+                syncCheckboxes(settings);
+                applyColumnVisibility(settings);
+
+                // チェックボックスの変更イベント（リアルタイム反映）
+                const checkboxes = document.querySelectorAll('#columnSettings input[type="checkbox"]:not(:disabled)');
+                checkboxes.forEach(cb => {
+                    cb.addEventListener('change', function () {
+                        const col = this.dataset.col;
+                        settings[col] = this.checked;
+                        applyColumnVisibility(settings);
+                        saveSettings(settings);
+                    });
+                });
+            }
+
+            // DOMContentLoaded後に実行
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+
+            // 設定メニューの表示切り替え
+            const settingsButton = document.getElementById('settingsButton');
+            const settingsDropdown = document.getElementById('settingsDropdown');
+
+            if (settingsButton && settingsDropdown) {
+                settingsButton.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    settingsDropdown.classList.toggle('hidden');
+                });
+
+                // メニュー外クリックで閉じる
+                document.addEventListener('click', function (e) {
+                    if (!settingsDropdown.contains(e.target) && !settingsButton.contains(e.target)) {
+                        settingsDropdown.classList.add('hidden');
+                    }
+                });
+
+                // メニュー内のクリックイベント伝播を止める（チェックボックス操作で閉じないようにするため）
+                settingsDropdown.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                });
+            }
+
+            // --- Back Button Logic (State Persistence) ---
             (function () {
-                const STORAGE_KEY = 'trashListVisibleColumns';
+                const backBtn = document.getElementById('backToListBtn');
+                const DEFAULT_URL = '/companies';
+                const lastUrl = sessionStorage.getItem('lastListUrl') || DEFAULT_URL;
 
-                // デフォルトの表示設定
-                const defaultSettings = {
-                    companyId: false,  // デフォルト非表示
-                    companyName: true,
-                    deletedAt: true,
-                    deletedBy: true,
-                    actions: true
-                };
+                if (backBtn) {
+                    backBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        window.location.href = lastUrl;
+                    });
+                }
+            })();
 
-                // localStorageから設定を読み込む
-                function loadSettings() {
-                    try {
-                        const saved = localStorage.getItem(STORAGE_KEY);
-                        return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
-                    } catch (e) {
-                        return defaultSettings;
+            (function () {
+                const inputs = document.querySelectorAll('.return-url-input');
+                const lastTrashUrl = sessionStorage.getItem('lastTrashUrl') || '/companies/trash';
+                inputs.forEach(input => {
+                    input.value = lastTrashUrl;
+                });
+            })();
+
+            // Table Sort Logic
+            (function () {
+                const table = document.querySelector('table');
+                const tbody = table ? table.querySelector('tbody') : null;
+                const headers = table ? table.querySelectorAll('thead th[data-col]') : [];
+                const state = { column: null, direction: null };
+                const originalRows = tbody ? Array.from(tbody.querySelectorAll('tr')) : [];
+
+                if (!table || !tbody || headers.length === 0) return;
+
+                function parseValue(value, type) {
+                    if (type === 'number') {
+                        const num = parseFloat(value.replace(/[^0-9.-]/g, ''));
+                        return Number.isNaN(num) ? null : num;
                     }
-                }
-
-                // localStorageに設定を保存
-                function saveSettings(settings) {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-                }
-
-                // 列の表示/非表示を適用（テーブル内のth, tdのみ対象）
-                function applyColumnVisibility(settings) {
-                    Object.keys(settings).forEach(col => {
-                        const cells = document.querySelectorAll(`table [data-col="${col}"]`);
-                        cells.forEach(cell => {
-                            cell.style.display = settings[col] ? '' : 'none';
-                        });
-                    });
-                }
-
-                // チェックボックスの状態を設定に反映
-                function syncCheckboxes(settings) {
-                    const checkboxes = document.querySelectorAll('#columnSettings input[type="checkbox"]');
-                    checkboxes.forEach(cb => {
-                        const col = cb.dataset.col;
-                        if (col && settings[col] !== undefined) {
-                            cb.checked = settings[col];
-                        }
-                    });
-                }
-
-                // 初期化
-                function init() {
-                    const settings = loadSettings();
-                    syncCheckboxes(settings);
-                    applyColumnVisibility(settings);
-
-                    // チェックボックスの変更イベント（リアルタイム反映）
-                    const checkboxes = document.querySelectorAll('#columnSettings input[type="checkbox"]:not(:disabled)');
-                    checkboxes.forEach(cb => {
-                        cb.addEventListener('change', function () {
-                            const col = this.dataset.col;
-                            settings[col] = this.checked;
-                            applyColumnVisibility(settings);
-                            saveSettings(settings);
-                        });
-                    });
-                }
-
-                // DOMContentLoaded後に実行
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', init);
-                } else {
-                    init();
-                }
-
-                // 設定メニューの表示切り替え
-                const settingsButton = document.getElementById('settingsButton');
-                const settingsDropdown = document.getElementById('settingsDropdown');
-
-                if (settingsButton && settingsDropdown) {
-                    settingsButton.addEventListener('click', function (e) {
-                        e.stopPropagation();
-                        settingsDropdown.classList.toggle('hidden');
-                    });
-
-                    // メニュー外クリックで閉じる
-                    document.addEventListener('click', function (e) {
-                        if (!settingsDropdown.contains(e.target) && !settingsButton.contains(e.target)) {
-                            settingsDropdown.classList.add('hidden');
-                        }
-                    });
-
-                    // メニュー内のクリックイベント伝播を止める（チェックボックス操作で閉じないようにするため）
-                    settingsDropdown.addEventListener('click', function (e) {
-                        e.stopPropagation();
-                    });
-                }
-
-                // --- Back Button Logic (State Persistence) ---
-                (function () {
-                    const backBtn = document.getElementById('backToListBtn');
-                    const DEFAULT_URL = '/companies';
-                    const lastUrl = sessionStorage.getItem('lastListUrl') || DEFAULT_URL;
-
-                    if (backBtn) {
-                        backBtn.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            window.location.href = lastUrl;
-                        });
+                    if (type === 'date') {
+                        const date = Date.parse(value);
+                        return Number.isNaN(date) ? null : date;
                     }
-                })();
+                    return value.toLowerCase();
+                }
 
-                (function () {
-                    const inputs = document.querySelectorAll('.return-url-input');
-                    const lastTrashUrl = sessionStorage.getItem('lastTrashUrl') || '/companies/trash';
-                    inputs.forEach(input => {
-                        input.value = lastTrashUrl;
-                    });
-                })();
-
-                // Table Sort Logic
-                (function () {
-                    const table = document.querySelector('table');
-                    const tbody = table ? table.querySelector('tbody') : null;
-                    const headers = table ? table.querySelectorAll('thead th[data-col]') : [];
-                    const state = { column: null, direction: null };
-                    const originalRows = tbody ? Array.from(tbody.querySelectorAll('tr')) : [];
-
-                    if (!table || !tbody || headers.length === 0) return;
-
-                    function parseValue(value, type) {
-                        if (type === 'number') {
-                            const num = parseFloat(value.replace(/[^0-9.-]/g, ''));
-                            return Number.isNaN(num) ? null : num;
-                        }
-                        if (type === 'date') {
-                            const date = Date.parse(value);
-                            return Number.isNaN(date) ? null : date;
-                        }
-                        return value.toLowerCase();
-                    }
-
-                    function updateIcons(activeCol, direction) {
-                        headers.forEach(header => {
-                            const icon = header.querySelector('.sort-icon');
-                            if (!icon) return;
-                            if (header.dataset.col === activeCol && direction) {
-                                icon.textContent = direction === 'asc' ? '↑' : '↓';
-                            } else {
-                                icon.textContent = '↕';
-                            }
-                        });
-                    }
-
-                    function resetRows() {
-                        originalRows.forEach(row => tbody.appendChild(row));
-                    }
-
-                    function sortRows(column, type, direction) {
-                        const rows = Array.from(tbody.querySelectorAll('tr'))
-                            .filter(row => !row.classList.contains('js-empty-row'));
-
-                        rows.sort((a, b) => {
-                            const aCell = a.querySelector(`[data-col="${column}"]`);
-                            const bCell = b.querySelector(`[data-col="${column}"]`);
-                            const aValue = parseValue(aCell ? aCell.textContent.trim() : '', type);
-                            const bValue = parseValue(bCell ? bCell.textContent.trim() : '', type);
-
-                            if (aValue === null && bValue === null) return 0;
-                            if (aValue === null) return 1;
-                            if (bValue === null) return -1;
-
-                            if (aValue < bValue) return direction === 'asc' ? -1 : 1;
-                            if (aValue > bValue) return direction === 'asc' ? 1 : -1;
-                            return 0;
-                        });
-
-                        rows.forEach(row => tbody.appendChild(row));
-                    }
-
+                function updateIcons(activeCol, direction) {
                     headers.forEach(header => {
-                        if (header.dataset.col === 'actions') return;
-                        header.addEventListener('click', () => {
-                            const column = header.dataset.col;
-                            const type = header.dataset.sortType || 'text';
-                            const isSame = state.column === column;
-                            let nextDirection = 'asc';
-
-                            if (isSame) {
-                                if (state.direction === 'asc') {
-                                    nextDirection = 'desc';
-                                } else if (state.direction === 'desc') {
-                                    nextDirection = null;
-                                }
-                            }
-
-                            if (nextDirection === null) {
-                                state.column = null;
-                                state.direction = null;
-                                resetRows();
-                                updateIcons(null, null);
-                            } else {
-                                state.column = column;
-                                state.direction = nextDirection;
-                                sortRows(column, type, nextDirection);
-                                updateIcons(column, nextDirection);
-                            }
-                        });
+                        const icon = header.querySelector('.sort-icon');
+                        if (!icon) return;
+                        if (header.dataset.col === activeCol && direction) {
+                            icon.textContent = direction === 'asc' ? '↑' : '↓';
+                        } else {
+                            icon.textContent = '↕';
+                        }
                     });
-                })();
+                }
 
-                function showToast(message, type = 'success') {
-                    const container = document.getElementById('toast-container');
-                    if (!container) return;
-                    const toast = document.createElement('div');
-                    toast.className = 'toast';
+                function resetRows() {
+                    originalRows.forEach(row => tbody.appendChild(row));
+                }
 
-                    let icon = 'check_circle';
-                    let iconColor = 'text-green-500';
-                    if (type === 'error') {
-                        icon = 'error';
-                        iconColor = 'text-red-500';
-                    } else if (type === 'warning') {
-                        icon = 'warning';
-                        iconColor = 'text-amber-400';
-                    }
+                function sortRows(column, type, direction) {
+                    const rows = Array.from(tbody.querySelectorAll('tr'))
+                        .filter(row => !row.classList.contains('js-empty-row'));
 
-                    toast.innerHTML = `
+                    rows.sort((a, b) => {
+                        const aCell = a.querySelector(`[data-col="${column}"]`);
+                        const bCell = b.querySelector(`[data-col="${column}"]`);
+                        const aValue = parseValue(aCell ? aCell.textContent.trim() : '', type);
+                        const bValue = parseValue(bCell ? bCell.textContent.trim() : '', type);
+
+                        if (aValue === null && bValue === null) return 0;
+                        if (aValue === null) return 1;
+                        if (bValue === null) return -1;
+
+                        if (aValue < bValue) return direction === 'asc' ? -1 : 1;
+                        if (aValue > bValue) return direction === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+
+                    rows.forEach(row => tbody.appendChild(row));
+                }
+
+                headers.forEach(header => {
+                    if (header.dataset.col === 'actions') return;
+                    header.addEventListener('click', () => {
+                        const column = header.dataset.col;
+                        const type = header.dataset.sortType || 'text';
+                        const isSame = state.column === column;
+                        let nextDirection = 'asc';
+
+                        if (isSame) {
+                            if (state.direction === 'asc') {
+                                nextDirection = 'desc';
+                            } else if (state.direction === 'desc') {
+                                nextDirection = null;
+                            }
+                        }
+
+                        if (nextDirection === null) {
+                            state.column = null;
+                            state.direction = null;
+                            resetRows();
+                            updateIcons(null, null);
+                        } else {
+                            state.column = column;
+                            state.direction = nextDirection;
+                            sortRows(column, type, nextDirection);
+                            updateIcons(column, nextDirection);
+                        }
+                    });
+                });
+            })();
+
+            function showToast(message, type = 'success') {
+                const container = document.getElementById('toast-container');
+                if (!container) return;
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+
+                let icon = 'check_circle';
+                let iconColor = 'text-green-500';
+                if (type === 'error') {
+                    icon = 'error';
+                    iconColor = 'text-red-500';
+                } else if (type === 'warning') {
+                    icon = 'warning';
+                    iconColor = 'text-amber-400';
+                }
+
+                toast.innerHTML = `
                     <div class="flex items-center gap-3">
                         <span class="material-symbols-outlined ${iconColor}">${icon}</span>
                         <span class="text-sm font-medium">${message}</span>
@@ -715,41 +714,41 @@
                     </div>
                 `;
 
-                    const closeBtn = toast.querySelector('.toast-close-btn');
-                    closeBtn.onclick = () => {
-                        hideToast(toast);
-                    };
+                const closeBtn = toast.querySelector('.toast-close-btn');
+                closeBtn.onclick = () => {
+                    hideToast(toast);
+                };
 
-                    container.appendChild(toast);
+                container.appendChild(toast);
 
-                    const timerId = setTimeout(() => {
-                        hideToast(toast);
-                    }, 10000);
+                const timerId = setTimeout(() => {
+                    hideToast(toast);
+                }, 10000);
 
-                    toast.dataset.timerId = timerId;
-                }
+                toast.dataset.timerId = timerId;
+            }
 
-                function hideToast(toast) {
-                    if (toast.classList.contains('hiding')) return;
-                    clearTimeout(toast.dataset.timerId);
-                    toast.classList.add('hiding');
-                    toast.addEventListener('animationend', () => {
-                        toast.remove();
-                    });
-                }
-
-                window.addEventListener('load', () => {
-                    const successMsg = "[[${successMessage}]]";
-                    const errorMsg = "[[${errorMessage}]]";
-
-                    if (successMsg && successMsg !== "null" && successMsg !== "") {
-                        showToast(successMsg, 'success');
-                    }
-                    if (errorMsg && errorMsg !== "null" && errorMsg !== "") {
-                        showToast(errorMsg, 'error');
-                    }
+            function hideToast(toast) {
+                if (toast.classList.contains('hiding')) return;
+                clearTimeout(toast.dataset.timerId);
+                toast.classList.add('hiding');
+                toast.addEventListener('animationend', () => {
+                    toast.remove();
                 });
-            })();
+            }
+
+            window.addEventListener('load', () => {
+                const successMsg = "[[${successMessage}]]";
+                const errorMsg = "[[${errorMessage}]]";
+
+                if (successMsg && successMsg !== "null" && successMsg !== "") {
+                    showToast(successMsg, 'success');
+                }
+                if (errorMsg && errorMsg !== "null" && errorMsg !== "") {
+                    showToast(errorMsg, 'error');
+                }
+            });
+        })();
     </script>
     <div id="toast-container"></div>
 </body>

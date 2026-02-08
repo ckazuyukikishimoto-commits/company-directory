@@ -5,6 +5,7 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>企業一覧画面</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/app-icon.svg}">
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap"
         rel="stylesheet" />
@@ -66,18 +67,18 @@
     </style>
 
     <script>
-        (function () {
-            const currentUrl = window.location.href;
-            const lastUrl = sessionStorage.getItem('lastListUrl');
+            (function () {
+                const currentUrl = window.location.href;
+                const lastUrl = sessionStorage.getItem('lastListUrl');
 
-            if (!window.location.search && lastUrl && lastUrl !== currentUrl) {
-                window.location.replace(lastUrl);
-                return;
-            }
+                if (!window.location.search && lastUrl && lastUrl !== currentUrl) {
+                    window.location.replace(lastUrl);
+                    return;
+                }
 
-            document.documentElement.classList.add('js-state-restored');
-            sessionStorage.setItem('lastListUrl', currentUrl);
-        })();
+                document.documentElement.classList.add('js-state-restored');
+                sessionStorage.setItem('lastListUrl', currentUrl);
+            })();
     </script>
 
     <!-- CSRF Meta Tags for AJAX -->
@@ -172,8 +173,7 @@
 </head>
 
 <body class="font-display bg-background-light dark:bg-background-dark">
-    <div id="page-loader"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-[#111418]/80">
+    <div id="page-loader" class="fixed inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-[#111418]/80">
         <div class="flex items-center gap-3 rounded-lg bg-white/90 dark:bg-[#1c2127]/90 px-4 py-3 shadow">
             <span class="material-symbols-outlined animate-spin text-primary">progress_activity</span>
             <span class="text-sm text-gray-700 dark:text-gray-200">読み込み中...</span>
@@ -202,32 +202,27 @@
                                         <span class="material-symbols-outlined text-base">grid_on</span>
                                         <span class="truncate">まとめて追加</span>
                                     </button>
-                                    <button th:formaction="@{/companies/import}"
-                                        title="Excelファイル(.xlsx)から企業データを一括インポート"
+                                    <button th:formaction="@{/companies/import}" title="Excelファイル(.xlsx)から企業データを一括インポート"
                                         class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-9 px-3 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
                                         <span class="material-symbols-outlined text-base">upload_file</span>
                                         <span class="truncate">Excelインポート</span>
                                     </button>
-                                    <button type="button" id="toggleSelectModeBtn"
-                                        title="複数の企業を選択してエクスポート"
+                                    <button type="button" id="toggleSelectModeBtn" title="複数の企業を選択してエクスポート"
                                         class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-9 px-3 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
                                         <span class="material-symbols-outlined text-base">check_box</span>
                                         <span class="truncate">選択モード</span>
                                     </button>
-                                    <button type="button" id="openExportModalBtn"
-                                        title="企業データをExcelファイルとして出力"
+                                    <button type="button" id="openExportModalBtn" title="企業データをExcelファイルとして出力"
                                         class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-9 px-3 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
                                         <span class="material-symbols-outlined text-base">download</span>
                                         <span class="truncate">エクスポート</span>
                                     </button>
-                                    <button th:formaction="@{companies/template}"
-                                        title="インポート用のExcelテンプレートをダウンロード"
+                                    <button th:formaction="@{companies/template}" title="インポート用のExcelテンプレートをダウンロード"
                                         class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-9 px-3 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
                                         <span class="material-symbols-outlined text-base">description</span>
                                         <span class="truncate">テンプレートDL</span>
                                     </button>
-                                    <button th:formaction="@{companies/trash}"
-                                        title="削除した企業の履歴を表示"
+                                    <button th:formaction="@{companies/trash}" title="削除した企業の履歴を表示"
                                         class="flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
                                         <span class="material-symbols-outlined text-xl">delete_history</span>
                                     </button>
@@ -444,8 +439,7 @@
                             </thead>
                             <tbody>
                                 <tr th:if="${page.totalElements == 0}" class="js-empty-row">
-                                    <td colspan="9"
-                                        class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
+                                    <td colspan="9" class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
                                         該当データがありません
                                     </td>
                                 </tr>
@@ -720,103 +714,103 @@
             </div>
         </div>
         <script>
-                (function () {
-                    const STORAGE_KEY = 'companyListVisibleColumns';
+            (function () {
+                const STORAGE_KEY = 'companyListVisibleColumns';
 
-                    // デフォルトの表示設定（全て表示）
-                    const defaultSettings = {
-                        companyId: false,
-                        companyName: true,
-                        address: true,
-                        zipCode: true,
-                        registrationDate: true,
-                        remarks: true
-                    };
+                // デフォルトの表示設定（全て表示）
+                const defaultSettings = {
+                    companyId: false,
+                    companyName: true,
+                    address: true,
+                    zipCode: true,
+                    registrationDate: true,
+                    remarks: true
+                };
 
-                    // localStorageから設定を読み込む
-                    function loadSettings() {
-                        try {
-                            const saved = localStorage.getItem(STORAGE_KEY);
-                            return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
-                        } catch (e) {
-                            return defaultSettings;
+                // localStorageから設定を読み込む
+                function loadSettings() {
+                    try {
+                        const saved = localStorage.getItem(STORAGE_KEY);
+                        return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
+                    } catch (e) {
+                        return defaultSettings;
+                    }
+                }
+
+                // localStorageに設定を保存
+                function saveSettings(settings) {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+                }
+
+                // 列の表示/非表示を適用（テーブル内のth, tdのみ対象）
+                function applyColumnVisibility(settings) {
+                    Object.keys(settings).forEach(col => {
+                        const cells = document.querySelectorAll(`table [data-col="${col}"]`);
+                        cells.forEach(cell => {
+                            cell.style.display = settings[col] ? '' : 'none';
+                        });
+                    });
+                }
+
+                // チェックボックスの状態を設定に反映
+                function syncCheckboxes(settings) {
+                    const checkboxes = document.querySelectorAll('#columnSettings input[type="checkbox"]');
+                    checkboxes.forEach(cb => {
+                        const col = cb.dataset.col;
+                        if (col && settings[col] !== undefined) {
+                            cb.checked = settings[col];
                         }
-                    }
+                    });
+                }
 
-                    // localStorageに設定を保存
-                    function saveSettings(settings) {
-                        localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-                    }
+                // 初期化
+                function init() {
+                    const settings = loadSettings();
+                    syncCheckboxes(settings);
+                    applyColumnVisibility(settings);
 
-                    // 列の表示/非表示を適用（テーブル内のth, tdのみ対象）
-                    function applyColumnVisibility(settings) {
-                        Object.keys(settings).forEach(col => {
-                            const cells = document.querySelectorAll(`table [data-col="${col}"]`);
-                            cells.forEach(cell => {
-                                cell.style.display = settings[col] ? '' : 'none';
-                            });
+                    // チェックボックスの変更イベント（リアルタイム反映）
+                    const checkboxes = document.querySelectorAll('#columnSettings input[type="checkbox"]:not(:disabled)');
+                    checkboxes.forEach(cb => {
+                        cb.addEventListener('change', function () {
+                            const col = this.dataset.col;
+                            settings[col] = this.checked;
+                            applyColumnVisibility(settings);
+                            saveSettings(settings);
                         });
-                    }
+                    });
+                }
 
-                    // チェックボックスの状態を設定に反映
-                    function syncCheckboxes(settings) {
-                        const checkboxes = document.querySelectorAll('#columnSettings input[type="checkbox"]');
-                        checkboxes.forEach(cb => {
-                            const col = cb.dataset.col;
-                            if (col && settings[col] !== undefined) {
-                                cb.checked = settings[col];
-                            }
-                        });
-                    }
+                // DOMContentLoaded後に実行
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', init);
+                } else {
+                    init();
+                }
 
-                    // 初期化
-                    function init() {
-                        const settings = loadSettings();
-                        syncCheckboxes(settings);
-                        applyColumnVisibility(settings);
+                // 設定メニューの表示切り替え
+                const settingsButton = document.getElementById('settingsButton');
+                const settingsDropdown = document.getElementById('settingsDropdown');
 
-                        // チェックボックスの変更イベント（リアルタイム反映）
-                        const checkboxes = document.querySelectorAll('#columnSettings input[type="checkbox"]:not(:disabled)');
-                        checkboxes.forEach(cb => {
-                            cb.addEventListener('change', function () {
-                                const col = this.dataset.col;
-                                settings[col] = this.checked;
-                                applyColumnVisibility(settings);
-                                saveSettings(settings);
-                            });
-                        });
-                    }
+                if (settingsButton && settingsDropdown) {
+                    settingsButton.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        settingsDropdown.classList.toggle('hidden');
+                    });
 
-                    // DOMContentLoaded後に実行
-                    if (document.readyState === 'loading') {
-                        document.addEventListener('DOMContentLoaded', init);
-                    } else {
-                        init();
-                    }
+                    // メニュー外クリックで閉じる
+                    document.addEventListener('click', function (e) {
+                        if (!settingsDropdown.contains(e.target) && !settingsButton.contains(e.target)) {
+                            settingsDropdown.classList.add('hidden');
+                        }
+                    });
 
-                    // 設定メニューの表示切り替え
-                    const settingsButton = document.getElementById('settingsButton');
-                    const settingsDropdown = document.getElementById('settingsDropdown');
-
-                    if (settingsButton && settingsDropdown) {
-                        settingsButton.addEventListener('click', function (e) {
-                            e.stopPropagation();
-                            settingsDropdown.classList.toggle('hidden');
-                        });
-
-                        // メニュー外クリックで閉じる
-                        document.addEventListener('click', function (e) {
-                            if (!settingsDropdown.contains(e.target) && !settingsButton.contains(e.target)) {
-                                settingsDropdown.classList.add('hidden');
-                            }
-                        });
-
-                        // メニュー内のクリックイベント伝播を止める（チェックボックス操作で閉じないようにするため）
-                        settingsDropdown.addEventListener('click', function (e) {
-                            e.stopPropagation();
-                        });
-                    }
-                })();
+                    // メニュー内のクリックイベント伝播を止める（チェックボックス操作で閉じないようにするため）
+                    settingsDropdown.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                    });
+                }
+            })();
 
             (function () {
                 const lastUrl = sessionStorage.getItem('lastListUrl');
