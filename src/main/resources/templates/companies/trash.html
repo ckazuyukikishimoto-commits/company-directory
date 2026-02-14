@@ -138,12 +138,13 @@
         }
     </style>
 
-    <script>
+    <script th:inline="javascript">
             (function () {
                 const currentUrl = window.location.href;
                 const lastUrl = sessionStorage.getItem('lastTrashUrl');
+                const hasFlashMessage = /*[[${successMessage != null || errorMessage != null}]]*/ false;
 
-                if (!window.location.search && lastUrl && lastUrl !== currentUrl) {
+                if (!hasFlashMessage && !window.location.search && lastUrl && lastUrl !== currentUrl) {
                     window.location.replace(lastUrl);
                     return;
                 }
@@ -430,6 +431,14 @@
                                 <div class="flex items-center gap-2 text-sm text-archive-text-dim">
                                     <span
                                         th:text="${(page.number * page.size + 1) + '-' + (page.number * page.size + page.numberOfElements) + ' of ' + page.totalElements + '件'}"></span>
+                                    <div class="flex items-center gap-2">
+                                        <span>ページ</span>
+                                        <input id="pageJumpInput" type="number" min="1"
+                                            th:attr="max=${page.totalPages > 0 ? page.totalPages : 1}"
+                                            th:value="${page.totalPages == 0 ? 1 : page.number + 1}"
+                                            class="w-16 rounded-md bg-archive-dark-panel border-archive-dark-border focus:ring-primary focus:border-primary h-8 text-sm text-center text-archive-text" />
+                                        <span th:text="|/ ${page.totalPages}|">/ 1</span>
+                                    </div>
                                     <div class="flex gap-1 text-archive-text">
                                         <!-- First Page -->
                                         <a th:href="@{/companies/trash(page=0, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
@@ -476,7 +485,7 @@
         </div>
     </div>
 
-    <script>
+    <script th:inline="javascript">
         (function () {
             const STORAGE_KEY = 'trashListVisibleColumns';
 
@@ -683,6 +692,40 @@
                             updateIcons(column, nextDirection);
                         }
                     });
+                });
+            })();
+
+            // Page Jump Logic
+            (function () {
+                const input = document.getElementById('pageJumpInput');
+                if (!input) return;
+
+                const max = parseInt(input.getAttribute('max') || '1', 10);
+                const clampPage = (value) => Math.min(Math.max(value, 1), max);
+
+                function jumpToPage(value) {
+                    const pageNumber = clampPage(value) - 1;
+                    const params = new URLSearchParams(window.location.search);
+                    params.set('page', pageNumber.toString());
+                    const query = params.toString();
+                    window.location.href = `${window.location.pathname}${query ? `?${query}` : ''}`;
+                }
+
+                input.addEventListener('change', () => {
+                    const value = parseInt(input.value || '1', 10);
+                    if (!Number.isNaN(value)) {
+                        jumpToPage(value);
+                    }
+                });
+
+                input.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        const value = parseInt(input.value || '1', 10);
+                        if (!Number.isNaN(value)) {
+                            jumpToPage(value);
+                        }
+                    }
                 });
             })();
 
