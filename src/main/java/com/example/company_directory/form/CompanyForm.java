@@ -27,4 +27,19 @@ public class CompanyForm {
     private String remarks;
 
     private java.util.List<com.example.company_directory.dto.ImportRowDto> rows;
+
+    public void setZipCode(String zipCode) {
+        if (zipCode == null) {
+            this.zipCode = null;
+            return;
+        }
+
+        String normalized = zipCode.trim();
+        if (normalized.matches("\\d{7}")) {
+            this.zipCode = normalized.substring(0, 3) + "-" + normalized.substring(3);
+            return;
+        }
+
+        this.zipCode = normalized;
+    }
 }

@@ -132,9 +132,24 @@ public class ExcelImportService {
         return s == null || s.trim().isEmpty();
     }
 
+    private String normalizeZipCode(String zipCode) {
+        if (zipCode == null) {
+            return null;
+        }
+
+        String normalized = zipCode.trim();
+        if (normalized.matches("\\d{7}")) {
+            return normalized.substring(0, 3) + "-" + normalized.substring(3);
+        }
+
+        return normalized;
+    }
+
     // 行データのエラーチェック
     private List<String> validateRow(ImportRowDto row, Set<String> excelCompanyIdSet, Set<String> dbCompanyIdSet) {
         List<String> errors = new ArrayList<>();
+
+        row.setZipCode(normalizeZipCode(row.getZipCode()));
 
         // -------- 1. 必須チェック --------
         if (isBlank(row.getCompanyName())) {
@@ -402,7 +417,7 @@ public class ExcelImportService {
             // DTO -> Entity 詰め替え
             company.setCompanyName(row.getCompanyName());
             company.setAddress(row.getAddress());
-            company.setZipCode(row.getZipCode());
+            company.setZipCode(normalizeZipCode(row.getZipCode()));
             company.setRemarks(row.getRemarks());
 
             if (StringUtils.hasText(row.getRegistrationDate())) {

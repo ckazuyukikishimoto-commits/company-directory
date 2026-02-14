@@ -241,8 +241,17 @@
     const btnSearch = document.getElementById('btnZipSearch');
     const addressInput = document.getElementById('address');
 
+    function normalizeZipCodeInput() {
+      const digits = zipInput.value.replace(/[^0-9]/g, '');
+      if (digits.length === 7) {
+        zipInput.value = `${digits.slice(0, 3)}-${digits.slice(3)}`;
+      }
+    }
+
     // ボタンクリックで実行
     btnSearch.addEventListener('click', fetchAddress);
+
+    zipInput.addEventListener('blur', normalizeZipCodeInput);
 
     // エンターキーでも実行 (フォーム送信を防ぐ)
     zipInput.addEventListener('keydown', function (e) {
@@ -253,7 +262,8 @@
     });
 
     function fetchAddress() {
-      const zip = zipInput.value.replace('-', '');
+      normalizeZipCodeInput();
+      const zip = zipInput.value.replace(/-/g, '');
       if (zip.length < 7) {
         alert("郵便番号は7桁で入力してください");
         return;

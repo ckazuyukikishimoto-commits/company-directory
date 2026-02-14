@@ -48,6 +48,16 @@
 </head>
 
 <body class="font-display bg-background-light dark:bg-background-dark">
+    <div id="uploadLoadingOverlay"
+        class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center px-4">
+        <div class="rounded-xl bg-[#13272b] border border-white/10 px-6 py-5 flex items-center gap-4 text-white">
+            <span class="material-symbols-outlined animate-spin text-primary text-3xl">progress_activity</span>
+            <div>
+                <p class="font-bold">Excel解析中...</p>
+                <p class="text-sm text-slate-300">アップロード後の検証が完了するまでお待ちください。</p>
+            </div>
+        </div>
+    </div>
     <!-- 成功メッセージ -->
     <div th:if="${successMessage}" class="p-4 mb-4 text-green-800 rounded-lg bg-green-100">
         <span th:text="${successMessage}"></span>
@@ -607,6 +617,13 @@
             return true;
         }
 
+        function showUploadLoading() {
+            const overlay = document.getElementById('uploadLoadingOverlay');
+            if (overlay) {
+                overlay.classList.remove('hidden');
+            }
+        }
+
         function setFile(file) {
             // ファイル名を表示
             document.getElementById('uploadText').textContent = `選択されたファイル: ${file.name}`;
@@ -615,6 +632,7 @@
             const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
             const confirmMessage = `ファイル名: ${file.name}\nファイルサイズ: ${fileSizeMB} MB\n\nこのファイルをアップロードして解析を開始しますか？`;
             if (confirm(confirmMessage)) {
+                showUploadLoading();
                 document.getElementById('uploadForm').submit();
             } else {
                 // キャンセルされた場合は選択をリセット
