@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="dark" lang="ja" xmlns:th="http://www.thymeleaf.org">
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
 
 <head>
     <meta charset="utf-8" />
@@ -18,12 +18,13 @@
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#137fec",
-                        "background-light": "#f6f7f8",
-                        "background-dark": "#111418",
+                        "primary": "#0066cc",
+                        "background-light": "#fffbf0",
+                        "background-dark": "#fffbf0",
+                        "text-light-primary": "#222222",
                     },
                     fontFamily: {
-                        "display": ["Inter", "Noto Sans JP", "sans-serif"]
+                        "display": ["Noto Sans JP", "Inter", "sans-serif"]
                     },
                 },
             },
@@ -40,31 +41,18 @@
             border: none !important;
             width: 100% !important;
             height: 100% !important;
-            padding-left: 0.5rem !important;
-            padding-right: 0.5rem !important;
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
             outline: none !important;
-            font-size: 0.875rem !important;
-            line-height: 1.25rem !important;
-            color: #1f2937 !important;
-            /* ライトモード：濃いグレー */
-        }
-
-        .dark .grid-input {
-            color: #ffffff !important;
-            /* ダークモード：白 */
-        }
-
-        /* 背景色が反映されない問題の対策 */
-        .dark .bg-white {
-            background-color: #1c2126 !important;
-        }
-
-        .dark .bg-gray-50 {
-            background-color: #283039 !important;
+            font-size: 1rem !important;
+            /* 16px */
+            line-height: 1.5rem !important;
+            color: #222222 !important;
         }
 
         .grid-input:focus {
-            box-shadow: 0 0 0 2px #137fec !important;
+            box-shadow: inset 0 0 0 2px #0066cc !important;
+            background-color: #fff !important;
         }
 
         .row-error {
@@ -93,26 +81,25 @@
     </style>
 </head>
 
-<body class="font-display bg-background-light dark:bg-background-dark min-h-screen">
+<body class="font-display bg-background-light min-h-screen">
     <div class="flex flex-col min-h-screen">
         <!-- Header Area -->
-        <header
-            class="flex items-center justify-between border-b border-[#e7e9eb] dark:border-[#283039] px-6 py-3 bg-white dark:bg-background-dark">
-            <h1 class="text-xl font-bold dark:text-white">まとめて企業登録</h1>
-            <div class="flex items-center gap-3">
+        <header class="flex items-center justify-between border-b border-gray-300 px-6 py-4 bg-white shadow-sm">
+            <h1 class="text-2xl font-bold text-gray-900">まとめて企業登録</h1>
+            <div class="flex items-center gap-4">
                 <!-- バリデーションチェックボタンのコンテナ（ツールチップ用） -->
                 <div class="relative group">
                     <button id="validateBtn" disabled
-                        class="flex items-center gap-2 rounded-md h-9 px-4 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold hover:bg-gray-300 dark:hover:bg-[#3b4754] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                        <span class="material-symbols-outlined text-sm">spellcheck</span>
+                        class="flex items-center gap-2 rounded-lg h-10 px-5 bg-gray-200 text-gray-800 text-base font-bold hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                        <span class="material-symbols-outlined text-xl">spellcheck</span>
                         バリデーションチェック
                         <span class="text-xs opacity-60">(Ctrl+Enter)</span>
                     </button>
                     <!-- 無効時のツールチップ -->
                     <div id="validateBtnTooltip"
-                        class="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                        class="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
                         <div
-                            class="absolute -top-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900 dark:border-b-gray-700">
+                            class="absolute -top-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-800">
                         </div>
                         <span id="validateBtnTooltipText">入力されたデータがありません</span>
                     </div>
@@ -120,21 +107,21 @@
                 <!-- 登録ボタンのコンテナ（ツールチップ用） -->
                 <div class="relative group">
                     <button id="registerBtn" disabled
-                        class="flex items-center gap-2 rounded-md h-9 px-4 bg-primary text-white text-sm font-bold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                        <span class="material-symbols-outlined text-sm">save</span>
+                        class="flex items-center gap-2 rounded-lg h-10 px-5 bg-primary text-white text-base font-bold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                        <span class="material-symbols-outlined text-xl">save</span>
                         登録する
                     </button>
                     <!-- 無効時のツールチップ -->
                     <div id="registerBtnTooltip"
-                        class="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                        class="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
                         <div
-                            class="absolute -top-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900 dark:border-b-gray-700">
+                            class="absolute -top-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-800">
                         </div>
                         <span id="registerBtnTooltipText">先にバリデーションチェックを実行してください</span>
                     </div>
                 </div>
                 <a th:href="@{/companies}" id="cancelBtn"
-                    class="flex items-center gap-2 rounded-md h-9 px-4 bg-white dark:bg-transparent border border-gray-300 dark:border-[#283039] text-gray-800 dark:text-white text-sm font-bold hover:bg-gray-100 dark:hover:bg-[#283039] transition-colors">
+                    class="flex items-center gap-2 rounded-lg h-10 px-5 bg-white border border-gray-300 text-gray-800 text-base font-bold hover:bg-gray-100 transition-colors">
                     キャンセル
                 </a>
             </div>
@@ -159,33 +146,33 @@
                 class="bg-white dark:bg-[#1c2126] rounded-xl border border-[#e7e9eb] dark:border-[#283039] shadow-sm overflow-hidden min-w-[1000px]">
                 <table class="w-full border-collapse">
                     <thead>
-                        <tr class="bg-gray-50 dark:bg-[#283039] border-b border-[#e7e9eb] dark:border-[#3b4754]">
+                        <tr class="bg-gray-100 border-b border-gray-300">
                             <th
-                                class="w-12 py-3 px-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                class="w-14 py-4 px-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">
                                 No</th>
                             <th
-                                class="w-24 py-3 px-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                class="w-28 py-4 px-2 text-center text-sm font-bold text-gray-800 uppercase tracking-wider">
                                 ステータス</th>
-                            <th class="py-3 px-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">企業名
+                            <th class="py-4 px-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">企業名
                                 <span class="text-red-500">*</span>
                             </th>
                             <th
-                                class="w-32 py-3 px-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                class="w-36 py-4 px-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">
                                 郵便番号 <span class="text-red-500">*</span></th>
-                            <th class="py-3 px-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">住所
+                            <th class="py-4 px-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">住所
                                 <span class="text-red-500">*</span>
                             </th>
-                            <th class="py-3 px-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">備考
+                            <th class="py-4 px-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">備考
                             </th>
                             <th
-                                class="w-48 py-3 px-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                class="w-56 py-4 px-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">
                                 エラー詳細</th>
                             <th
-                                class="w-28 py-3 px-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                class="w-32 py-4 px-2 text-center text-sm font-bold text-gray-800 uppercase tracking-wider">
                                 操作</th>
                         </tr>
                     </thead>
-                    <tbody id="batchTableBody" class="divide-y divide-[#e7e9eb] dark:divide-[#283039]">
+                    <tbody id="batchTableBody" class="divide-y divide-gray-200">
                         <!-- Dynamic Rows Here -->
                     </tbody>
                 </table>
@@ -290,11 +277,11 @@
             rowCount++;
             const rowId = `row-${rowCount}`;
             return `
-                <tr id="${rowId}" class="group hover:bg-gray-50 dark:hover:bg-[#283039]/50 transition-colors">
-                    <td class="py-2 px-2 text-xs text-gray-400 font-mono row-no text-center">${index}</td>
-                    <td class="py-2 px-2 text-center col-status">
-                        <span class="inline-flex items-center gap-1 text-xs text-gray-400">
-                            <span class="h-2 w-2 rounded-full bg-gray-300 dark:bg-gray-600"></span>
+                <tr id="${rowId}" class="group hover:bg-blue-50 transition-colors">
+                    <td class="py-3 px-2 text-sm text-gray-500 font-mono row-no text-center">${index}</td>
+                    <td class="py-3 px-2 text-center col-status">
+                        <span class="inline-flex items-center gap-1 text-xs text-gray-500">
+                            <span class="h-2 w-2 rounded-full bg-gray-400"></span>
                             <span class="status-text">未検証</span>
                         </span>
                     </td>
@@ -302,12 +289,12 @@
                     <td class="px-1"><input type="text" class="grid-input col-zip" placeholder="000-0000" maxlength="8" value="${data.zipCode || ''}"></td>
                     <td class="px-1"><input type="text" class="grid-input col-address" placeholder="東京都..." value="${data.address || ''}"></td>
                     <td class="px-1"><input type="text" class="grid-input col-remarks" placeholder="メモ" value="${data.remarks || ''}"></td>
-                    <td class="py-2 px-2 text-xs col-error-detail text-gray-400">-</td>
-                    <td class="py-2 px-2">
+                    <td class="py-3 px-2 text-xs col-error-detail text-gray-400">-</td>
+                    <td class="py-3 px-2">
                         <div class="flex items-center justify-center gap-1">
-                            <button type="button" class="insert-above p-1 hover:text-primary dark:text-gray-400" title="上に挿入"><span class="material-symbols-outlined text-lg">add_box</span></button>
-                            <button type="button" class="insert-below p-1 hover:text-primary dark:text-gray-400" title="下に挿入"><span class="material-symbols-outlined text-lg">add_circle</span></button>
-                            <button type="button" class="delete-row p-1 hover:text-red-500 dark:text-gray-400" title="削除"><span class="material-symbols-outlined text-lg">delete</span></button>
+                            <button type="button" class="insert-above p-1.5 hover:text-primary transition-colors" title="上に挿入"><span class="material-symbols-outlined text-xl">add_box</span></button>
+                            <button type="button" class="insert-below p-1.5 hover:text-primary transition-colors" title="下に挿入"><span class="material-symbols-outlined text-xl">add_circle</span></button>
+                            <button type="button" class="delete-row p-1.5 hover:text-red-500 transition-colors" title="削除"><span class="material-symbols-outlined text-xl">delete</span></button>
                         </div>
                     </td>
                 </tr>

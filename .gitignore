@@ -1,39 +1,19 @@
-HELP.md
-.gradle
+# Secrets (機密情報)
+.env
+*.local
+
+# Java / Gradle (ビルド関連)
 build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
+.gradle/
 bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
-
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
 out/
-!**/src/main/**/out/
-!**/src/test/**/out/
+build.log
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-
-### VS Code ###
+# IDE (エディタ関連)
+.idea/
+*.iml
 .vscode/
 
-仕様書/
+# OS (システム関連)
+.DS_Store
+Thumbs.db

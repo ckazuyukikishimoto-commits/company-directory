@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="dark" lang="ja">
+<html lang="ja">
 
 <head>
     <meta charset="utf-8" />
@@ -23,17 +23,18 @@
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#13c8ec",
-                        "background-light": "#f6f8f8",
-                        "background-dark": "#101f22",
+                        "primary": "#0066cc",
+                        "background-light": "#fffbf0",
+                        "background-dark": "#fffbf0",
+                        "text-light-primary": "#222222",
                     },
                     fontFamily: {
-                        "display": ["Space Grotesk", "sans-serif"]
+                        "display": ["Noto Sans JP", "Space Grotesk", "sans-serif"]
                     },
                     borderRadius: {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem",
                         "full": "9999px"
                     },
                 },
@@ -47,32 +48,32 @@
     </style>
 </head>
 
-<body class="font-display bg-background-light dark:bg-background-dark">
+<body class="font-display bg-background-light text-text-light-primary">
     <div id="uploadLoadingOverlay"
         class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center px-4">
-        <div class="rounded-xl bg-[#13272b] border border-white/10 px-6 py-5 flex items-center gap-4 text-white">
-            <span class="material-symbols-outlined animate-spin text-primary text-3xl">progress_activity</span>
+        <div class="rounded-xl bg-white border border-gray-300 px-8 py-6 flex items-center gap-4 shadow-xl">
+            <span class="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span>
             <div>
-                <p class="font-bold">Excel解析中...</p>
-                <p class="text-sm text-slate-300">アップロード後の検証が完了するまでお待ちください。</p>
+                <p class="font-bold text-gray-900 text-lg">Excel解析中...</p>
+                <p class="text-base text-gray-600">アップロード後の検証が完了するまでお待ちください。</p>
             </div>
         </div>
     </div>
     <!-- 成功メッセージ -->
-    <div th:if="${successMessage}" class="p-4 mb-4 text-green-800 rounded-lg bg-green-100">
+    <div th:if="${successMessage}" class="p-4 mb-4 text-green-800 rounded-lg bg-green-100 border border-green-200">
         <span th:text="${successMessage}"></span>
     </div>
 
     <!-- エラーメッセージ -->
-    <div th:if="${errorMessage}" class="p-4 mb-4 text-red-800 rounded-lg bg-red-100">
+    <div th:if="${errorMessage}" class="p-4 mb-4 text-red-800 rounded-lg bg-red-100 border border-red-200">
         <span th:text="${errorMessage}"></span>
     </div>
     <div class="relative flex h-auto min-h-screen w-full flex-col">
         <div class="layout-container flex h-full grow flex-col">
             <header
-                class="flex items-center justify-between whitespace-nowrap border-b border-solid border-white/10 px-6 sm:px-10 py-3 font-display">
-                <div class="flex items-center gap-4 text-white">
-                    <div class="size-6 text-primary">
+                class="flex items-center justify-between whitespace-nowrap border-b border-gray-300 px-6 sm:px-10 py-4 font-display bg-white shadow-sm">
+                <div class="flex items-center gap-4 text-gray-900">
+                    <div class="size-8 text-primary">
                         <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
                             <path
                                 d="M13.8261 30.5736C16.7203 29.8826 20.2244 29.4783 24 29.4783C27.7756 29.4783 31.2797 29.8826 34.1739 30.5736C36.9144 31.2278 39.9967 32.7669 41.3563 33.8352L24.8486 7.36089C24.4571 6.73303 23.5429 6.73303 23.1514 7.36089L6.64374 33.8352C8.00331 32.7669 11.0856 31.2278 13.8261 30.5736Z"
@@ -82,7 +83,7 @@
                                 fill="currentColor" fill-rule="evenodd"></path>
                         </svg>
                     </div>
-                    <h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em]">データアップロード制御ステーション</h2>
+                    <h2 class="text-gray-900 text-xl font-bold leading-tight tracking-[-0.015em]">データアップロード</h2>
                 </div>
                 <div class="flex flex-1 justify-end gap-2 sm:gap-4"></div>
             </header>
@@ -90,30 +91,30 @@
                 <div class="layout-content-container flex flex-col max-w-7xl mx-auto gap-8">
                     <div class="flex flex-wrap justify-between gap-4">
                         <div class="flex min-w-72 flex-col gap-2">
-                            <p class="text-white text-4xl font-black leading-tight tracking-[-0.033em]">
-                                データアップロード制御ステーション</p>
-                            <p class="text-slate-400 dark:text-slate-400 text-base font-normal leading-normal">
-                                外部のデータストリームをシステムに取り込み、品質監査し、最終的に登録します。</p>
+                            <p class="text-gray-900 text-3xl font-black leading-tight tracking-[-0.033em]">
+                                Excelデータアップロード</p>
+                            <p class="text-gray-700 text-lg font-normal leading-normal">
+                                Excelファイルをアップロードして、データを一括登録します。</p>
                         </div>
                     </div>
                     <div class="flex flex-col gap-8">
                         <form id="uploadForm" th:action="@{/companies/import}" method="post"
                             enctype="multipart/form-data">
-                            <div class="flex flex-col items-center gap-6 rounded-xl border-2 border-dashed border-white/20 px-6 py-14 bg-white/5 hover:border-primary/80 transition-colors duration-300"
+                            <div class="flex flex-col items-center gap-6 rounded-xl border-2 border-dashed border-gray-400 px-6 py-16 bg-gray-50 hover:border-primary hover:bg-blue-50 transition-colors duration-300"
                                 id="dropZone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)"
                                 ondrop="handleDrop(event)">
-                                <div class="flex max-w-[480px] flex-col items-center gap-2">
-                                    <span class="material-symbols-outlined text-primary text-5xl">upload_file</span>
-                                    <p class="text-white text-lg font-bold leading-tight tracking-[-0.015em] max-w-[480px] text-center"
-                                        id="uploadText">データストリームをここに注入</p>
+                                <div class="flex max-w-[480px] flex-col items-center gap-3">
+                                    <span class="material-symbols-outlined text-primary text-6xl">upload_file</span>
+                                    <p class="text-gray-900 text-xl font-bold leading-tight tracking-[-0.015em] max-w-[480px] text-center"
+                                        id="uploadText">Excelファイルをアップロード</p>
                                     <p
-                                        class="text-slate-400 dark:text-slate-400 text-sm font-normal leading-normal max-w-[480px] text-center">
+                                        class="text-gray-600 text-base font-normal leading-normal max-w-[480px] text-center">
                                         ファイルをドラッグ＆ドロップするか、クリックして選択</p>
                                 </div>
                                 <input type="file" id="fileInput" name="file" accept=".xlsx" style="display: none;"
                                     onchange="handleFileSelect(event)" aria-label="Excelファイルを選択">
                                 <button type="button"
-                                    class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-white/10 text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-white/20 transition-colors"
+                                    class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-6 bg-primary text-white text-base font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors shadow-md"
                                     onclick="document.getElementById('fileInput').click()" aria-label="ファイル選択ダイアログを開く">
                                     <span class="truncate">ファイルを選択</span>
                                 </button>
@@ -121,66 +122,71 @@
                         </form>
                     </div>
                     <div th:if="${importResult != null}">
-                        <h2 class="text-white text-[22px] font-bold leading-tight tracking-[-0.015em] pt-5">一次品質監査レポート
+                        <h2 class="text-gray-900 text-2xl font-bold leading-tight tracking-[-0.015em] pt-5">アップロード結果
                         </h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             <div onclick="filterTable('all')" data-filter-card="all" class="cursor-pointer"
                                 role="button" aria-pressed="true" tabindex="0">
-                                <div class="rounded-xl p-6 bg-white/5 border border-white/10 flex flex-col gap-2">
-                                    <p class="text-sm text-slate-400">総件数</p>
-                                    <p class="text-4xl font-bold text-white" th:text="${importResult.totalCount}"></p>
+                                <div
+                                    class="rounded-xl p-6 bg-white border border-gray-300 shadow-sm flex flex-col gap-2 hover:shadow-md transition-shadow">
+                                    <p class="text-base text-gray-600 font-bold">総件数</p>
+                                    <p class="text-4xl font-bold text-gray-900" th:text="${importResult.totalCount}">
+                                    </p>
                                 </div>
                             </div>
                             <div onclick="filterTable('success')" data-filter-card="success" class="cursor-pointer"
                                 role="button" aria-pressed="false" tabindex="0">
-                                <div class="rounded-xl p-6 bg-white/5 border border-white/10 flex flex-col gap-2">
-                                    <p class="text-sm text-slate-400">正常</p>
-                                    <p class="text-4xl font-bold text-green-400" th:text="${importResult.successCount}">
+                                <div
+                                    class="rounded-xl p-6 bg-white border border-gray-300 shadow-sm flex flex-col gap-2 hover:shadow-md transition-shadow">
+                                    <p class="text-base text-gray-600 font-bold">正常</p>
+                                    <p class="text-4xl font-bold text-green-600" th:text="${importResult.successCount}">
                                     </p>
                                 </div>
                             </div>
                             <div onclick="filterTable('warning')" data-filter-card="warning" class="cursor-pointer"
                                 role="button" aria-pressed="false" tabindex="0">
-                                <div class="rounded-xl p-6 bg-white/5 border border-white/10 flex flex-col gap-2">
-                                    <p class="text-sm text-slate-400">警告</p>
-                                    <p class="text-4xl font-bold text-yellow-400"
+                                <div
+                                    class="rounded-xl p-6 bg-white border border-gray-300 shadow-sm flex flex-col gap-2 hover:shadow-md transition-shadow">
+                                    <p class="text-base text-gray-600 font-bold">警告</p>
+                                    <p class="text-4xl font-bold text-yellow-600"
                                         th:text="${importResult.warningCount}"></p>
                                 </div>
                             </div>
                             <div onclick="filterTable('error')" data-filter-card="error" class="cursor-pointer"
                                 role="button" aria-pressed="false" tabindex="0">
-                                <div class="rounded-xl p-6 bg-white/5 border border-white/10 flex flex-col gap-2">
-                                    <p class="text-sm text-slate-400">エラー</p>
-                                    <p class="text-4xl font-bold text-red-500" th:text="${importResult.errorCount}"></p>
+                                <div
+                                    class="rounded-xl p-6 bg-white border border-gray-300 shadow-sm flex flex-col gap-2 hover:shadow-md transition-shadow">
+                                    <p class="text-base text-gray-600 font-bold">エラー</p>
+                                    <p class="text-4xl font-bold text-red-600" th:text="${importResult.errorCount}"></p>
                                 </div>
                             </div>
                         </div>
                         <div class="flex flex-col gap-6">
-                            <h2 class="text-white text-[22px] font-bold leading-tight tracking-[-0.015em] pt-5">
-                                深層検査プレビュー</h2>
-                            <div class="overflow-hidden rounded-xl border border-white/10 bg-white/5">
+                            <h2 class="text-gray-900 text-2xl font-bold leading-tight tracking-[-0.015em] pt-5">
+                                データプレビュー</h2>
+                            <div class="overflow-hidden rounded-xl border border-gray-300 bg-white shadow-sm">
                                 <div class="overflow-x-auto">
-                                    <table class="w-full text-left text-sm text-slate-300" role="table"
+                                    <table class="w-full text-left text-base text-gray-700" role="table"
                                         aria-label="インポートデータ検証結果">
-                                        <thead class="bg-white/5 text-xs uppercase text-slate-400">
+                                        <thead class="bg-gray-100 text-sm uppercase text-gray-700 font-bold">
                                             <tr>
-                                                <th class="px-6 py-3" scope="col">No.</th>
-                                                <th class="px-6 py-3" scope="col">企業ID</th>
-                                                <th class="px-6 py-3" scope="col">企業名</th>
-                                                <th class="px-6 py-3" scope="col">住所</th>
-                                                <th class="px-6 py-3" scope="col">郵便番号</th>
-                                                <th class="px-6 py-3" scope="col">登録日</th>
-                                                <th class="px-6 py-3" scope="col">備考</th>
-                                                <th class="px-6 py-3" scope="col">ステータス</th>
-                                                <th class="px-6 py-3" scope="col">エラー詳細</th>
+                                                <th class="px-6 py-4" scope="col">No.</th>
+                                                <th class="px-6 py-4" scope="col">企業ID</th>
+                                                <th class="px-6 py-4" scope="col">企業名</th>
+                                                <th class="px-6 py-4" scope="col">住所</th>
+                                                <th class="px-6 py-4" scope="col">郵便番号</th>
+                                                <th class="px-6 py-4" scope="col">登録日</th>
+                                                <th class="px-6 py-4" scope="col">備考</th>
+                                                <th class="px-6 py-4" scope="col">ステータス</th>
+                                                <th class="px-6 py-4" scope="col">エラー詳細</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr class="border-b border-white/10"
+                                            <tr class="border-b border-gray-200"
                                                 th:attr="data-status=${row.isValid} ? (${row.hasWarning} ? 'warning' : 'success') : 'error'"
-                                                th:classappend="${row.isValid} ? (${row.hasWarning} ? 'bg-yellow-400/10' : '') : 'bg-red-500/10'"
+                                                th:classappend="${row.isValid} ? (${row.hasWarning} ? 'bg-yellow-50' : '') : 'bg-red-50'"
                                                 th:each="row : ${importResult.totalList}">
-                                                <th class="whitespace-nowrap px-6 py-4 font-medium text-white text-center"
+                                                <th class="whitespace-nowrap px-6 py-4 font-medium text-gray-900 text-center"
                                                     th:text="${row.rowNum == null} ? '-' : ${row.rowNum}"></th>
                                                 <td class="px-6 py-4"
                                                     th:text="${#strings.isEmpty(row.companyId)} ? '-' : ${row.companyId}">

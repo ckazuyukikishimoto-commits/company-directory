@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="dark" lang="ja" xmlns:th="http://www.thymeleaf.org">
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
 
 <head>
     <meta charset="utf-8" />
@@ -18,17 +18,19 @@
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#137fec",
-                        "background-light": "#f6f7f8",
-                        "background-dark": "#111418",
+                        "primary": "#0066cc", // Accessible Blue
+                        "background-light": "#fffbf0", // Warm White
+                        "background-dark": "#fffbf0", // Force Light
+                        "text-light-primary": "#222222",
+                        "text-light-secondary": "#444444",
                     },
                     fontFamily: {
-                        "display": ["Inter", "Noto Sans JP", "sans-serif"]
+                        "display": ["Noto Sans JP", "Inter", "sans-serif"]
                     },
                     borderRadius: {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem",
                         "full": "9999px"
                     },
                 },
@@ -172,16 +174,15 @@
     </style>
 </head>
 
-<body class="font-display bg-background-light dark:bg-background-dark">
-    <div id="page-loader" class="fixed inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-[#111418]/80">
-        <div class="flex items-center gap-3 rounded-lg bg-white/90 dark:bg-[#1c2127]/90 px-4 py-3 shadow">
-            <span class="material-symbols-outlined animate-spin text-primary">progress_activity</span>
-            <span class="text-sm text-gray-700 dark:text-gray-200">読み込み中...</span>
+<body class="font-display bg-background-light text-text-light-primary">
+    <div id="page-loader" class="fixed inset-0 z-50 flex items-center justify-center bg-white/80">
+        <div class="flex items-center gap-3 rounded-lg bg-white/90 px-6 py-4 shadow-xl border border-gray-200">
+            <span class="material-symbols-outlined animate-spin text-primary text-3xl">progress_activity</span>
+            <span class="text-base font-bold text-gray-800">読み込み中...</span>
         </div>
     </div>
 
-    <div
-        class="js-state-content relative flex h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-hidden">
+    <div class="js-state-content relative flex h-screen w-full flex-col bg-background-light overflow-hidden">
         <div class="flex h-full grow flex-col">
             <div class="px-4 sm:px-6 md:px-8 lg:px-10 flex flex-col h-full">
                 <div class="layout-content-container flex flex-col w-full mx-auto max-w-[1400px] flex-1 h-full py-4">
@@ -202,20 +203,20 @@
                                         <span class="material-symbols-outlined text-base">grid_on</span>
                                         <span class="truncate">まとめて追加</span>
                                     </button>
-                                    <button th:formaction="@{/companies/import}" title="Excelファイル(.xlsx)から企業データを一括インポート"
+                                    <button th:formaction="@{/companies/import}" title="Excelファイル(.xlsx)から企業データを一括登録"
                                         class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-9 px-3 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
                                         <span class="material-symbols-outlined text-base">upload_file</span>
-                                        <span class="truncate">Excelインポート</span>
+                                        <span class="truncate">Excelから登録</span>
                                     </button>
-                                    <button type="button" id="toggleSelectModeBtn" title="複数の企業を選択してエクスポート"
+                                    <button type="button" id="toggleSelectModeBtn" title="複数の企業を選択してダウンロード"
                                         class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-9 px-3 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
                                         <span class="material-symbols-outlined text-base">check_box</span>
                                         <span class="truncate">選択モード</span>
                                     </button>
-                                    <button type="button" id="openExportModalBtn" title="企業データをExcelファイルとして出力"
+                                    <button type="button" id="openExportModalBtn" title="企業データをExcelファイルとしてダウンロード"
                                         class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-9 px-3 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
                                         <span class="material-symbols-outlined text-base">download</span>
-                                        <span class="truncate">エクスポート</span>
+                                        <span class="truncate">Excelでダウンロード</span>
                                     </button>
                                     <button th:formaction="@{companies/template}" title="インポート用のExcelテンプレートをダウンロード"
                                         class="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-9 px-3 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
@@ -381,19 +382,17 @@
                         </div>
                     </div>
                 </div>
-                <div
-                    class="flex overflow-hidden rounded-lg border border-gray-300 dark:border-[#3b4754] bg-white dark:bg-background-dark flex-col flex-1">
+                <div class="flex overflow-hidden rounded-xl border border-gray-300 bg-white flex-col flex-1 shadow-sm">
                     <div class="overflow-y-auto flex-1">
-                        <table class="w-full min-w-[1200px] text-sm">
+                        <table class="w-full min-w-[1200px] text-base">
                             <thead class="sticky top-0 z-10">
-                                <tr class="bg-gray-50 dark:bg-[#1c2127]">
+                                <tr class="bg-[#f0f4f8] border-b border-gray-300">
                                     <th
-                                        class="select-checkbox-col hidden px-4 py-2.5 text-center w-[40px] font-medium leading-normal">
+                                        class="select-checkbox-col hidden px-4 py-4 text-center w-[50px] font-bold leading-normal text-gray-800">
                                         <input type="checkbox" id="selectAllCheckbox"
-                                            class="form-checkbox rounded text-primary focus:ring-primary/50 bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600" />
+                                            class="form-checkbox h-5 w-5 rounded text-primary focus:ring-primary/50 bg-white border-gray-400" />
                                     </th>
-                                    <th
-                                        class="px-4 py-2.5 text-center text-gray-600 dark:text-white w-[60px] font-medium leading-normal">
+                                    <th class="px-4 py-4 text-center text-gray-800 w-[70px] font-bold leading-normal">
                                         No.
                                     </th>
                                     <th data-col="companyId" data-sort-type="number"
@@ -439,12 +438,12 @@
                             </thead>
                             <tbody>
                                 <tr th:if="${page.totalElements == 0}" class="js-empty-row">
-                                    <td colspan="9" class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
+                                    <td colspan="9" class="px-4 py-16 text-center text-gray-600 text-lg">
                                         該当データがありません
                                     </td>
                                 </tr>
                                 <tr th:each="company, iterStat : ${companies}"
-                                    class="border-t border-t-gray-200 dark:border-t-[#3b4754] hover:bg-gray-50 dark:hover:bg-[#1c2127]/50">
+                                    class="border-b border-gray-200 hover:bg-blue-50 transition-colors">
                                     <td class="select-checkbox-col hidden px-4 py-2 text-center">
                                         <input type="checkbox" name="rowCheckbox" th:value="${company.companyId}"
                                             class="form-checkbox rounded text-primary focus:ring-primary/50 bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600" />
@@ -469,21 +468,23 @@
                                         class="px-4 py-2 text-gray-500 dark:text-[#9dabb9] font-normal leading-normal">
                                         [[${company.registrationDate}]]</td>
                                     <td data-col="remarks"
-                                        class="px-4 py-2 text-gray-500 dark:text-[#9dabb9] font-normal leading-normal truncate max-w-xs">
+                                        class="px-4 py-3 text-gray-800 font-normal leading-normal truncate max-w-xs">
                                         [[${company.remarks}]]</td>
-                                    <td data-col="actions" class="px-4 py-2 w-60 text-center">
-                                        <div class="flex justify-center gap-2">
+                                    <td data-col="actions" class="px-4 py-3 w-60 text-center">
+                                        <div class="flex justify-center gap-3">
                                             <a data-edit-link
                                                 th:href="@{/companies/edit/{id}(id=${company.companyId})}">
                                                 <button
-                                                    class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">
-                                                    <span class="material-symbols-outlined text-xl">edit</span>
+                                                    class="h-10 w-10 rounded-full flex items-center justify-center bg-blue-100 hover:bg-blue-200 text-primary transition-colors"
+                                                    title="編集">
+                                                    <span class="material-symbols-outlined text-2xl">edit</span>
                                                 </button>
                                             </a>
                                             <button type="button" th:data-id="${company.companyId}"
                                                 th:data-name="${company.companyName}" onclick="deleteCompany(this)"
-                                                class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">
-                                                <span class="material-symbols-outlined text-xl">delete</span>
+                                                class="h-10 w-10 rounded-full flex items-center justify-center bg-red-100 hover:bg-red-200 text-red-600 transition-colors"
+                                                title="削除">
+                                                <span class="material-symbols-outlined text-2xl">delete</span>
                                             </button>
                                         </div>
                                     </td>
