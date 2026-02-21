@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController // HTMLではなくJSONを返すコントローラー
 @RequestMapping("/api/zip")
@@ -20,9 +21,13 @@ public class ZipApiController {
      * GET /api/zip/1000005
      */
     @GetMapping("/{zipCode}")
-    public ResponseEntity<ZipMaster> getAddress(@PathVariable String zipCode) {
+    public ResponseEntity<?> getAddress(@PathVariable String zipCode) {
         // ハイフン除去
         String cleanZip = zipCode.replace("-", "");
+
+        if (!cleanZip.matches("\\d{7}")) {
+            return ResponseEntity.badRequest().body(Map.of("message", "郵便番号は7桁の数字で入力してください。"));
+        }
 
         ZipMaster master = zipMasterRepository.findByZipCode(cleanZip);
 
