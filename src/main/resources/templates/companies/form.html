@@ -136,6 +136,7 @@
           </div>
         </label>
         <div th:if="${#fields.hasErrors('zipCode')}" th:errors="*{zipCode}" class="text-red-500 text-sm mt-1"></div>
+        <p id="zipLookupMessage" class="text-sm mt-1 hidden"></p>
 
         <!-- 住所 -->
         <!-- 住所 -->
@@ -298,17 +299,52 @@
     const btnSearch = document.getElementById('btnZipSearch');
     const addressInput = document.getElementById('address');
 
+    const zipLookupMessage = document.getElementById('zipLookupMessage');
+    let lastFetchedZip = '';
+
+    function setZipLookupMessage(message, type = 'info') {
+      if (!zipLookupMessage) return;
+      if (!message) {
+        zipLookupMessage.classList.add('hidden');
+        zipLookupMessage.textContent = '';
+        return;
+      }
+
+      const colorClass = type === 'error' ? 'text-red-600' : type === 'success' ? 'text-green-600' : 'text-gray-600';
+      zipLookupMessage.className = `text-sm mt-1 ${colorClass}`;
+      zipLookupMessage.textContent = message;
+    }
+
     function normalizeZipCodeInput() {
       const digits = zipInput.value.replace(/[^0-9]/g, '');
       if (digits.length === 7) {
         zipInput.value = `${digits.slice(0, 3)}-${digits.slice(3)}`;
+      } else {
+        zipInput.value = digits.slice(0, 7);
       }
+
+      return digits;
     }
 
     // ボタンクリックで実行
     btnSearch.addEventListener('click', fetchAddress);
 
-    zipInput.addEventListener('blur', normalizeZipCodeInput);
+    zipInput.addEventListener('blur', () => {
+      const digits = normalizeZipCodeInput();
+      fetchAddress(digits);
+    });
+
+    zipInput.addEventListener('input', () => {
+      const digits = normalizeZipCodeInput();
+      if (digits.length < 7) {
+        lastFetchedZip = '';
+        setZipLookupMessage('');
+      }
+
+      if (digits.length === 7 && digits !== lastFetchedZip) {
+        fetchAddress(digits);
+      }
+    });
 
     // エンターキーでも実行 (フォーム送信を防ぐ)
     zipInput.addEventListener('keydown', function (e) {
@@ -318,20 +354,26 @@
       }
     });
 
-    function fetchAddress() {
-      normalizeZipCodeInput();
-      const zip = zipInput.value.replace(/-/g, '');
-      if (zip.length < 7) {
-        alert("郵便番号は7桁で入力してください");
+    function fetchAddress(zipDigits) {
+      const zip = zipDigits || normalizeZipCodeInput();
+      if (zip.length !== 7) {
+        setZipLookupMessage('郵便番号は7桁で入力してください。', 'error');
         return;
       }
+
+      setZipLookupMessage('住所を検索しています...');
 
       // 自作APIを呼び出す
       fetch(`/api/zip/${zip}`)
         .then(response => {
-          if (!response.ok) {
-            // 404などの場合
+          if (response.status === 400) {
+            throw new Error('InvalidZip');
+          }
+          if (response.status === 404) {
             throw new Error('NotFound');
+          }
+          if (!response.ok) {
+            throw new Error('Unexpected');
           }
           return response.json();
         })
@@ -339,10 +381,22 @@
           // ZipMasterのフィールド名に合わせて結合
           const fullAddress = (data.prefecture || '') + (data.city || '') + (data.town || '');
           addressInput.value = fullAddress;
+          lastFetchedZip = zip;
+          setZipLookupMessage('住所を自動入力しました。', 'success');
         })
         .catch(error => {
           console.error(error);
-          alert("該当する住所が見つかりませんでした。");
+          lastFetchedZip = '';
+          if (error.message === 'InvalidZip') {
+            setZipLookupMessage('郵便番号の形式が不正です。7桁の数字で入力してください。', 'error');
+            return;
+          }
+          if (error.message === 'NotFound') {
+            setZipLookupMessage('該当する住所が見つかりませんでした。郵便番号をご確認ください。', 'error');
+            return;
+          }
+
+          setZipLookupMessage('住所検索でエラーが発生しました。時間をおいて再度お試しください。', 'error');
         });
     }
 

@@ -337,6 +337,22 @@
         let rowCount = 0;
         let lastValidationResult = null;
 
+        function showStatusMessage(message, type = 'info') {
+            const colorClassMap = {
+                info: 'text-gray-500',
+                success: 'text-green-600',
+                error: 'text-red-600'
+            };
+            statusMessage.textContent = message;
+            statusMessage.className = `mt-4 text-sm ${colorClassMap[type] || colorClassMap.info}`;
+        }
+
+        function normalizeZipValue(input) {
+            const digits = input.value.replace(/[^0-9]/g, '').slice(0, 7);
+            input.value = digits.length === 7 ? `${digits.slice(0, 3)}-${digits.slice(3)}` : digits;
+            return digits;
+        }
+
         // 行のHTML生成
         function createRowHtml(index, data = {}) {
             rowCount++;
@@ -432,19 +448,70 @@
 
             // 郵便番号補完
             const zipInput = row.querySelector('.col-zip');
-            zipInput.onblur = async () => {
-                const zip = zipInput.value.replace(/-/g, '');
-                if (zip.length === 7) {
-                    try {
-                        const res = await fetch(`/api/zip/${zip}`);
-                        if (res.ok) {
-                            const data = await res.json();
-                            row.querySelector('.col-address').value = data.prefecture + data.city + data.town;
-                            saveDraft();
-                        }
-                    } catch (e) { }
+            let lastFetchedZip = '';
+
+            async function lookupAddress() {
+                const zip = normalizeZipValue(zipInput);
+                const addressInput = row.querySelector('.col-address');
+
+                if (zip.length === 0) {
+                    zipInput.classList.remove('ring-2', 'ring-red-500');
+                    lastFetchedZip = '';
+                    return;
                 }
-            };
+
+                if (zip.length !== 7) {
+                    zipInput.classList.add('ring-2', 'ring-red-500');
+                    showStatusMessage('郵便番号は7桁で入力してください。', 'error');
+                    lastFetchedZip = '';
+                    return;
+                }
+
+                if (zip === lastFetchedZip) {
+                    return;
+                }
+
+                try {
+                    const res = await fetch(`/api/zip/${zip}`);
+                    if (res.status === 404) {
+                        zipInput.classList.add('ring-2', 'ring-red-500');
+                        lastFetchedZip = '';
+                        showStatusMessage(`行${row.querySelector('.row-no').textContent}: 該当する住所が見つかりません。`, 'error');
+                        return;
+                    }
+                    if (res.status === 400) {
+                        zipInput.classList.add('ring-2', 'ring-red-500');
+                        lastFetchedZip = '';
+                        showStatusMessage(`行${row.querySelector('.row-no').textContent}: 郵便番号の形式が不正です。`, 'error');
+                        return;
+                    }
+                    if (!res.ok) {
+                        throw new Error('lookup failed');
+                    }
+
+                    const data = await res.json();
+                    addressInput.value = (data.prefecture || '') + (data.city || '') + (data.town || '');
+                    zipInput.classList.remove('ring-2', 'ring-red-500');
+                    lastFetchedZip = zip;
+                    showStatusMessage(`行${row.querySelector('.row-no').textContent}: 住所を自動入力しました。`, 'success');
+                    saveDraft();
+                } catch (e) {
+                    zipInput.classList.add('ring-2', 'ring-red-500');
+                    lastFetchedZip = '';
+                    showStatusMessage(`行${row.querySelector('.row-no').textContent}: 住所検索でエラーが発生しました。`, 'error');
+                }
+            }
+
+            zipInput.addEventListener('blur', lookupAddress);
+            zipInput.addEventListener('input', () => {
+                const zip = normalizeZipValue(zipInput);
+                if (zip.length < 7) {
+                    zipInput.classList.remove('ring-2', 'ring-red-500');
+                    lastFetchedZip = '';
+                    return;
+                }
+                lookupAddress();
+            });
 
             // Enterキーで行追加
             const remarksInput = row.querySelector('.col-remarks');
