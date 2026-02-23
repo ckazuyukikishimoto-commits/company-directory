@@ -78,6 +78,24 @@
         .dark .row-success {
             background-color: rgba(20, 83, 45, 0.1);
         }
+
+        /* Custom Scrollbar for Modal Results */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.5);
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(156, 163, 175, 0.8);
+        }
     </style>
 </head>
 
@@ -261,6 +279,53 @@
         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
     </form>
 
+    <!-- 企業名検索モーダル -->
+    <div id="companySearchModal" class="fixed inset-0 z-50 hidden" aria-hidden="true">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" id="companyModalBackdrop"></div>
+
+        <!-- Modal Content -->
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div
+                class="relative w-full max-w-lg transform rounded-2xl bg-white p-6 shadow-xl transition-all border border-gray-200">
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">apartment</span>
+                        企業名検索結果
+                    </h3>
+                    <button type="button" id="closeCompanyModal" class="text-gray-500 hover:text-gray-700">
+                        <span class="material-symbols-outlined text-2xl">close</span>
+                    </button>
+                </div>
+
+                <!-- 検索住所表示 -->
+                <div id="companySearchAddress" class="mb-4 px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-600">
+                </div>
+
+                <!-- ローディング -->
+                <div id="companySearchLoading" class="hidden py-8 text-center">
+                    <div class="inline-flex items-center gap-3 text-gray-500">
+                        <svg class="animate-spin h-6 w-6 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                            </circle>
+                            <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                            </path>
+                        </svg>
+                        <span class="text-base">検索中...</span>
+                    </div>
+                </div>
+
+                <!-- 結果リスト -->
+                <div id="companyResultList" class="custom-scrollbar max-h-72 overflow-y-auto flex flex-col gap-1">
+                    <!-- JSで追加 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script th:inline="javascript">
         const tableBody = document.getElementById('batchTableBody');
         const validateBtn = document.getElementById('validateBtn');
@@ -292,6 +357,7 @@
                     <td class="py-3 px-2 text-xs col-error-detail text-gray-400">-</td>
                     <td class="py-3 px-2">
                         <div class="flex items-center justify-center gap-1">
+                            <button type="button" class="btn-row-search p-1.5 hover:text-primary transition-colors" title="住所で企業検索"><span class="material-symbols-outlined text-xl">search</span></button>
                             <button type="button" class="insert-above p-1.5 hover:text-primary transition-colors" title="上に挿入"><span class="material-symbols-outlined text-xl">add_box</span></button>
                             <button type="button" class="insert-below p-1.5 hover:text-primary transition-colors" title="下に挿入"><span class="material-symbols-outlined text-xl">add_circle</span></button>
                             <button type="button" class="delete-row p-1.5 hover:text-red-500 transition-colors" title="削除"><span class="material-symbols-outlined text-xl">delete</span></button>
@@ -354,6 +420,16 @@
             row.querySelector('.insert-above').onclick = () => { addRow(row, 'beforebegin'); saveDraft(); updateValidateButtonState(); };
             row.querySelector('.insert-below').onclick = () => { addRow(row, 'afterend'); saveDraft(); updateValidateButtonState(); };
 
+            // 企業検索ボタン
+            row.querySelector('.btn-row-search').onclick = () => {
+                const address = row.querySelector('.col-address').value.trim();
+                if (!address) {
+                    alert('先に住所を入力してください。');
+                    return;
+                }
+                openCompanySearch(address, row);
+            };
+
             // 郵便番号補完
             const zipInput = row.querySelector('.col-zip');
             zipInput.onblur = async () => {
@@ -393,6 +469,106 @@
                 registrationDate: null, // 日付列削除のためnull（サーバー側で当日日付補完）
                 remarks: row.querySelector('.col-remarks').value.trim()
             }));
+        }
+
+        // 企業検索モーダル制御
+        const companyModal = document.getElementById('companySearchModal');
+        const closeCompanyModal = document.getElementById('closeCompanyModal');
+        const companyModalBackdrop = document.getElementById('companyModalBackdrop');
+        const companyResultList = document.getElementById('companyResultList');
+        const companySearchLoading = document.getElementById('companySearchLoading');
+        const companySearchAddress = document.getElementById('companySearchAddress');
+
+        let activeRowForSearch = null;
+
+        function toggleCompanyModal(show) {
+            if (show) {
+                companyModal.classList.remove('hidden');
+            } else {
+                companyModal.classList.add('hidden');
+            }
+        }
+
+        closeCompanyModal.addEventListener('click', () => toggleCompanyModal(false));
+        companyModalBackdrop.addEventListener('click', () => toggleCompanyModal(false));
+
+        function openCompanySearch(address, row) {
+            activeRowForSearch = row;
+            toggleCompanyModal(true);
+            executeCompanySearch(address);
+        }
+
+        function executeCompanySearch(address) {
+            companySearchAddress.innerHTML = '<span class="font-bold">検索住所:</span> ' + address;
+            companyResultList.innerHTML = '';
+            companySearchLoading.classList.remove('hidden');
+
+            fetch(`/api/companies/search-by-address?address=${encodeURIComponent(address)}`)
+                .then(res => {
+                    if (!res.ok) throw new Error('検索に失敗しました');
+                    return res.json();
+                })
+                .then(data => {
+                    companySearchLoading.classList.add('hidden');
+                    companyResultList.innerHTML = '';
+
+                    if (!data || data.length === 0) {
+                        companyResultList.innerHTML =
+                            '<div class="text-gray-500 p-4 text-center text-base font-bold">'
+                            + '<span class="material-symbols-outlined text-3xl mb-2 block">search_off</span>'
+                            + '企業名が見つかりませんでした</div>';
+                        return;
+                    }
+
+                    data.forEach(item => {
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className =
+                            'w-full text-left px-4 py-3 rounded-lg text-gray-800 hover:bg-primary/10 '
+                            + 'transition-colors border border-transparent hover:border-primary/30 flex flex-col gap-1';
+
+                        const nameSpan = document.createElement('span');
+                        nameSpan.className = 'text-base font-bold';
+                        nameSpan.textContent = item.companyName;
+                        button.appendChild(nameSpan);
+
+                        const metaDiv = document.createElement('div');
+                        metaDiv.className = 'flex items-center gap-2 text-xs text-gray-500';
+
+                        const badge = document.createElement('span');
+                        badge.className = item.source === 'データベース'
+                            ? 'px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold'
+                            : 'px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-bold';
+                        badge.textContent = item.source;
+                        metaDiv.appendChild(badge);
+
+                        if (item.address) {
+                            const addrSpan = document.createElement('span');
+                            addrSpan.textContent = item.address;
+                            metaDiv.appendChild(addrSpan);
+                        }
+                        button.appendChild(metaDiv);
+
+                        button.addEventListener('click', () => {
+                            if (activeRowForSearch) {
+                                activeRowForSearch.querySelector('.col-name').value = item.companyName;
+                                saveDraft();
+                                updateValidateButtonState();
+                            }
+                            toggleCompanyModal(false);
+                        });
+
+                        companyResultList.appendChild(button);
+                    });
+                })
+                .catch(err => {
+                    console.error(err);
+                    companySearchLoading.classList.add('hidden');
+                    companyResultList.innerHTML =
+                        '<div class="text-red-500 p-4 text-center text-base font-bold">'
+                        + '<span class="material-symbols-outlined text-3xl mb-2 block">error</span>'
+                        + '検索中にエラーが発生しました</div>';
+                });
         }
 
         // バリデーションボタンの状態を更新
