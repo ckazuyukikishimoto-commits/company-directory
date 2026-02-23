@@ -69,6 +69,9 @@ public class CompanySearchService {
 
         List<CompanySearchResultDto> results = new ArrayList<>();
         for (CompanyMaster master : masters) {
+            if (master.getCompanyName() == null || master.getCompanyName().isBlank()) {
+                continue;
+            }
             results.add(new CompanySearchResultDto(
                     master.getCompanyName(),
                     master.getCorporateNumber(),
@@ -173,6 +176,9 @@ public class CompanySearchService {
 
             if (companyNames != null) {
                 for (String companyName : companyNames) {
+                    if (companyName == null) {
+                        continue;
+                    }
                     String trimmed = companyName.trim();
                     if (!trimmed.isBlank() && trimmed.length() >= 2) {
                         results.add(new CompanySearchResultDto(
@@ -192,6 +198,10 @@ public class CompanySearchService {
     private List<CompanySearchResultDto> deduplicateResults(List<CompanySearchResultDto> results) {
         Map<String, CompanySearchResultDto> unique = new LinkedHashMap<>();
         for (CompanySearchResultDto dto : results) {
+            if (dto == null || dto.getCompanyName() == null || dto.getCompanyName().isBlank()) {
+                continue;
+            }
+
             String key = dto.getCompanyName().trim();
             if (!unique.containsKey(key)) {
                 unique.put(key, dto);
