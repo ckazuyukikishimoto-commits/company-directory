@@ -4,11 +4,11 @@ import com.example.company_directory.dto.CompanySearchResultDto;
 import com.example.company_directory.entity.CompanyMaster;
 import com.example.company_directory.repository.CompanyMasterRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestClient;
 
 import java.util.*;
 
@@ -20,8 +20,9 @@ import java.util.*;
 @Service
 public class CompanySearchService {
 
-    private final WebClient webClient;
+    private final RestClient restClient;
     private final CompanyMasterRepository companyMasterRepository;
+    private final ObjectMapper objectMapper;
 
     @Value("${app.gemini.api-key:}")
     private String geminiApiKey;
@@ -29,8 +30,9 @@ public class CompanySearchService {
     private static final String GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
     public CompanySearchService(CompanyMasterRepository companyMasterRepository) {
-        this.webClient = WebClient.create();
+        this.restClient = RestClient.builder().build();
         this.companyMasterRepository = companyMasterRepository;
+        this.objectMapper = new ObjectMapper();
     }
 
     /**
@@ -53,8 +55,9 @@ public class CompanySearchService {
             List<CompanySearchResultDto> geminiResults = searchByGeminiApi(address);
             results.addAll(geminiResults);
             log.info("Gemini API: {}件の結果を取得", geminiResults.size());
-        } catch (Exception e) {
-            log.warn("Gemini APIの呼び出しに失敗しました: {}", e.getMessage());
+        } catch (Throwable t) {
+            // ネイティブライブラリ読込エラー（UnsatisfiedLinkError）も含めて握りつぶし、検索全体は継続
+            log.warn("Gemini APIの呼び出しに失敗しました: {}", t.getMessage());
         }
 
         // 3. 重複を除去（企業名ベース）
@@ -118,13 +121,12 @@ public class CompanySearchService {
 
         try {
             @SuppressWarnings("unchecked")
-            Map<String, Object> response = webClient.post()
+            Map<String, Object> response = restClient.post()
                     .uri(url)
-                    .header("Content-Type", "application/json")
-                    .bodyValue(requestBody)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(requestBody)
                     .retrieve()
-                    .bodyToMono(Map.class)
-                    .block();
+                    .body(Map.class);
 
             log.debug("Gemini API レスポンス: {}", response);
             if (response == null) {
@@ -132,8 +134,8 @@ public class CompanySearchService {
             }
 
             return parseGeminiResponse(response, address);
-        } catch (Exception e) {
-            log.error("Gemini API呼び出しエラー: {}", e.getMessage(), e);
+        } catch (Throwable t) {
+            log.warn("Gemini API呼び出しエラー: {}", t.getMessage());
             return Collections.emptyList();
         }
     }
@@ -170,8 +172,7 @@ public class CompanySearchService {
             }
 
             // JSONをパース
-            ObjectMapper mapper = new ObjectMapper();
-            Map<String, Object> jsonMap = mapper.readValue(cleanedText, Map.class);
+            Map<String, Object> jsonMap = objectMapper.readValue(cleanedText, Map.class);
             List<String> companyNames = (List<String>) jsonMap.get("companies");
 
             if (companyNames != null) {
