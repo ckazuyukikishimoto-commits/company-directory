@@ -140,8 +140,10 @@
                 const currentUrl = window.location.href;
                 const lastUrl = sessionStorage.getItem('lastTrashUrl');
                 const hasFlashMessage = /*[[${successMessage != null || errorMessage != null}]]*/ false;
+                const params = new URLSearchParams(window.location.search);
+                const isClearAction = params.get('clear') === '1';
 
-                if (!hasFlashMessage && !window.location.search && lastUrl && lastUrl !== currentUrl) {
+                if (!hasFlashMessage && !isClearAction && !window.location.search && lastUrl && lastUrl !== currentUrl) {
                     window.location.replace(lastUrl);
                     return;
                 }
@@ -262,7 +264,7 @@
                                                         </div>
                                                     </div>
                                                     <div class="flex justify-end gap-2 mt-4">
-                                                        <a th:href="@{/companies/trash}"
+                                                        <a th:href="@{/companies/trash(clear=1)}"
                                                             class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">クリア</a>
                                                         <button type="submit"
                                                             class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors">検索</button>

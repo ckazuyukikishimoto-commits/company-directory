@@ -40,6 +40,10 @@ public class CompanySpecification {
             }
 
             // 2. 詳細検索 - 企業ID (完全一致)
+            if (form.getNo() != null) {
+                spec = spec.and((r, q, c) -> c.equal(r.get("companyId"), form.getNo()));
+            }
+
             if (form.getCompanyId() != null) {
                 spec = spec.and((r, q, c) -> c.equal(r.get("companyId"), form.getCompanyId()));
             }

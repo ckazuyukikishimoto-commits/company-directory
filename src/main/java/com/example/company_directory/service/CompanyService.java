@@ -151,7 +151,7 @@ public class CompanyService {
                 break;
         }
 
-        return ExcelHelper.companiesToExcel(companies, form.getColumns());
+        return ExcelHelper.companiesToExcel(companies, form.resolveOrderedColumns());
     }
 
     public Page<Company> searchCompanies(CompanySearchForm form, Pageable pageable) {
