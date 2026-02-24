@@ -49,11 +49,12 @@ public class ExcelHelper {
         // Determine active columns
         List<String> activeKeys = new ArrayList<>();
         if (columnKeys == null || columnKeys.isEmpty()) {
-            activeKeys.addAll(headersMap.keySet());
+            activeKeys.add("companyName");
+            activeKeys.add("zipCode");
+            activeKeys.add("address");
         } else {
-            // Keep definition order but filter by selected
-            for (String key : headersMap.keySet()) {
-                if (columnKeys.contains(key)) {
+            for (String key : columnKeys) {
+                if (headersMap.containsKey(key) && !activeKeys.contains(key)) {
                     activeKeys.add(key);
                 }
             }

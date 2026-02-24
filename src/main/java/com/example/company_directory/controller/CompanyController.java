@@ -46,8 +46,8 @@ public class CompanyController {
     }
 
     @GetMapping
-    public String list(@ModelAttribute CompanySearchForm searchForm, @RequestParam(defaultValue = "5") int size,
-            @PageableDefault(size = 5) Pageable pageable,
+    public String list(@ModelAttribute CompanySearchForm searchForm, @RequestParam(defaultValue = "100") int size,
+            @PageableDefault(size = 100) Pageable pageable,
             Model model) {
 
         pageable = PageRequest.of(pageable.getPageNumber(), size);
@@ -165,8 +165,8 @@ public class CompanyController {
     }
 
     @GetMapping("/trash")
-    public String trash(@ModelAttribute CompanySearchForm searchForm, @RequestParam(defaultValue = "5") int size,
-            @PageableDefault(size = 5) Pageable pageable, Model model) {
+    public String trash(@ModelAttribute CompanySearchForm searchForm, @RequestParam(defaultValue = "100") int size,
+            @PageableDefault(size = 100) Pageable pageable, Model model) {
 
         pageable = PageRequest.of(pageable.getPageNumber(), size);
         Page<Company> page = companyService.searchTrashCompanies(searchForm, pageable);

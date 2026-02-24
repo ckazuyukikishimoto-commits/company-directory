@@ -72,8 +72,11 @@
             (function () {
                 const currentUrl = window.location.href;
                 const lastUrl = sessionStorage.getItem('lastListUrl');
+                const hasFlashMessage = /*[[${successMessage != null || errorMessage != null || warningMessage != null}]]*/ false;
+                const params = new URLSearchParams(window.location.search);
+                const isClearAction = params.get('clear') === '1';
 
-                if (!window.location.search && lastUrl && lastUrl !== currentUrl) {
+                if (!hasFlashMessage && !isClearAction && !window.location.search && lastUrl && lastUrl !== currentUrl) {
                     window.location.replace(lastUrl);
                     return;
                 }
@@ -230,8 +233,8 @@
                                 </form>
                             </div>
                         </div>
-                        <form th:action="@{/companies}" method="get" th:object="${searchForm}">
-                            <input type="hidden" name="size" th:value="${page?.size} ?: 5" />
+                        <form id="companySearchForm" th:action="@{/companies}" method="get" th:object="${searchForm}">
+                            <input type="hidden" name="size" th:value="${page?.size} ?: 100" />
                             <div class="flex flex-col gap-3 pb-3">
                                 <div class="flex items-start gap-3">
                                     <div class="flex-1">
@@ -263,14 +266,18 @@
                                                 <div
                                                     class="border border-gray-300 dark:border-[#3b4754] p-4 bg-white dark:bg-[#1c2127] rounded-lg shadow-lg">
                                                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                        <div>
+                                                        <div data-advanced-field="no">
+                                                            <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">No</label>
+                                                            <input name="no" th:value="${searchForm?.no}" class="form-input block w-full rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-primary focus:border-primary h-9 text-sm" type="number" step="1" />
+                                                        </div>
+                                                        <div data-advanced-field="companyId">
                                                             <label
                                                                 class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">企業ID</label>
                                                             <input name="companyId" th:value="${searchForm?.companyId}"
                                                                 class="form-input block w-full rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-primary focus:border-primary h-9 text-sm"
                                                                 placeholder="例: 0001" type="number" step="1" />
                                                         </div>
-                                                        <div>
+                                                        <div data-advanced-field="companyName">
                                                             <label
                                                                 class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">企業名</label>
                                                             <input name="companyName"
@@ -278,21 +285,21 @@
                                                                 class="form-input block w-full rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-primary focus:border-primary h-9 text-sm"
                                                                 placeholder="例: 株式会社未来テクノロジー" type="text" />
                                                         </div>
-                                                        <div>
+                                                        <div data-advanced-field="address">
                                                             <label
                                                                 class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">住所</label>
                                                             <input name="address" th:value="${searchForm?.address}"
                                                                 class="form-input block w-full rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-primary focus:border-primary h-9 text-sm"
                                                                 placeholder="例: 東京都千代田区" type="text" />
                                                         </div>
-                                                        <div>
+                                                        <div data-advanced-field="zipCode">
                                                             <label
                                                                 class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">郵便番号</label>
                                                             <input name="zipCode" th:value="${searchForm?.zipCode}"
                                                                 class="form-input block w-full rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-primary focus:border-primary h-9 text-sm"
                                                                 placeholder="例: 100-0005" type="text" />
                                                         </div>
-                                                        <div class="md:col-span-2">
+                                                        <div class="md:col-span-2" data-advanced-field="registrationDate">
                                                             <label
                                                                 class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">登録日</label>
                                                             <div class="flex items-center gap-2">
@@ -309,10 +316,10 @@
                                                     </div>
                                                     <div class="flex justify-end gap-2 mt-4">
                                                         <!-- クリアボタン: 検索条件なしで再検索 -->
-                                                        <a th:href="@{/companies}"
+                                                        <button type="button" id="clearSearchBtn"
                                                             class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
                                                             クリア
-                                                        </a>
+                                                        </button>
                                                         <!-- 検索ボタン: フォームsubmit -->
                                                         <button type="submit"
                                                             class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors">
@@ -499,6 +506,7 @@
                             <span>表示件数:</span>
                             <form th:action="@{/companies}" method="get" id="pageSizeForm">
                                 <!-- 検索条件を隠しフィールドで保持 -->
+                                <input type="hidden" name="no" th:value="${searchForm?.no}" />
                                 <input type="hidden" name="keyword" th:value="${searchForm?.keyword}" />
                                 <input type="hidden" name="companyId" th:value="${searchForm?.companyId}" />
                                 <input type="hidden" name="companyName" th:value="${searchForm?.companyName}" />
@@ -531,25 +539,25 @@
                             </div>
                             <div class="flex gap-1">
                                 <!-- 最初のページへ -->
-                                <a th:href="@{/companies(page=0, size=${page.size}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo})}"
+                                <a th:href="@{/companies(page=0, size=${page.size}, no=${searchForm?.no}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo})}"
                                     th:classappend="${page.first or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''"
                                     class="h-8 w-8 rounded flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700">
                                     <span class="material-symbols-outlined text-xl">first_page</span>
                                 </a>
                                 <!-- 前のページへ -->
-                                <a th:href="@{/companies(page=${page.number - 1}, size=${page.size}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo})}"
+                                <a th:href="@{/companies(page=${page.number - 1}, size=${page.size}, no=${searchForm?.no}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo})}"
                                     th:classappend="${page.first or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''"
                                     class="h-8 w-8 rounded flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700">
                                     <span class="material-symbols-outlined text-xl">chevron_left</span>
                                 </a>
                                 <!-- 次のページへ -->
-                                <a th:href="@{/companies(page=${page.number + 1}, size=${page.size}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo})}"
+                                <a th:href="@{/companies(page=${page.number + 1}, size=${page.size}, no=${searchForm?.no}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo})}"
                                     th:classappend="${page.last or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''"
                                     class="h-8 w-8 rounded flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700">
                                     <span class="material-symbols-outlined text-xl">chevron_right</span>
                                 </a>
                                 <!-- 最後のページへ -->
-                                <a th:href="@{/companies(page=${page.totalPages - 1}, size=${page.size}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo})}"
+                                <a th:href="@{/companies(page=${page.totalPages - 1}, size=${page.size}, no=${searchForm?.no}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo})}"
                                     th:classappend="${page.last or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''"
                                     class="h-8 w-8 rounded flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700">
                                     <span class="material-symbols-outlined text-xl">last_page</span>
@@ -574,6 +582,7 @@
                     class="inline-block align-bottom bg-white dark:bg-[#1c2127] rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
                     <form id="exportForm" th:action="@{/companies/export}" method="post">
                         <!-- Hidden fields for search params (copied via JS) -->
+                        <input type="hidden" name="no" />
                         <input type="hidden" name="keyword" />
                         <input type="hidden" name="companyId" />
                         <input type="hidden" name="companyName" />
@@ -617,37 +626,38 @@
 
                                 <!-- Columns -->
                                 <div>
-                                    <label
-                                        class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">出力カラム設定</label>
-                                    <div class="grid grid-cols-2 gap-2 text-sm">
-                                        <label class="flex items-center space-x-2">
-                                            <input type="checkbox" name="columns" value="companyId" checked
-                                                class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
-                                            <span class="text-gray-700 dark:text-gray-300">企業ID</span>
-                                        </label>
-                                        <label class="flex items-center space-x-2">
-                                            <input type="checkbox" name="columns" value="companyName" checked
-                                                class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">出力カラム設定</label>
+                                    <p class="text-xs text-gray-500 mb-2">Noは常に出力されます。ドラッグで順序を変更できます。</p>
+                                    <input type="hidden" name="columnOrder" id="exportColumnOrder" />
+                                    <div id="exportColumnList" class="space-y-2 text-sm">
+                                        <label draggable="true" data-column-item data-key="companyName" class="flex items-center gap-2 p-2 rounded border border-gray-200 dark:border-gray-600 cursor-move">
+                                            <span class="material-symbols-outlined text-gray-400 text-base">drag_indicator</span>
+                                            <input type="checkbox" name="columns" value="companyName" checked class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
                                             <span class="text-gray-700 dark:text-gray-300">企業名</span>
                                         </label>
-                                        <label class="flex items-center space-x-2">
-                                            <input type="checkbox" name="columns" value="address" checked
-                                                class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
-                                            <span class="text-gray-700 dark:text-gray-300">住所</span>
-                                        </label>
-                                        <label class="flex items-center space-x-2">
-                                            <input type="checkbox" name="columns" value="zipCode" checked
-                                                class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                                        <label draggable="true" data-column-item data-key="zipCode" class="flex items-center gap-2 p-2 rounded border border-gray-200 dark:border-gray-600 cursor-move">
+                                            <span class="material-symbols-outlined text-gray-400 text-base">drag_indicator</span>
+                                            <input type="checkbox" name="columns" value="zipCode" checked class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
                                             <span class="text-gray-700 dark:text-gray-300">郵便番号</span>
                                         </label>
-                                        <label class="flex items-center space-x-2">
-                                            <input type="checkbox" name="columns" value="registrationDate" checked
-                                                class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                                        <label draggable="true" data-column-item data-key="address" class="flex items-center gap-2 p-2 rounded border border-gray-200 dark:border-gray-600 cursor-move">
+                                            <span class="material-symbols-outlined text-gray-400 text-base">drag_indicator</span>
+                                            <input type="checkbox" name="columns" value="address" checked class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                                            <span class="text-gray-700 dark:text-gray-300">住所</span>
+                                        </label>
+                                        <label draggable="true" data-column-item data-key="companyId" class="flex items-center gap-2 p-2 rounded border border-gray-200 dark:border-gray-600 cursor-move">
+                                            <span class="material-symbols-outlined text-gray-400 text-base">drag_indicator</span>
+                                            <input type="checkbox" name="columns" value="companyId" class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                                            <span class="text-gray-700 dark:text-gray-300">企業ID</span>
+                                        </label>
+                                        <label draggable="true" data-column-item data-key="registrationDate" class="flex items-center gap-2 p-2 rounded border border-gray-200 dark:border-gray-600 cursor-move">
+                                            <span class="material-symbols-outlined text-gray-400 text-base">drag_indicator</span>
+                                            <input type="checkbox" name="columns" value="registrationDate" class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
                                             <span class="text-gray-700 dark:text-gray-300">登録日</span>
                                         </label>
-                                        <label class="flex items-center space-x-2">
-                                            <input type="checkbox" name="columns" value="remarks" checked
-                                                class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                                        <label draggable="true" data-column-item data-key="remarks" class="flex items-center gap-2 p-2 rounded border border-gray-200 dark:border-gray-600 cursor-move">
+                                            <span class="material-symbols-outlined text-gray-400 text-base">drag_indicator</span>
+                                            <input type="checkbox" name="columns" value="remarks" class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
                                             <span class="text-gray-700 dark:text-gray-300">備考</span>
                                         </label>
                                     </div>
@@ -750,6 +760,11 @@
                         cells.forEach(cell => {
                             cell.style.display = settings[col] ? '' : 'none';
                         });
+
+                        const detailField = document.querySelector(`[data-advanced-field="${col}"]`);
+                        if (detailField) {
+                            detailField.style.display = settings[col] ? '' : 'none';
+                        }
                     });
                 }
 
@@ -809,6 +824,44 @@
                     // メニュー内のクリックイベント伝播を止める（チェックボックス操作で閉じないようにするため）
                     settingsDropdown.addEventListener('click', function (e) {
                         e.stopPropagation();
+                    });
+                }
+
+                const searchForm = document.getElementById('companySearchForm');
+                const clearBtn = document.getElementById('clearSearchBtn');
+                if (searchForm && clearBtn) {
+                    clearBtn.addEventListener('click', function () {
+                        const action = searchForm.getAttribute('action') || window.location.pathname;
+                        window.location.href = `${action}?clear=1&size=100`;
+                    });
+                }
+
+                if (searchForm) {
+                    const targetInputs = searchForm.querySelectorAll('input:not([type="hidden"])');
+                    targetInputs.forEach(input => {
+                        const wrapper = input.parentElement;
+                        if (!wrapper) return;
+                        wrapper.classList.add('relative');
+                        input.classList.add('pr-8');
+
+                        let btn = wrapper.querySelector(`.search-clear-btn[data-clear-target="${input.name}"]`);
+                        if (!btn) {
+                            btn = document.createElement('button');
+                            btn.type = 'button';
+                            btn.dataset.clearTarget = input.name;
+                            btn.className = 'search-clear-btn absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 hidden';
+                            btn.textContent = '✕';
+                            wrapper.appendChild(btn);
+                        }
+
+                        const toggle = () => btn.classList.toggle('hidden', !input.value);
+                        input.addEventListener('input', toggle);
+                        btn.addEventListener('click', () => {
+                            input.value = '';
+                            input.dispatchEvent(new Event('input'));
+                            input.focus();
+                        });
+                        toggle();
                     });
                 }
             })();
@@ -997,7 +1050,7 @@
                         // 1. Copy Search Params
                         // Assuming the main search form inputs have unique names or we select them from the document
                         // Using document.getElementsByName to find source inputs (first one found usually main form)
-                        const fields = ['keyword', 'companyId', 'companyName', 'address', 'zipCode', 'dateFrom', 'dateTo'];
+                        const fields = ['no', 'keyword', 'companyId', 'companyName', 'address', 'zipCode', 'dateFrom', 'dateTo'];
                         const modalForm = document.getElementById('exportForm');
 
                         fields.forEach(name => {
@@ -1069,6 +1122,46 @@
                     });
                 }
             })();
+            (function () {
+                const columnList = document.getElementById('exportColumnList');
+                const columnOrderInput = document.getElementById('exportColumnOrder');
+                if (!columnList || !columnOrderInput) return;
+
+                let dragging = null;
+                const updateOrder = () => {
+                    columnOrderInput.value = Array.from(columnList.querySelectorAll('[data-column-item]'))
+                        .map(item => item.dataset.key)
+                        .join(',');
+                };
+
+                columnList.querySelectorAll('[data-column-item]').forEach(item => {
+                    item.addEventListener('dragstart', () => {
+                        dragging = item;
+                        item.classList.add('opacity-50');
+                    });
+                    item.addEventListener('dragend', () => {
+                        item.classList.remove('opacity-50');
+                        dragging = null;
+                        updateOrder();
+                    });
+                    item.addEventListener('dragover', (event) => event.preventDefault());
+                    item.addEventListener('drop', (event) => {
+                        event.preventDefault();
+                        if (!dragging || dragging === item) return;
+                        const rect = item.getBoundingClientRect();
+                        const isAfter = event.clientY > rect.top + rect.height / 2;
+                        columnList.insertBefore(dragging, isAfter ? item.nextSibling : item);
+                        updateOrder();
+                    });
+                });
+
+                const exportForm = document.getElementById('exportForm');
+                if (exportForm) {
+                    exportForm.addEventListener('submit', updateOrder);
+                }
+                updateOrder();
+            })();
+
             // --- Deletion Toast with Undo Logic ---
             function deleteCompany(btn) {
                 const id = btn.dataset.id;

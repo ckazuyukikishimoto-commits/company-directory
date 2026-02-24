@@ -6,6 +6,9 @@ import java.time.LocalDate;
 
 @Data
 public class CompanySearchForm {
+    // No（行番号）検索用（内部的には企業IDに紐づけ）
+    private Integer no;
+
     // キーワード検索用（企業名、住所などを横断検索）
     private String keyword;
 
