@@ -6,9 +6,11 @@ import com.example.company_directory.repository.CompanyMasterRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 
@@ -20,7 +22,7 @@ import java.util.*;
 @Service
 public class CompanySearchService {
 
-    private final RestClient restClient;
+    private final RestTemplate restTemplate;
     private final CompanyMasterRepository companyMasterRepository;
     private final ObjectMapper objectMapper;
 
@@ -30,7 +32,7 @@ public class CompanySearchService {
     private static final String GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
     public CompanySearchService(CompanyMasterRepository companyMasterRepository) {
-        this.restClient = RestClient.builder().build();
+        this.restTemplate = new RestTemplate();
         this.companyMasterRepository = companyMasterRepository;
         this.objectMapper = new ObjectMapper();
     }
@@ -120,13 +122,12 @@ public class CompanySearchService {
         log.debug("Gemini API リクエスト送信: address={}", address);
 
         try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+
             @SuppressWarnings("unchecked")
-            Map<String, Object> response = restClient.post()
-                    .uri(url)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(requestBody)
-                    .retrieve()
-                    .body(Map.class);
+            Map<String, Object> response = restTemplate.postForObject(url, entity, Map.class);
 
             log.debug("Gemini API レスポンス: {}", response);
             if (response == null) {
