@@ -329,34 +329,34 @@
                                     <thead class="sticky top-0 z-10 bg-archive-dark-panel">
                                         <tr class="bg-archive-dark-panel">
                                             <th
-                                                class="px-4 py-2.5 text-center text-archive-text w-[60px] font-medium leading-normal">
+                                                class="bg-archive-dark-panel px-4 py-2.5 text-center text-archive-text w-[60px] font-medium leading-normal">
                                                 No.</th>
                                             <th data-col="companyId" data-sort-type="number"
-                                                class="px-4 py-2.5 text-left text-archive-text w-[120px] font-medium leading-normal group cursor-pointer">
+                                                class="bg-archive-dark-panel px-4 py-2.5 text-left text-archive-text w-[120px] font-medium leading-normal group cursor-pointer">
                                                 <div class="flex items-center gap-2">企業ID <span
                                                         class="sort-icon text-xs text-archive-text-dim group-hover:text-archive-text">↕</span>
                                                 </div>
                                             </th>
                                             <th data-col="companyName" data-sort-type="text"
-                                                class="px-4 py-2.5 text-left text-archive-text min-w-[200px] font-medium leading-normal group cursor-pointer">
+                                                class="bg-archive-dark-panel px-4 py-2.5 text-left text-archive-text min-w-[200px] font-medium leading-normal group cursor-pointer">
                                                 <div class="flex items-center gap-2">企業名 <span
                                                         class="sort-icon text-xs text-archive-text-dim group-hover:text-archive-text">↕</span>
                                                 </div>
                                             </th>
                                             <th data-col="deletedAt" data-sort-type="date"
-                                                class="px-4 py-2.5 text-left text-archive-text w-[200px] font-bold leading-normal group cursor-pointer text-amber-300">
+                                                class="bg-archive-dark-panel px-4 py-2.5 text-left text-archive-text w-[200px] font-bold leading-normal group cursor-pointer text-amber-300">
                                                 <div class="flex items-center gap-2">削除日時 <span
                                                         class="sort-icon text-xs text-archive-text-dim group-hover:text-archive-text">↕</span>
                                                 </div>
                                             </th>
                                             <th data-col="deletedBy" data-sort-type="text"
-                                                class="px-4 py-2.5 text-left text-archive-text w-[180px] font-bold leading-normal group cursor-pointer text-amber-300">
+                                                class="bg-archive-dark-panel px-4 py-2.5 text-left text-archive-text w-[180px] font-bold leading-normal group cursor-pointer text-amber-300">
                                                 <div class="flex items-center gap-2">削除実行者 <span
                                                         class="sort-icon text-xs text-archive-text-dim group-hover:text-archive-text">↕</span>
                                                 </div>
                                             </th>
                                             <th data-col="actions"
-                                                class="px-4 py-2.5 text-center text-archive-text w-[120px] font-medium leading-normal">
+                                                class="bg-archive-dark-panel px-4 py-2.5 text-center text-archive-text w-[120px] font-medium leading-normal">
                                                 操作</th>
                                         </tr>
                                     </thead>
@@ -621,7 +621,7 @@
                         btn.type = 'button';
                         btn.dataset.clearTarget = input.name;
                         btn.className = 'search-clear-btn absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 inline-flex items-center justify-center leading-none text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-300 hidden';
-                        btn.textContent = '✕';
+                        btn.innerHTML = '<span class="material-symbols-outlined text-sm leading-none">close</span>';
                         wrapper.appendChild(btn);
                     }
 
@@ -825,6 +825,12 @@
             });
         })();
     </script>
+    <a th:if="${page != null and !page.first and page.totalElements > 0}"
+        th:href="@{/companies/trash(page=${page.number - 1}, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
+        class="fixed left-4 top-1/2 z-30 -translate-y-1/2 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg transition hover:bg-primary/90"
+        aria-label="前のページへ">
+        <span class="material-symbols-outlined">arrow_back</span>
+    </a>
     <a th:if="${page != null and !page.last and page.totalElements > 0}"
         th:href="@{/companies/trash(page=${page.number + 1}, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
         class="fixed right-4 top-1/2 z-30 -translate-y-1/2 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg transition hover:bg-primary/90"
