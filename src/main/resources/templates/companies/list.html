@@ -70,7 +70,7 @@
 
     <script>
             (function () {
-                const currentUrl = window.location.href;
+                const currentUrl = `${window.location.pathname}${window.location.search}`;
                 const lastUrl = sessionStorage.getItem('lastListUrl');
                 const hasFlashMessage = /*[[${successMessage != null || errorMessage != null || warningMessage != null}]]*/ false;
                 const params = new URLSearchParams(window.location.search);
@@ -849,7 +849,7 @@
                             btn = document.createElement('button');
                             btn.type = 'button';
                             btn.dataset.clearTarget = input.name;
-                            btn.className = 'search-clear-btn absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 hidden';
+                            btn.className = 'search-clear-btn absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 inline-flex items-center justify-center leading-none text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-300 hidden';
                             btn.textContent = '✕';
                             wrapper.appendChild(btn);
                         }
@@ -1338,6 +1338,13 @@
             });
         </script>
         <!-- Toast Container -->
+        <a th:if="${page != null and !page.last and page.totalElements > 0}"
+            th:href="@{/companies(page=${page.number + 1}, size=${page.size}, no=${searchForm?.no}, keyword=${searchForm?.keyword}, companyId=${searchForm?.companyId}, companyName=${searchForm?.companyName}, address=${searchForm?.address}, zipCode=${searchForm?.zipCode}, dateFrom=${searchForm?.dateFrom}, dateTo=${searchForm?.dateTo})}"
+            class="fixed right-4 top-1/2 z-30 -translate-y-1/2 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg transition hover:bg-primary/90"
+            aria-label="次のページへ">
+            <span class="material-symbols-outlined">arrow_forward</span>
+        </a>
+
         <div id="toast-container"></div>
 
 </body>
