@@ -30,12 +30,18 @@ public class CompanySpecification {
             // 1. キーワード検索（企業名 OR 住所 OR 郵便番号 OR 備考 OR 企業ID）
             if (StringUtils.hasText(form.getKeyword())) {
                 String pattern = "%" + form.getKeyword() + "%";
-                Specification<Company> keywordSpec = (r, q, c) -> c.or(
-                        c.like(r.get("companyId").as(String.class), pattern),
+                Specification<Company> keywordSpec = (r, q, c) -> {
+                    // PostgreSQLでは整数カラムに直接LIKEを適用できないため、
+                    // companyIdは空文字との連結で文字列化してからLIKE検索する。
+                    // （生成SQLイメージ: concat('', company_id) like ?）
+                    var companyIdAsText = c.concat("", r.get("companyId").as(String.class));
+                    return c.or(
+                        c.like(companyIdAsText, pattern),
                         c.like(r.get("companyName"), pattern),
                         c.like(r.get("address"), pattern),
                         c.like(r.get("zipCode"), pattern),
                         c.like(r.get("remarks"), pattern));
+                };
                 spec = spec.and(keywordSpec);
             }
 
