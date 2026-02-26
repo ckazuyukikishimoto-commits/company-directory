@@ -66,6 +66,68 @@
             display: none;
         }
 
+        .resizable-table {
+            table-layout: fixed;
+        }
+
+        .resizable-table th,
+        .resizable-table td {
+            position: relative;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .resizable-table .col-resizer {
+            position: absolute;
+            top: 0;
+            right: -2px;
+            width: 6px;
+            height: 100%;
+            cursor: col-resize;
+            user-select: none;
+        }
+
+        .resizable-table .row-resizer {
+            position: absolute;
+            left: 0;
+            bottom: -2px;
+            width: 100%;
+            height: 6px;
+            cursor: row-resize;
+            user-select: none;
+        }
+
+        body.resizing-col {
+            cursor: col-resize;
+            user-select: none;
+        }
+
+        body.resizing-row {
+            cursor: row-resize;
+            user-select: none;
+        }
+
+        .resizable-table .header-cell {
+            position: relative;
+            display: block;
+            padding-right: 18px;
+        }
+
+        .resizable-table .header-text {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .resizable-table .sort-icon {
+            position: absolute;
+            right: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
         #toast-container {
             position: fixed;
             bottom: 2rem;
@@ -326,36 +388,46 @@
                         <div
                             class="flex overflow-hidden rounded-lg border border-archive-dark-border bg-archive-dark flex-col flex-1">
                             <div class="overflow-y-auto flex-1">
-                                <table class="w-full min-w-[1000px] text-sm">
+                                <table class="resizable-table w-full min-w-[1000px] text-sm">
                                     <thead class="sticky top-0 z-10 bg-amber-50">
                                         <tr class="bg-amber-50">
                                             <th data-col="displayNumber" data-sort-type="number"
                                                 class="bg-amber-50 px-4 py-2.5 text-center text-archive-text w-[60px] font-medium leading-normal group cursor-pointer">
-                                                <div class="flex items-center justify-center gap-2">No. <span
+                                                <div class="header-cell">
+                                                    <span class="header-text">No.</span>
+                                                    <span
                                                         class="sort-icon text-xs text-archive-text-dim group-hover:text-archive-text">↕</span>
                                                 </div>
                                             </th>
                                             <th data-col="companyId" data-sort-type="number"
-                                                class="bg-amber-50 px-4 py-2.5 text-left text-archive-text w-[120px] font-medium leading-normal group cursor-pointer">
-                                                <div class="flex items-center gap-2">企業ID <span
+                                                class="bg-amber-50 px-4 py-2.5 text-left text-archive-text w-[120px] font-medium leading-normal group cursor-pointer whitespace-nowrap">
+                                                <div class="header-cell">
+                                                    <span class="header-text">企業ID</span>
+                                                    <span
                                                         class="sort-icon text-xs text-archive-text-dim group-hover:text-archive-text">↕</span>
                                                 </div>
                                             </th>
                                             <th data-col="companyName" data-sort-type="text"
                                                 class="bg-amber-50 px-4 py-2.5 text-left text-archive-text min-w-[200px] font-medium leading-normal group cursor-pointer">
-                                                <div class="flex items-center gap-2">企業名 <span
+                                                <div class="header-cell">
+                                                    <span class="header-text">企業名</span>
+                                                    <span
                                                         class="sort-icon text-xs text-archive-text-dim group-hover:text-archive-text">↕</span>
                                                 </div>
                                             </th>
                                             <th data-col="deletedAt" data-sort-type="date"
                                                 class="bg-amber-50 px-4 py-2.5 text-left text-archive-text w-[200px] font-bold leading-normal group cursor-pointer text-amber-300">
-                                                <div class="flex items-center gap-2">削除日時 <span
+                                                <div class="header-cell">
+                                                    <span class="header-text">削除日時</span>
+                                                    <span
                                                         class="sort-icon text-xs text-archive-text-dim group-hover:text-archive-text">↕</span>
                                                 </div>
                                             </th>
                                             <th data-col="deletedBy" data-sort-type="text"
                                                 class="bg-amber-50 px-4 py-2.5 text-left text-archive-text w-[180px] font-bold leading-normal group cursor-pointer text-amber-300">
-                                                <div class="flex items-center gap-2">削除実行者 <span
+                                                <div class="header-cell">
+                                                    <span class="header-text">削除実行者</span>
+                                                    <span
                                                         class="sort-icon text-xs text-archive-text-dim group-hover:text-archive-text">↕</span>
                                                 </div>
                                             </th>
@@ -376,7 +448,7 @@
                                                 class="px-4 py-2 text-center text-archive-text-dim font-normal leading-normal">
                                                 [[${company.displayNumber}]]</td>
                                             <td data-col="companyId"
-                                                class="px-4 py-2 text-archive-text-dim font-normal leading-normal">
+                                                class="px-4 py-2 text-archive-text-dim font-normal leading-normal whitespace-nowrap">
                                                 [[${company.companyId}]]</td>
                                             <td data-col="companyName"
                                                 class="px-4 py-2 text-archive-text font-normal leading-normal">
@@ -702,7 +774,9 @@
 
                 headers.forEach(header => {
                     if (header.dataset.col === 'actions') return;
-                    header.addEventListener('click', () => {
+                    header.addEventListener('click', (event) => {
+                        if (window.__isResizingColumn) return;
+                        if (event.target.closest('.col-resizer')) return;
                         const column = header.dataset.col;
                         const type = header.dataset.sortType || 'text';
                         const isSame = state.column === column;
@@ -827,6 +901,116 @@
                     showToast(errorMsg, 'error');
                 }
             });
+
+            (function () {
+                const MIN_COL_WIDTH = 60;
+                const MIN_ROW_HEIGHT = 28;
+                window.__isResizingColumn = false;
+
+                function initResizableTable(table) {
+                    const headerRow = table.tHead && table.tHead.rows[0];
+                    if (headerRow) {
+                        Array.from(headerRow.cells).forEach((th, index) => {
+                            if (th.querySelector('.col-resizer')) return;
+                            const resizer = document.createElement('div');
+                            resizer.className = 'col-resizer';
+                            th.appendChild(resizer);
+
+                            let startX = 0;
+                            let startWidth = 0;
+
+                            const onMouseMove = (event) => {
+                                const newWidth = Math.max(MIN_COL_WIDTH, startWidth + (event.pageX - startX));
+                                th.style.width = `${newWidth}px`;
+                                Array.from(table.tBodies[0]?.rows || []).forEach(row => {
+                                    const cell = row.children[index];
+                                    if (cell) {
+                                        cell.style.width = `${newWidth}px`;
+                                    }
+                                });
+                            };
+
+                            const onMouseUp = () => {
+                                document.removeEventListener('mousemove', onMouseMove);
+                                document.removeEventListener('mouseup', onMouseUp);
+                                document.body.classList.remove('resizing-col');
+                                setTimeout(() => { window.__isResizingColumn = false; }, 0);
+                            };
+
+                            resizer.addEventListener('mousedown', (event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                window.__isResizingColumn = true;
+                                startX = event.pageX;
+                                startWidth = th.offsetWidth;
+                                document.addEventListener('mousemove', onMouseMove);
+                                document.addEventListener('mouseup', onMouseUp);
+                                document.body.classList.add('resizing-col');
+                            });
+                            resizer.addEventListener('click', (event) => {
+                                event.stopPropagation();
+                            });
+                        });
+                    }
+
+                    Array.from(table.tBodies[0]?.rows || []).forEach(row => {
+                        if (row.classList.contains('js-empty-row')) return;
+                        const lastCell = row.cells[row.cells.length - 1];
+                        if (!lastCell || lastCell.querySelector('.row-resizer')) return;
+
+                        const resizer = document.createElement('div');
+                        resizer.className = 'row-resizer';
+                        lastCell.appendChild(resizer);
+
+                        let startY = 0;
+                        let startHeight = 0;
+
+                        const onMouseMove = (event) => {
+                            const newHeight = Math.max(MIN_ROW_HEIGHT, startHeight + (event.pageY - startY));
+                            row.style.height = `${newHeight}px`;
+                            Array.from(row.cells).forEach(cell => {
+                                cell.style.height = `${newHeight}px`;
+                            });
+                        };
+
+                        const onMouseUp = () => {
+                            document.removeEventListener('mousemove', onMouseMove);
+                            document.removeEventListener('mouseup', onMouseUp);
+                            document.body.classList.remove('resizing-row');
+                        };
+
+                        resizer.addEventListener('mousedown', (event) => {
+                            event.preventDefault();
+                            startY = event.pageY;
+                            startHeight = row.offsetHeight;
+                            document.addEventListener('mousemove', onMouseMove);
+                            document.addEventListener('mouseup', onMouseUp);
+                            document.body.classList.add('resizing-row');
+                        });
+                    });
+                }
+
+                function applyCellTitles(table) {
+                    const cells = table.querySelectorAll('th[data-col], td[data-col]');
+                    cells.forEach(cell => {
+                        if (cell.dataset.col === 'actions') return;
+                        const headerText = cell.querySelector('.header-text');
+                        const text = headerText ? headerText.textContent.trim() : cell.textContent.trim();
+                        if (text) {
+                            cell.setAttribute('title', text);
+                        } else {
+                            cell.removeAttribute('title');
+                        }
+                    });
+                }
+
+                window.addEventListener('load', () => {
+                    document.querySelectorAll('table.resizable-table').forEach(table => {
+                        initResizableTable(table);
+                        applyCellTitles(table);
+                    });
+                });
+            })();
         })();
     </script>
     <a th:if="${page != null and !page.first and page.totalElements > 0}"

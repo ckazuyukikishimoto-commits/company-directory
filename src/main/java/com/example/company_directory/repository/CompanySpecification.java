@@ -29,19 +29,21 @@ public class CompanySpecification {
                     // companyIdは空文字との連結で文字列化してからLIKE検索する。
                     // （生成SQLイメージ: concat('', company_id) like ?）
                     var companyIdAsText = c.concat("", r.get("companyId").as(String.class));
+                    var displayNumberAsText = c.concat("", r.get("displayNumber").as(String.class));
                     return c.or(
                             c.like(companyIdAsText, pattern),
                             c.like(r.get("companyName"), pattern),
                             c.like(r.get("address"), pattern),
                             c.like(r.get("zipCode"), pattern),
-                            c.like(r.get("remarks"), pattern));
+                            c.like(r.get("remarks"), pattern),
+                            c.like(displayNumberAsText, pattern));
                 };
                 spec = spec.and(keywordSpec);
             }
 
             // 2. 詳細検索 - 企業ID (完全一致)
             if (form.getNo() != null) {
-                spec = spec.and((r, q, c) -> c.equal(r.get("companyId"), form.getNo()));
+                spec = spec.and((r, q, c) -> c.equal(r.get("displayNumber"), form.getNo()));
             }
 
             if (form.getCompanyId() != null) {
