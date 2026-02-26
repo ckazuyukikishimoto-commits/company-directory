@@ -7,6 +7,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -47,10 +48,10 @@ public class CompanyController {
 
     @GetMapping
     public String list(@ModelAttribute CompanySearchForm searchForm, @RequestParam(defaultValue = "100") int size,
-            @PageableDefault(size = 100) Pageable pageable,
+            @PageableDefault(size = 100, sort = "displayNumber", direction = Sort.Direction.ASC) Pageable pageable,
             Model model) {
 
-        pageable = PageRequest.of(pageable.getPageNumber(), size);
+        pageable = PageRequest.of(pageable.getPageNumber(), size, pageable.getSort());
         // 検索＆ページ取得
         Page<Company> page = companyService.searchCompanies(searchForm, pageable);
 
@@ -166,9 +167,10 @@ public class CompanyController {
 
     @GetMapping("/trash")
     public String trash(@ModelAttribute CompanySearchForm searchForm, @RequestParam(defaultValue = "100") int size,
-            @PageableDefault(size = 100) Pageable pageable, Model model) {
+            @PageableDefault(size = 100, sort = "displayNumber", direction = Sort.Direction.ASC) Pageable pageable,
+            Model model) {
 
-        pageable = PageRequest.of(pageable.getPageNumber(), size);
+        pageable = PageRequest.of(pageable.getPageNumber(), size, pageable.getSort());
         Page<Company> page = companyService.searchTrashCompanies(searchForm, pageable);
 
         model.addAttribute("page", page);

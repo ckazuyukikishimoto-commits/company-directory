@@ -29,8 +29,11 @@ public class Company {
     @Column(columnDefinition = "TEXT") // TEXT型を指定
     private String remarks;
 
+    @Column
+    private Integer displayNumber;
+
     // --- 論理削除用 ---
-    
+
     @Column(nullable = false)
     private Boolean isDeleted = false; // デフォルトはfalse(有効)
 

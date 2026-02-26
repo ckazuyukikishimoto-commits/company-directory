@@ -24,10 +24,14 @@ public class CompanyApiController {
     @PostMapping("/delete/{id}")
     public ResponseEntity<Map<String, Object>> delete(@PathVariable Integer id) {
         try {
+            // Get the display number before deleting
+            Integer deletedDisplayNumber = companyService.findById(id).getDisplayNumber();
+
             companyService.delete(id);
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Company soft-deleted successfully");
+            response.put("deletedDisplayNumber", deletedDisplayNumber);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();

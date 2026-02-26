@@ -399,6 +399,7 @@ public class ExcelImportService {
 
         // 日付フォーマットの定義 (Excelの入力形式に合わせる)
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd");
+        int currentMaxNumber = companyRepository.findMaxDisplayNumberByIsDeletedFalse();
 
         for (ImportRowDto row : successList) {
             Company company;
@@ -412,6 +413,8 @@ public class ExcelImportService {
             } else {
                 company = new Company();
                 company.setIsDeleted(false);
+                currentMaxNumber++;
+                company.setDisplayNumber(currentMaxNumber);
             }
 
             // DTO -> Entity 詰め替え

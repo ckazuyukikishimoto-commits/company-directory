@@ -18,12 +18,6 @@ public class CompanySpecification {
                     isDeleted);
 
             if (form == null) {
-                // ソート順のみ設定して返す
-                if (isDeleted) {
-                    query.orderBy(cb.desc(root.get("deletedAt")));
-                } else {
-                    query.orderBy(cb.asc(root.get("companyId")));
-                }
                 return spec.toPredicate(root, query, cb);
             }
 
@@ -36,11 +30,11 @@ public class CompanySpecification {
                     // （生成SQLイメージ: concat('', company_id) like ?）
                     var companyIdAsText = c.concat("", r.get("companyId").as(String.class));
                     return c.or(
-                        c.like(companyIdAsText, pattern),
-                        c.like(r.get("companyName"), pattern),
-                        c.like(r.get("address"), pattern),
-                        c.like(r.get("zipCode"), pattern),
-                        c.like(r.get("remarks"), pattern));
+                            c.like(companyIdAsText, pattern),
+                            c.like(r.get("companyName"), pattern),
+                            c.like(r.get("address"), pattern),
+                            c.like(r.get("zipCode"), pattern),
+                            c.like(r.get("remarks"), pattern));
                 };
                 spec = spec.and(keywordSpec);
             }
@@ -73,13 +67,6 @@ public class CompanySpecification {
             }
             if (form.getDateTo() != null) {
                 spec = spec.and((r, q, c) -> c.lessThanOrEqualTo(r.get("registrationDate"), form.getDateTo()));
-            }
-
-            // 最終的なクエリを生成
-            if (isDeleted) {
-                query.orderBy(cb.desc(root.get("deletedAt")));
-            } else {
-                query.orderBy(cb.asc(root.get("companyId")));
             }
 
             return spec.toPredicate(root, query, cb);

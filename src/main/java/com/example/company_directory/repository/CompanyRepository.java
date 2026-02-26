@@ -36,4 +36,12 @@ public interface CompanyRepository extends JpaRepository<Company, Integer>, JpaS
     @Query("DELETE FROM Company c WHERE c.isDeleted = true AND c.deletedAt < :threshold")
     int deleteByIsDeletedTrueAndDeletedAtBefore(@Param("threshold") LocalDateTime threshold);
 
+    @Query("SELECT COALESCE(MAX(c.displayNumber), 0) FROM Company c WHERE c.isDeleted = false")
+    Integer findMaxDisplayNumberByIsDeletedFalse();
+
+    @Modifying
+    @Query("UPDATE Company c SET c.displayNumber = c.displayNumber - 1 WHERE c.isDeleted = false AND c.displayNumber > :deletedDisplayNumber")
+    void shiftDisplayNumbersDown(@Param("deletedDisplayNumber") Integer deletedDisplayNumber);
+
+    List<Company> findAllByIsDeletedFalseAndDisplayNumberIsNullOrderByCompanyIdAsc();
 }

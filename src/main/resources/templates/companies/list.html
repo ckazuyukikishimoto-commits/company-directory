@@ -267,8 +267,11 @@
                                                     class="border border-gray-300 dark:border-[#3b4754] p-4 bg-white dark:bg-[#1c2127] rounded-lg shadow-lg">
                                                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                                         <div data-advanced-field="no">
-                                                            <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">No</label>
-                                                            <input name="no" th:value="${searchForm?.no}" class="form-input block w-full rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-primary focus:border-primary h-9 text-sm" type="number" step="1" />
+                                                            <label
+                                                                class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">No</label>
+                                                            <input name="no" th:value="${searchForm?.no}"
+                                                                class="form-input block w-full rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-primary focus:border-primary h-9 text-sm"
+                                                                type="number" step="1" />
                                                         </div>
                                                         <div data-advanced-field="companyId">
                                                             <label
@@ -299,7 +302,8 @@
                                                                 class="form-input block w-full rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-primary focus:border-primary h-9 text-sm"
                                                                 placeholder="例: 100-0005" type="text" />
                                                         </div>
-                                                        <div class="md:col-span-2" data-advanced-field="registrationDate">
+                                                        <div class="md:col-span-2"
+                                                            data-advanced-field="registrationDate">
                                                             <label
                                                                 class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">登録日</label>
                                                             <div class="flex items-center gap-2">
@@ -399,8 +403,11 @@
                                         <input type="checkbox" id="selectAllCheckbox"
                                             class="form-checkbox h-5 w-5 rounded text-primary focus:ring-primary/50 bg-white border-gray-400" />
                                     </th>
-                                    <th class="px-4 py-4 text-center text-gray-800 w-[70px] font-bold leading-normal">
-                                        No.
+                                    <th data-col="displayNumber" data-sort-type="number"
+                                        class="px-4 py-2.5 text-center text-gray-800 w-[70px] font-bold leading-normal group cursor-pointer">
+                                        <div class="flex items-center justify-center gap-2">No. <span
+                                                class="sort-icon text-xs text-gray-400 group-hover:text-gray-600 dark:text-gray-400">↕</span>
+                                        </div>
                                     </th>
                                     <th data-col="companyId" data-sort-type="number"
                                         class="px-4 py-2.5 text-left text-gray-600 dark:text-white w-[100px] font-medium leading-normal group cursor-pointer">
@@ -455,9 +462,9 @@
                                         <input type="checkbox" name="rowCheckbox" th:value="${company.companyId}"
                                             class="form-checkbox rounded text-primary focus:ring-primary/50 bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600" />
                                     </td>
-                                    <td
+                                    <td data-col="displayNumber"
                                         class="px-4 py-2 text-center text-gray-400 dark:text-gray-500 font-normal leading-normal">
-                                        [[${(page.number * page.size) + iterStat.count}]]
+                                        [[${company.displayNumber}]]
                                     </td>
                                     <td data-col="companyId"
                                         class="px-4 py-2 text-gray-500 dark:text-[#9dabb9] font-normal leading-normal">
@@ -626,38 +633,57 @@
 
                                 <!-- Columns -->
                                 <div>
-                                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">出力カラム設定</label>
+                                    <label
+                                        class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">出力カラム設定</label>
                                     <p class="text-xs text-gray-500 mb-2">Noは常に出力されます。ドラッグで順序を変更できます。</p>
                                     <input type="hidden" name="columnOrder" id="exportColumnOrder" />
                                     <div id="exportColumnList" class="space-y-2 text-sm">
-                                        <label draggable="true" data-column-item data-key="companyName" class="flex items-center gap-2 p-2 rounded border border-gray-200 dark:border-gray-600 cursor-move">
-                                            <span class="material-symbols-outlined text-gray-400 text-base">drag_indicator</span>
-                                            <input type="checkbox" name="columns" value="companyName" checked class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                                        <label draggable="true" data-column-item data-key="companyName"
+                                            class="flex items-center gap-2 p-2 rounded border border-gray-200 dark:border-gray-600 cursor-move">
+                                            <span
+                                                class="material-symbols-outlined text-gray-400 text-base">drag_indicator</span>
+                                            <input type="checkbox" name="columns" value="companyName" checked
+                                                class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
                                             <span class="text-gray-700 dark:text-gray-300">企業名</span>
                                         </label>
-                                        <label draggable="true" data-column-item data-key="zipCode" class="flex items-center gap-2 p-2 rounded border border-gray-200 dark:border-gray-600 cursor-move">
-                                            <span class="material-symbols-outlined text-gray-400 text-base">drag_indicator</span>
-                                            <input type="checkbox" name="columns" value="zipCode" checked class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                                        <label draggable="true" data-column-item data-key="zipCode"
+                                            class="flex items-center gap-2 p-2 rounded border border-gray-200 dark:border-gray-600 cursor-move">
+                                            <span
+                                                class="material-symbols-outlined text-gray-400 text-base">drag_indicator</span>
+                                            <input type="checkbox" name="columns" value="zipCode" checked
+                                                class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
                                             <span class="text-gray-700 dark:text-gray-300">郵便番号</span>
                                         </label>
-                                        <label draggable="true" data-column-item data-key="address" class="flex items-center gap-2 p-2 rounded border border-gray-200 dark:border-gray-600 cursor-move">
-                                            <span class="material-symbols-outlined text-gray-400 text-base">drag_indicator</span>
-                                            <input type="checkbox" name="columns" value="address" checked class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                                        <label draggable="true" data-column-item data-key="address"
+                                            class="flex items-center gap-2 p-2 rounded border border-gray-200 dark:border-gray-600 cursor-move">
+                                            <span
+                                                class="material-symbols-outlined text-gray-400 text-base">drag_indicator</span>
+                                            <input type="checkbox" name="columns" value="address" checked
+                                                class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
                                             <span class="text-gray-700 dark:text-gray-300">住所</span>
                                         </label>
-                                        <label draggable="true" data-column-item data-key="companyId" class="flex items-center gap-2 p-2 rounded border border-gray-200 dark:border-gray-600 cursor-move">
-                                            <span class="material-symbols-outlined text-gray-400 text-base">drag_indicator</span>
-                                            <input type="checkbox" name="columns" value="companyId" class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                                        <label draggable="true" data-column-item data-key="companyId"
+                                            class="flex items-center gap-2 p-2 rounded border border-gray-200 dark:border-gray-600 cursor-move">
+                                            <span
+                                                class="material-symbols-outlined text-gray-400 text-base">drag_indicator</span>
+                                            <input type="checkbox" name="columns" value="companyId"
+                                                class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
                                             <span class="text-gray-700 dark:text-gray-300">企業ID</span>
                                         </label>
-                                        <label draggable="true" data-column-item data-key="registrationDate" class="flex items-center gap-2 p-2 rounded border border-gray-200 dark:border-gray-600 cursor-move">
-                                            <span class="material-symbols-outlined text-gray-400 text-base">drag_indicator</span>
-                                            <input type="checkbox" name="columns" value="registrationDate" class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                                        <label draggable="true" data-column-item data-key="registrationDate"
+                                            class="flex items-center gap-2 p-2 rounded border border-gray-200 dark:border-gray-600 cursor-move">
+                                            <span
+                                                class="material-symbols-outlined text-gray-400 text-base">drag_indicator</span>
+                                            <input type="checkbox" name="columns" value="registrationDate"
+                                                class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
                                             <span class="text-gray-700 dark:text-gray-300">登録日</span>
                                         </label>
-                                        <label draggable="true" data-column-item data-key="remarks" class="flex items-center gap-2 p-2 rounded border border-gray-200 dark:border-gray-600 cursor-move">
-                                            <span class="material-symbols-outlined text-gray-400 text-base">drag_indicator</span>
-                                            <input type="checkbox" name="columns" value="remarks" class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                                        <label draggable="true" data-column-item data-key="remarks"
+                                            class="flex items-center gap-2 p-2 rounded border border-gray-200 dark:border-gray-600 cursor-move">
+                                            <span
+                                                class="material-symbols-outlined text-gray-400 text-base">drag_indicator</span>
+                                            <input type="checkbox" name="columns" value="remarks"
+                                                class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
                                             <span class="text-gray-700 dark:text-gray-300">備考</span>
                                         </label>
                                     </div>
@@ -839,20 +865,21 @@
                 if (searchForm) {
                     const targetInputs = searchForm.querySelectorAll('input:not([type="hidden"])');
                     targetInputs.forEach(input => {
-                        const wrapper = input.parentElement;
-                        if (!wrapper) return;
-                        wrapper.classList.add('relative');
+                        // Create a dedicated wrapper for the input and its clear button
+                        // to ensure the button is positioned relative only to the input field.
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'relative flex-1';
+                        input.parentNode.insertBefore(wrapper, input);
+                        wrapper.appendChild(input);
+
                         input.classList.add('pr-8');
 
-                        let btn = wrapper.querySelector(`.search-clear-btn[data-clear-target="${input.name}"]`);
-                        if (!btn) {
-                            btn = document.createElement('button');
-                            btn.type = 'button';
-                            btn.dataset.clearTarget = input.name;
-                            btn.className = 'search-clear-btn absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 inline-flex items-center justify-center leading-none text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-300 hidden';
-                            btn.innerHTML = '<span class="material-symbols-outlined text-sm leading-none">close</span>';
-                            wrapper.appendChild(btn);
-                        }
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.dataset.clearTarget = input.name;
+                        btn.className = 'search-clear-btn absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 inline-flex items-center justify-center leading-none text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-300 hidden';
+                        btn.innerHTML = '<span class="material-symbols-outlined text-sm leading-none">close</span>';
+                        wrapper.appendChild(btn);
 
                         const toggle = () => btn.classList.toggle('hidden', !input.value);
                         input.addEventListener('input', toggle);
@@ -1187,6 +1214,18 @@
                             // Immediately hide row
                             row.style.transition = 'all 0.3s ease';
                             row.style.opacity = '0';
+
+                            // Shift remaining displayNumber below deletedDisplayNumber
+                            const deletedNum = data.deletedDisplayNumber;
+                            if (deletedNum != null) {
+                                document.querySelectorAll('td[data-col="displayNumber"]').forEach(td => {
+                                    const currentNum = parseInt(td.textContent.trim(), 10);
+                                    if (!isNaN(currentNum) && currentNum > deletedNum) {
+                                        td.textContent = currentNum - 1;
+                                    }
+                                });
+                            }
+
                             setTimeout(() => {
                                 row.style.display = 'none';
                                 handleEmptyPageAfterDelete();
@@ -1242,12 +1281,10 @@
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {
-                            // Restore row
-                            row.style.display = '';
+                            showToast('復元しました。画面を更新します...', 'success');
                             setTimeout(() => {
-                                row.style.opacity = '1';
-                            }, 10);
-                            showToast('復元しました', 'success');
+                                window.location.reload();
+                            }, 1000);
                         } else {
                             showToast('復元に失敗しました: ' + data.message, 'error');
                         }

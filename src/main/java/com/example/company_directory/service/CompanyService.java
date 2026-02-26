@@ -9,6 +9,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import jakarta.annotation.PostConstruct;
 
 import com.example.company_directory.entity.Company;
 import com.example.company_directory.form.CompanyForm;
@@ -33,6 +35,21 @@ public class CompanyService {
         return companyRepository.findAllByIsDeletedFalse();
     }
 
+    @PostConstruct
+    @Transactional
+    public void initDisplayNumbers() {
+        List<Company> companiesToInit = companyRepository
+                .findAllByIsDeletedFalseAndDisplayNumberIsNullOrderByCompanyIdAsc();
+        if (!companiesToInit.isEmpty()) {
+            int currentMax = companyRepository.findMaxDisplayNumberByIsDeletedFalse();
+            for (Company company : companiesToInit) {
+                currentMax++;
+                company.setDisplayNumber(currentMax);
+                companyRepository.save(company);
+            }
+        }
+    }
+
     public Company save(CompanyForm form) {
         Company company = new Company();
 
@@ -41,6 +58,9 @@ public class CompanyService {
         company.setZipCode(form.getZipCode());
         company.setRemarks(form.getRemarks());
         company.setRegistrationDate(LocalDate.now());
+
+        int nextNumber = companyRepository.findMaxDisplayNumberByIsDeletedFalse() + 1;
+        company.setDisplayNumber(nextNumber);
 
         return companyRepository.save(company);
     }
@@ -78,8 +98,10 @@ public class CompanyService {
 
     }
 
+    @Transactional
     public void delete(Integer id) {
         Company company = this.findById(id);
+        Integer deletedDisplayNumber = company.getDisplayNumber();
 
         company.setIsDeleted(true);
         company.setDeletedAt(LocalDateTime.now());
@@ -87,6 +109,9 @@ public class CompanyService {
 
         companyRepository.save(company);
 
+        if (deletedDisplayNumber != null) {
+            companyRepository.shiftDisplayNumbersDown(deletedDisplayNumber);
+        }
     }
 
     public List<Company> findAllTrash() {
@@ -99,11 +124,15 @@ public class CompanyService {
         return companyRepository.findAll(spec, pageable);
     }
 
+    @Transactional
     public void restore(Integer id) {
         Company company = this.findById(id);
 
         company.setIsDeleted(false);
         company.setDeletedAt(null);
+
+        int nextNumber = companyRepository.findMaxDisplayNumberByIsDeletedFalse() + 1;
+        company.setDisplayNumber(nextNumber);
 
         companyRepository.save(company);
 
