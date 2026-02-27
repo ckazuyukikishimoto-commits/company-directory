@@ -17,6 +17,7 @@ public class CompanySearchForm {
     private String companyName;
     private String address;
     private String zipCode;
+    private String deletedBy;
 
     // 登録日（範囲検索）
     @DateTimeFormat(pattern = "yyyy-MM-dd")
@@ -24,5 +25,12 @@ public class CompanySearchForm {
 
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate dateTo;
+
+    // 削除日時（範囲検索）
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    private LocalDate deletedFrom;
+
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    private LocalDate deletedTo;
 
 }

@@ -99,13 +99,13 @@ public class CompanyService {
     }
 
     @Transactional
-    public void delete(Integer id) {
+    public void delete(Integer id, String userId) {
         Company company = this.findById(id);
         Integer deletedDisplayNumber = company.getDisplayNumber();
 
         company.setIsDeleted(true);
         company.setDeletedAt(LocalDateTime.now());
-        // company.setDeletedBy(null);
+        company.setDeletedBy(userId);
 
         companyRepository.save(company);
 
@@ -130,6 +130,7 @@ public class CompanyService {
 
         company.setIsDeleted(false);
         company.setDeletedAt(null);
+        company.setDeletedBy(null);
 
         int nextNumber = companyRepository.findMaxDisplayNumberByIsDeletedFalse() + 1;
         company.setDisplayNumber(nextNumber);

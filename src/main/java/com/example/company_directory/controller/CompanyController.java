@@ -2,6 +2,7 @@ package com.example.company_directory.controller;
 
 import java.io.InputStream;
 
+import java.security.Principal;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -146,10 +147,10 @@ public class CompanyController {
     }
 
     @PostMapping("/delete/{id}")
-    public String delete(@PathVariable Integer id, RedirectAttributes redirectAttributes,
+    public String delete(@PathVariable Integer id, Principal principal, RedirectAttributes redirectAttributes,
             @RequestParam(required = false) String returnUrl, Model model) {
         try {
-            companyService.delete(id);
+            companyService.delete(id, principal.getName());
             redirectAttributes.addFlashAttribute("successMessage", "企業情報を削除しました。");
             return resolveReturnUrl(returnUrl, "/companies");
 

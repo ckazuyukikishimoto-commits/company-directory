@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.company_directory.service.CompanyService;
 
+import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,12 +23,12 @@ public class CompanyApiController {
     }
 
     @PostMapping("/delete/{id}")
-    public ResponseEntity<Map<String, Object>> delete(@PathVariable Integer id) {
+    public ResponseEntity<Map<String, Object>> delete(@PathVariable Integer id, Principal principal) {
         try {
             // Get the display number before deleting
             Integer deletedDisplayNumber = companyService.findById(id).getDisplayNumber();
 
-            companyService.delete(id);
+            companyService.delete(id, principal.getName());
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Company soft-deleted successfully");

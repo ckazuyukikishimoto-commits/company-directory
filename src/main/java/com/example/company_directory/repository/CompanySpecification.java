@@ -5,6 +5,11 @@ import com.example.company_directory.form.CompanySearchForm;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.StringUtils;
 
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 public class CompanySpecification {
 
     public static Specification<Company> search(CompanySearchForm form) {
@@ -30,13 +35,23 @@ public class CompanySpecification {
                     // （生成SQLイメージ: concat('', company_id) like ?）
                     var companyIdAsText = c.concat("", r.get("companyId").as(String.class));
                     var displayNumberAsText = c.concat("", r.get("displayNumber").as(String.class));
-                    return c.or(
-                            c.like(companyIdAsText, pattern),
-                            c.like(r.get("companyName"), pattern),
-                            c.like(r.get("address"), pattern),
-                            c.like(r.get("zipCode"), pattern),
-                            c.like(r.get("remarks"), pattern),
-                            c.like(displayNumberAsText, pattern));
+
+                    List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+                    predicates.add(c.like(companyIdAsText, pattern));
+                    predicates.add(c.like(r.get("companyName"), pattern));
+                    predicates.add(c.like(r.get("address"), pattern));
+                    predicates.add(c.like(r.get("zipCode"), pattern));
+                    predicates.add(c.like(r.get("remarks"), pattern));
+                    predicates.add(c.like(displayNumberAsText, pattern));
+
+                    if (isDeleted) {
+                        predicates.add(c.like(r.get("deletedBy"), pattern));
+                        var deletedAtText = c.function("to_char", String.class, r.get("deletedAt"),
+                                c.literal("YYYY-MM-DD HH24:MI:SS"));
+                        predicates.add(c.like(deletedAtText, pattern));
+                    }
+
+                    return c.or(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
                 };
                 spec = spec.and(keywordSpec);
             }
@@ -69,6 +84,22 @@ public class CompanySpecification {
             }
             if (form.getDateTo() != null) {
                 spec = spec.and((r, q, c) -> c.lessThanOrEqualTo(r.get("registrationDate"), form.getDateTo()));
+            }
+
+            // 7. 削除日時・削除実行者（削除済みのみ）
+            if (isDeleted) {
+                if (StringUtils.hasText(form.getDeletedBy())) {
+                    spec = spec.and((r, q, c) -> c.like(r.get("deletedBy"), "%" + form.getDeletedBy() + "%"));
+                }
+
+                if (form.getDeletedFrom() != null) {
+                    LocalDateTime from = form.getDeletedFrom().atStartOfDay();
+                    spec = spec.and((r, q, c) -> c.greaterThanOrEqualTo(r.get("deletedAt"), from));
+                }
+                if (form.getDeletedTo() != null) {
+                    LocalDateTime to = form.getDeletedTo().plusDays(1).atStartOfDay();
+                    spec = spec.and((r, q, c) -> c.lessThan(r.get("deletedAt"), to));
+                }
             }
 
             return spec.toPredicate(root, query, cb);
