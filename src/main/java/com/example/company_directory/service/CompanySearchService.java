@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 住所から企業名候補を検索するサービス。
@@ -41,28 +42,35 @@ public class CompanySearchService {
      * 住所から企業名候補を検索する（データベース + Gemini API統合）
      */
     public List<CompanySearchResultDto> searchByAddress(String address) {
+        CompletableFuture<List<CompanySearchResultDto>> dbFuture = CompletableFuture.supplyAsync(() -> {
+            try {
+                List<CompanySearchResultDto> dbResults = searchByDatabase(address);
+                log.info("Database: {} 件の結果を取得", dbResults.size());
+                return dbResults;
+            } catch (Exception e) {
+                log.warn("Database 検索エラー: {}", e.getMessage());
+                return Collections.emptyList();
+            }
+        });
+
+        CompletableFuture<List<CompanySearchResultDto>> geminiFuture = CompletableFuture.supplyAsync(() -> {
+            try {
+                List<CompanySearchResultDto> geminiResults = searchByGeminiApi(address);
+                log.info("Gemini API: {} 件の結果を取得", geminiResults.size());
+                return geminiResults;
+            } catch (Throwable t) {
+                // Keep overall search available even when native/library errors occur.
+                log.warn("Gemini API 呼び出しエラー: {}", t.getMessage());
+                return Collections.emptyList();
+            }
+        });
+
+        CompletableFuture.allOf(dbFuture, geminiFuture).join();
+
         List<CompanySearchResultDto> results = new ArrayList<>();
+        results.addAll(dbFuture.join());
+        results.addAll(geminiFuture.join());
 
-        // 1. データベースで検索
-        try {
-            List<CompanySearchResultDto> dbResults = searchByDatabase(address);
-            results.addAll(dbResults);
-            log.info("データベース: {}件の結果を取得", dbResults.size());
-        } catch (Exception e) {
-            log.warn("データベース検索に失敗しました: {}", e.getMessage());
-        }
-
-        // 2. Gemini API で検索
-        try {
-            List<CompanySearchResultDto> geminiResults = searchByGeminiApi(address);
-            results.addAll(geminiResults);
-            log.info("Gemini API: {}件の結果を取得", geminiResults.size());
-        } catch (Throwable t) {
-            // ネイティブライブラリ読込エラー（UnsatisfiedLinkError）も含めて握りつぶし、検索全体は継続
-            log.warn("Gemini APIの呼び出しに失敗しました: {}", t.getMessage());
-        }
-
-        // 3. 重複を除去（企業名ベース）
         return deduplicateResults(results);
     }
 
