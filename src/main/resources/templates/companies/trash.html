@@ -210,6 +210,7 @@
                     return;
                 }
 
+                document.documentElement.classList.add('js-state-restored');
                 sessionStorage.setItem('lastTrashUrl', currentUrl);
             })();
     </script>
@@ -302,7 +303,6 @@
                                                                 class="form-input block w-full rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-primary focus:border-primary h-9 text-sm"
                                                                 placeholder="例: 株式会社未来テクノロジー" type="text" />
                                                         </div>
-                                                        <!-- Trashでは住所・郵便番号列はないが検索機能としては残す -->
                                                         <div data-advanced-field="address">
                                                             <label
                                                                 class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">住所</label>
@@ -317,24 +317,16 @@
                                                                 class="form-input block w-full rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-primary focus:border-primary h-9 text-sm"
                                                                 placeholder="例: 100-0005" type="text" />
                                                         </div>
-                                                        <div data-advanced-field="deletedBy">
+                                                        <div class="md:col-span-2">
                                                             <label
-                                                                class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">削除実行者</label>
-                                                            <input name="deletedBy" th:value="${searchForm?.deletedBy}"
-                                                                class="form-input block w-full rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-primary focus:border-primary h-9 text-sm"
-                                                                placeholder="例: user01" type="text" />
-                                                        </div>
-                                                        <div class="md:col-span-2" data-advanced-field="deletedAt">
-                                                            <label
-                                                                class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">削除日時</label>
+                                                                class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">登録日</label>
                                                             <div class="flex items-center gap-2">
-                                                                <input name="deletedFrom"
-                                                                    th:value="${searchForm?.deletedFrom}"
+                                                                <input name="dateFrom"
+                                                                    th:value="${searchForm?.dateFrom}"
                                                                     class="form-input block w-full rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] text-gray-800 dark:text-white focus:ring-primary focus:border-primary h-9 text-sm"
                                                                     type="date" />
                                                                 <span class="text-gray-500 dark:text-gray-400">〜</span>
-                                                                <input name="deletedTo"
-                                                                    th:value="${searchForm?.deletedTo}"
+                                                                <input name="dateTo" th:value="${searchForm?.dateTo}"
                                                                     class="form-input block w-full rounded-md bg-white dark:bg-[#283039] border-gray-300 dark:border-[#3b4754] text-gray-800 dark:text-white focus:ring-primary focus:border-primary h-9 text-sm"
                                                                     type="date" />
                                                             </div>
@@ -527,9 +519,6 @@
                                 <input type="hidden" name="zipCode" th:value="${searchForm?.zipCode}" />
                                 <input type="hidden" name="dateFrom" th:value="${searchForm?.dateFrom}" />
                                 <input type="hidden" name="dateTo" th:value="${searchForm?.dateTo}" />
-                                <input type="hidden" name="deletedFrom" th:value="${searchForm?.deletedFrom}" />
-                                <input type="hidden" name="deletedTo" th:value="${searchForm?.deletedTo}" />
-                                <input type="hidden" name="deletedBy" th:value="${searchForm?.deletedBy}" />
                                 <select name="size" onchange="document.getElementById('pageSizeForm').submit()"
                                     class="form-select rounded-md bg-archive-dark-panel border-archive-dark-border focus:ring-primary focus:border-primary h-8 py-0 pl-2 pr-7 text-sm text-archive-text">
                                     <option value="5" th:selected="${page.size == 5}">5</option>
@@ -553,7 +542,7 @@
                             </div>
                             <div class="flex gap-1 text-archive-text">
                                 <!-- First Page -->
-                                <a th:href="@{/companies/trash(page=0, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo}, deletedFrom=${searchForm.deletedFrom}, deletedTo=${searchForm.deletedTo}, deletedBy=${searchForm.deletedBy})}"
+                                <a th:href="@{/companies/trash(page=0, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
                                     th:classappend="${page.first or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''">
                                     <button th:disabled="${page.first or page.totalElements == 0}"
                                         class="h-8 w-8 rounded flex items-center justify-center hover:bg-archive-dark-panel disabled:opacity-50">
@@ -562,7 +551,7 @@
                                 </a>
 
                                 <!-- Previous Page -->
-                                <a th:href="@{/companies/trash(page=${page.number - 1}, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo}, deletedFrom=${searchForm.deletedFrom}, deletedTo=${searchForm.deletedTo}, deletedBy=${searchForm.deletedBy})}"
+                                <a th:href="@{/companies/trash(page=${page.number - 1}, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
                                     th:classappend="${page.first or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''">
                                     <button th:disabled="${page.first or page.totalElements == 0}"
                                         class="h-8 w-8 rounded flex items-center justify-center hover:bg-archive-dark-panel disabled:opacity-50">
@@ -571,7 +560,7 @@
                                 </a>
 
                                 <!-- Next Page -->
-                                <a th:href="@{/companies/trash(page=${page.number + 1}, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo}, deletedFrom=${searchForm.deletedFrom}, deletedTo=${searchForm.deletedTo}, deletedBy=${searchForm.deletedBy})}"
+                                <a th:href="@{/companies/trash(page=${page.number + 1}, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
                                     th:classappend="${page.last or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''">
                                     <button th:disabled="${page.last or page.totalElements == 0}"
                                         class="h-8 w-8 rounded flex items-center justify-center hover:bg-archive-dark-panel disabled:opacity-50">
@@ -580,7 +569,7 @@
                                 </a>
 
                                 <!-- Last Page -->
-                                <a th:href="@{/companies/trash(page=${page.totalPages - 1}, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo}, deletedFrom=${searchForm.deletedFrom}, deletedTo=${searchForm.deletedTo}, deletedBy=${searchForm.deletedBy})}"
+                                <a th:href="@{/companies/trash(page=${page.totalPages - 1}, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
                                     th:classappend="${page.last or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''">
                                     <button th:disabled="${page.last or page.totalElements == 0}"
                                         class="h-8 w-8 rounded flex items-center justify-center hover:bg-archive-dark-panel disabled:opacity-50">
@@ -654,29 +643,21 @@
             }
 
             // 初期化
-            function showContent() {
-                document.documentElement.classList.add('js-state-restored');
-            }
-
             function init() {
-                try {
-                    const settings = loadSettings();
-                    syncCheckboxes(settings);
-                    applyColumnVisibility(settings);
+                const settings = loadSettings();
+                syncCheckboxes(settings);
+                applyColumnVisibility(settings);
 
-                    // チェックボックスの変更イベント（リアルタイム反映）
-                    const checkboxes = document.querySelectorAll('#columnSettings input[type="checkbox"]:not(:disabled)');
-                    checkboxes.forEach(cb => {
-                        cb.addEventListener('change', function () {
-                            const col = this.dataset.col;
-                            settings[col] = this.checked;
-                            applyColumnVisibility(settings);
-                            saveSettings(settings);
-                        });
+                // チェックボックスの変更イベント（リアルタイム反映）
+                const checkboxes = document.querySelectorAll('#columnSettings input[type="checkbox"]:not(:disabled)');
+                checkboxes.forEach(cb => {
+                    cb.addEventListener('change', function () {
+                        const col = this.dataset.col;
+                        settings[col] = this.checked;
+                        applyColumnVisibility(settings);
+                        saveSettings(settings);
                     });
-                } finally {
-                    showContent();
-                }
+                });
             }
 
             // DOMContentLoaded後に実行
@@ -735,22 +716,23 @@
                 const form = document.getElementById('trashSearchForm');
                 if (!form) return;
 
-                const targetInputs = form.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"])');
+                const targetInputs = form.querySelectorAll('input:not([type="hidden"])');
                 targetInputs.forEach(input => {
-                    // Create a dedicated wrapper for the input and its clear button
-                    // to ensure the button is positioned relative only to the input field.
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'relative flex-1';
-                    input.parentNode.insertBefore(wrapper, input);
-                    wrapper.appendChild(input);
+                    const wrapper = input.parentElement;
+                    if (!wrapper) return;
+
+                    wrapper.classList.add('relative');
                     input.classList.add('pr-8');
 
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.dataset.clearTarget = input.name;
-                    btn.className = 'search-clear-btn absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 inline-flex items-center justify-center leading-none text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-300 hidden';
-                    btn.innerHTML = '<span class="material-symbols-outlined text-sm leading-none">close</span>';
-                    wrapper.appendChild(btn);
+                    let btn = wrapper.querySelector(`.search-clear-btn[data-clear-target="${input.name}"]`);
+                    if (!btn) {
+                        btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.dataset.clearTarget = input.name;
+                        btn.className = 'search-clear-btn absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 inline-flex items-center justify-center leading-none text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-300 hidden';
+                        btn.innerHTML = '<span class="material-symbols-outlined text-sm leading-none">close</span>';
+                        wrapper.appendChild(btn);
+                    }
 
                     const toggle = () => btn.classList.toggle('hidden', !input.value);
                     input.addEventListener('input', toggle);
@@ -1065,13 +1047,13 @@
         })();
     </script>
     <a th:if="${page != null and !page.first and page.totalElements > 0}"
-        th:href="@{/companies/trash(page=${page.number - 1}, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo}, deletedFrom=${searchForm.deletedFrom}, deletedTo=${searchForm.deletedTo}, deletedBy=${searchForm.deletedBy})}"
+        th:href="@{/companies/trash(page=${page.number - 1}, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
         class="fixed left-4 top-1/2 z-30 -translate-y-1/2 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg transition hover:bg-primary/90"
         aria-label="前のページへ">
         <span class="material-symbols-outlined">arrow_back</span>
     </a>
     <a th:if="${page != null and !page.last and page.totalElements > 0}"
-        th:href="@{/companies/trash(page=${page.number + 1}, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo}, deletedFrom=${searchForm.deletedFrom}, deletedTo=${searchForm.deletedTo}, deletedBy=${searchForm.deletedBy})}"
+        th:href="@{/companies/trash(page=${page.number + 1}, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
         class="fixed right-4 top-1/2 z-30 -translate-y-1/2 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg transition hover:bg-primary/90"
         aria-label="次のページへ">
         <span class="material-symbols-outlined">arrow_forward</span>

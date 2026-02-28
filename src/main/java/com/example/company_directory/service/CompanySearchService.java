@@ -95,16 +95,17 @@ public class CompanySearchService {
             return Collections.emptyList();
         }
 
-        String url = GEMINI_API_BASE + "/models/gemini-2.5-flash:generateContent?key=" + geminiApiKey;
+        String url = GEMINI_API_BASE + "/models/gemini-3-flash-preview:generateContent?key=" + geminiApiKey;
 
         // Google Search Grounding を使ったプロンプト
-        String prompt = "以下の住所にある企業名を可能な限り多く教えてください。"
-                + "結果は必ず以下のJSON形式のみで出力してください。"
+        String prompt = "以下の住所に存在する建物名・施設名・企業名・会社名・店舗名・事業所名をGoogle検索結果をもとに可能な限り多く列挙してください。\n"
+                + "確実でなくても候補として含めてください。\n"
+                + "結果は必ず以下のJSON形式のみで出力してください。\n"
                 + "余計な説明・マークダウン・コードブロックは不要です。\n\n"
-                + "{\"companies\": [\"企業名1\", \"企業名2\", \"企業名3\"]}\n\n"
+                + "{\"companies\": [\"名称1\", \"名称2\", \"名称3\"]}\n\n"
                 + "住所: " + address;
 
-        // Gemini API リクエストボディ
+        // Gemini API リクエストボデ
         Map<String, Object> requestBody = new LinkedHashMap<>();
 
         // contents
@@ -119,7 +120,7 @@ public class CompanySearchService {
                 "google_search", Map.of());
         requestBody.put("tools", List.of(googleSearchTool));
 
-        log.debug("Gemini API リクエスト送信: address={}", address);
+        log.info("Gemini API リクエスト送信: address={}", address);
 
         try {
             HttpHeaders headers = new HttpHeaders();
@@ -129,7 +130,7 @@ public class CompanySearchService {
             @SuppressWarnings("unchecked")
             Map<String, Object> response = restTemplate.postForObject(url, entity, Map.class);
 
-            log.debug("Gemini API レスポンス: {}", response);
+            log.info("Gemini API レスポンス: {}", response);
             if (response == null) {
                 return Collections.emptyList();
             }
