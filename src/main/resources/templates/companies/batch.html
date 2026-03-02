@@ -96,6 +96,11 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background-color: rgba(156, 163, 175, 0.8);
         }
+
+        .drop-zone-active {
+            border-color: #0066cc;
+            background-color: #eff6ff;
+        }
     </style>
 </head>
 
@@ -105,6 +110,11 @@
         <header class="flex items-center justify-between border-b border-gray-300 px-6 py-4 bg-white shadow-sm">
             <h1 class="text-2xl font-bold text-gray-900">まとめて企業登録</h1>
             <div class="flex items-center gap-4">
+                <button id="openImageUploadModalBtn"
+                    class="flex items-center gap-2 rounded-lg h-10 px-5 bg-white border border-primary text-primary text-base font-bold hover:bg-blue-50 transition-colors">
+                    <span class="material-symbols-outlined text-xl">image</span>
+                    画像から企業登録
+                </button>
                 <!-- バリデーションチェックボタンのコンテナ（ツールチップ用） -->
                 <div class="relative group">
                     <button id="validateBtn" disabled
@@ -279,6 +289,73 @@
         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
     </form>
 
+    <!-- 画像アップロードモーダル -->
+    <div id="imageUploadModal" class="fixed inset-0 z-50 hidden" aria-hidden="true">
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" id="imageUploadModalBackdrop"></div>
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div
+                class="relative w-full max-w-xl transform rounded-2xl bg-white p-6 shadow-xl transition-all border border-gray-200">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">image</span>
+                        画像から企業登録
+                    </h3>
+                    <button type="button" id="closeImageUploadModalBtn" class="text-gray-500 hover:text-gray-700">
+                        <span class="material-symbols-outlined text-2xl">close</span>
+                    </button>
+                </div>
+
+                <p class="text-sm text-gray-600">
+                    JPG/PNG画像をアップロードすると、企業名・郵便番号・住所を最大25件まで自動入力します。
+                </p>
+
+                <input type="file" id="imageUploadInput" class="hidden" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+
+                <div id="imageDropZone"
+                    class="mt-4 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center cursor-pointer hover:border-primary hover:bg-blue-50 transition-colors">
+                    <span class="material-symbols-outlined text-4xl text-gray-500">upload_file</span>
+                    <p class="mt-2 text-sm text-gray-700 font-bold">ここに画像をドラッグ&ドロップ</p>
+                    <p class="text-xs text-gray-500">または下のボタンから選択してください</p>
+                </div>
+
+                <div class="mt-3 flex items-center justify-between gap-3">
+                    <p id="imageUploadSelectedFile" class="text-sm text-gray-600 truncate">ファイルが選択されていません</p>
+                    <button type="button" id="imageFileSelectBtn"
+                        class="shrink-0 px-4 py-2 text-sm font-bold text-primary border border-primary rounded-lg hover:bg-blue-50 transition-colors">
+                        ファイル選択
+                    </button>
+                </div>
+
+                <p id="imageUploadMessage" class="mt-3 text-sm hidden"></p>
+
+                <div id="imageUploadLoading" class="hidden mt-4 py-3 text-center">
+                    <div class="inline-flex items-center gap-3 text-gray-500">
+                        <svg class="animate-spin h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                            </circle>
+                            <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                            </path>
+                        </svg>
+                        <span class="text-sm font-bold">画像を解析しています...</span>
+                    </div>
+                </div>
+
+                <div class="mt-5 flex justify-end gap-3">
+                    <button type="button" id="imageUploadCancelBtn"
+                        class="px-4 py-2 text-sm font-bold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
+                        キャンセル
+                    </button>
+                    <button type="button" id="imageUploadExecBtn" disabled
+                        class="px-4 py-2 text-sm font-bold text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                        読み取りして反映
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 企業名検索モーダル -->
     <div id="companySearchModal" class="fixed inset-0 z-50 hidden" aria-hidden="true">
         <!-- Backdrop -->
@@ -363,6 +440,8 @@
         const addBottomBtn = document.getElementById('addBottomBtn');
         const statusMessage = document.getElementById('statusMessage');
         const confirmModal = document.getElementById('confirmModal');
+        const csrfTokenValue = document.getElementById('csrfToken').value;
+        const csrfHeaderName = document.getElementById('csrfHeader').value;
 
         let rowCount = 0;
         let lastValidationResult = null;
@@ -567,6 +646,203 @@
                 remarks: row.querySelector('.col-remarks').value.trim()
             }));
         }
+
+        function rowHasAnyValue(row) {
+            return ['.col-name', '.col-zip', '.col-address', '.col-remarks']
+                .map(selector => row.querySelector(selector))
+                .some(input => input && input.value.trim() !== '');
+        }
+
+        function applyExtractedCompaniesToRows(companies) {
+            const rows = Array.from(tableBody.querySelectorAll('tr'));
+            let searchIndex = 0;
+            let appliedCount = 0;
+
+            for (const company of companies) {
+                let targetRow = null;
+
+                while (searchIndex < rows.length) {
+                    const candidate = rows[searchIndex];
+                    searchIndex += 1;
+                    if (!rowHasAnyValue(candidate)) {
+                        targetRow = candidate;
+                        break;
+                    }
+                }
+
+                if (!targetRow) {
+                    targetRow = addRow();
+                    if (!targetRow) {
+                        break;
+                    }
+                    rows.push(targetRow);
+                }
+
+                targetRow.querySelector('.col-name').value = (company.companyName || '').trim();
+                targetRow.querySelector('.col-zip').value = (company.zipCode || '').trim();
+                normalizeZipValue(targetRow.querySelector('.col-zip'));
+                targetRow.querySelector('.col-address').value = (company.address || '').trim();
+                appliedCount += 1;
+            }
+
+            saveDraft();
+            updateValidateButtonState();
+            lastValidationResult = null;
+            updateRegisterButtonState(null);
+            return appliedCount;
+        }
+
+        // 画像アップロードモーダル制御
+        const openImageUploadModalBtn = document.getElementById('openImageUploadModalBtn');
+        const imageUploadModal = document.getElementById('imageUploadModal');
+        const imageUploadModalBackdrop = document.getElementById('imageUploadModalBackdrop');
+        const closeImageUploadModalBtn = document.getElementById('closeImageUploadModalBtn');
+        const imageUploadCancelBtn = document.getElementById('imageUploadCancelBtn');
+        const imageDropZone = document.getElementById('imageDropZone');
+        const imageUploadInput = document.getElementById('imageUploadInput');
+        const imageFileSelectBtn = document.getElementById('imageFileSelectBtn');
+        const imageUploadSelectedFile = document.getElementById('imageUploadSelectedFile');
+        const imageUploadMessage = document.getElementById('imageUploadMessage');
+        const imageUploadLoading = document.getElementById('imageUploadLoading');
+        const imageUploadExecBtn = document.getElementById('imageUploadExecBtn');
+
+        let selectedImageFile = null;
+
+        function toggleImageUploadModal(show) {
+            imageUploadModal.classList.toggle('hidden', !show);
+        }
+
+        function setImageUploadMessage(message, type = 'info') {
+            const colorClassMap = {
+                info: 'text-gray-600',
+                success: 'text-green-600',
+                error: 'text-red-600'
+            };
+            if (!message) {
+                imageUploadMessage.classList.add('hidden');
+                imageUploadMessage.textContent = '';
+                return;
+            }
+            imageUploadMessage.className = `mt-3 text-sm ${colorClassMap[type] || colorClassMap.info}`;
+            imageUploadMessage.textContent = message;
+        }
+
+        function resetImageUploadState() {
+            selectedImageFile = null;
+            imageUploadInput.value = '';
+            imageUploadSelectedFile.textContent = 'ファイルが選択されていません';
+            imageUploadExecBtn.disabled = true;
+            imageUploadLoading.classList.add('hidden');
+            setImageUploadMessage('');
+        }
+
+        function isSupportedImage(file) {
+            if (!file) return false;
+            const fileName = (file.name || '').toLowerCase();
+            const contentType = (file.type || '').toLowerCase();
+            const extensionOk = fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png');
+            const contentTypeOk = contentType === 'image/jpeg' || contentType === 'image/jpg' || contentType === 'image/png';
+            return extensionOk || contentTypeOk;
+        }
+
+        function selectImageFile(file) {
+            if (!file) return;
+            if (!isSupportedImage(file)) {
+                selectedImageFile = null;
+                imageUploadExecBtn.disabled = true;
+                imageUploadSelectedFile.textContent = 'ファイルが選択されていません';
+                setImageUploadMessage('JPGまたはPNG形式の画像を選択してください。', 'error');
+                return;
+            }
+
+            selectedImageFile = file;
+            imageUploadSelectedFile.textContent = file.name;
+            imageUploadExecBtn.disabled = false;
+            setImageUploadMessage('');
+        }
+
+        openImageUploadModalBtn.addEventListener('click', () => {
+            resetImageUploadState();
+            toggleImageUploadModal(true);
+        });
+        closeImageUploadModalBtn.addEventListener('click', () => toggleImageUploadModal(false));
+        imageUploadCancelBtn.addEventListener('click', () => toggleImageUploadModal(false));
+        imageUploadModalBackdrop.addEventListener('click', () => toggleImageUploadModal(false));
+
+        imageFileSelectBtn.addEventListener('click', () => imageUploadInput.click());
+        imageUploadInput.addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files.length > 0 ? e.target.files[0] : null;
+            selectImageFile(file);
+        });
+
+        imageDropZone.addEventListener('click', () => imageUploadInput.click());
+        imageDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            imageDropZone.classList.add('drop-zone-active');
+        });
+        imageDropZone.addEventListener('dragleave', () => {
+            imageDropZone.classList.remove('drop-zone-active');
+        });
+        imageDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            imageDropZone.classList.remove('drop-zone-active');
+            const file = e.dataTransfer?.files?.length ? e.dataTransfer.files[0] : null;
+            selectImageFile(file);
+        });
+
+        imageUploadExecBtn.addEventListener('click', async () => {
+            if (!selectedImageFile) {
+                setImageUploadMessage('画像ファイルを選択してください。', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', selectedImageFile);
+
+            imageUploadExecBtn.disabled = true;
+            imageUploadLoading.classList.remove('hidden');
+            setImageUploadMessage('');
+
+            try {
+                const res = await fetch('/api/batch/extract-companies-from-image', {
+                    method: 'POST',
+                    headers: {
+                        [csrfHeaderName]: csrfTokenValue
+                    },
+                    body: formData
+                });
+
+                const payload = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(payload.message || '画像解析中にエラーが発生しました。');
+                }
+
+                const companies = Array.isArray(payload.companies) ? payload.companies : [];
+                if (companies.length === 0) {
+                    setImageUploadMessage('企業情報を抽出できませんでした。', 'error');
+                    return;
+                }
+
+                const appliedCount = applyExtractedCompaniesToRows(companies);
+                if (appliedCount === 0) {
+                    setImageUploadMessage('反映可能な行がありません。100行の上限に達しています。', 'error');
+                    return;
+                }
+
+                const omittedCount = companies.length - appliedCount;
+                const statusText = omittedCount > 0
+                    ? `画像から${companies.length}件抽出し、${appliedCount}件を反映しました（${omittedCount}件は未反映）。`
+                    : `画像から${appliedCount}件を自動入力しました。`;
+
+                showStatusMessage(statusText, omittedCount > 0 ? 'info' : 'success');
+                toggleImageUploadModal(false);
+            } catch (e) {
+                setImageUploadMessage(e.message || '画像解析中にエラーが発生しました。', 'error');
+            } finally {
+                imageUploadLoading.classList.add('hidden');
+                imageUploadExecBtn.disabled = !selectedImageFile;
+            }
+        });
 
         // 企業検索モーダル制御
         const companyModal = document.getElementById('companySearchModal');
@@ -803,7 +1079,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        [document.getElementById('csrfHeader').value]: document.getElementById('csrfToken').value
+                        [csrfHeaderName]: csrfTokenValue
                     },
                     body: JSON.stringify(rows)
                 });
