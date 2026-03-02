@@ -38,28 +38,44 @@ public class CompanySearchService {
     }
 
     /**
-     * 住所から企業名候補を検索する（データベース + Gemini API統合）
+     * 住所から企業名候補を検索する（データベース + Gemini API + Places API統合）
      */
-    public List<CompanySearchResultDto> searchByAddress(String address) {
+    public List<CompanySearchResultDto> searchByAddress(String address, boolean useDb, boolean useGemini,
+            boolean usePlaces) {
         List<CompanySearchResultDto> results = new ArrayList<>();
 
         // 1. データベースで検索
-        try {
-            List<CompanySearchResultDto> dbResults = searchByDatabase(address);
-            results.addAll(dbResults);
-            log.info("データベース: {}件の結果を取得", dbResults.size());
-        } catch (Exception e) {
-            log.warn("データベース検索に失敗しました: {}", e.getMessage());
+        if (useDb) {
+            try {
+                List<CompanySearchResultDto> dbResults = searchByDatabase(address);
+                results.addAll(dbResults);
+                log.info("データベース: {}件の結果を取得", dbResults.size());
+            } catch (Exception e) {
+                log.warn("データベース検索に失敗しました: {}", e.getMessage());
+            }
         }
 
         // 2. Gemini API で検索
-        try {
-            List<CompanySearchResultDto> geminiResults = searchByGeminiApi(address);
-            results.addAll(geminiResults);
-            log.info("Gemini API: {}件の結果を取得", geminiResults.size());
-        } catch (Throwable t) {
-            // ネイティブライブラリ読込エラー（UnsatisfiedLinkError）も含めて握りつぶし、検索全体は継続
-            log.warn("Gemini APIの呼び出しに失敗しました: {}", t.getMessage());
+        if (useGemini) {
+            try {
+                List<CompanySearchResultDto> geminiResults = searchByGeminiApi(address);
+                results.addAll(geminiResults);
+                log.info("Gemini API: {}件の結果を取得", geminiResults.size());
+            } catch (Throwable t) {
+                // ネイティブライブラリ読込エラー（UnsatisfiedLinkError）も含めて握りつぶし、検索全体は継続
+                log.warn("Gemini APIの呼び出しに失敗しました: {}", t.getMessage());
+            }
+        }
+
+        // 3. Places API で検索
+        if (usePlaces) {
+            try {
+                List<CompanySearchResultDto> placesResults = searchByPlacesApi(address);
+                results.addAll(placesResults);
+                log.info("Places API: {}件の結果を取得", placesResults.size());
+            } catch (Throwable t) {
+                log.warn("Places APIの呼び出しに失敗しました: {}", t.getMessage());
+            }
         }
 
         // 3. 重複を除去（企業名ベース）
@@ -99,7 +115,6 @@ public class CompanySearchService {
 
         // Google Search Grounding を使ったプロンプト
         String prompt = "以下の住所に存在する建物名・施設名・企業名・会社名・店舗名・事業所名をGoogle検索結果をもとに可能な限り多く列挙してください。\n"
-                + "確実でなくても候補として含めてください。\n"
                 + "結果は必ず以下のJSON形式のみで出力してください。\n"
                 + "余計な説明・マークダウン・コードブロックは不要です。\n\n"
                 + "{\"companies\": [\"名称1\", \"名称2\", \"名称3\"]}\n\n"
@@ -192,6 +207,93 @@ public class CompanySearchService {
         } catch (Exception e) {
             log.error("Geminiレスポンスパースエラー: {}", e.getMessage(), e);
         }
+        return results;
+    }
+
+    /**
+     * Places API で住所から施設名を検索
+     */
+    private List<CompanySearchResultDto> searchByPlacesApi(String address) {
+        if (geminiApiKey == null || geminiApiKey.isBlank()) {
+            log.warn("Places API（Gemini APIキーと共用）が設定されていません");
+            return Collections.emptyList();
+        }
+
+        String url = "https://places.googleapis.com/v1/places:searchText";
+
+        Map<String, Object> requestBody = Map.of(
+                "textQuery", address);
+
+        log.info("Places API リクエスト送信: address={}", address);
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("X-Goog-Api-Key", geminiApiKey);
+            headers.set("X-Goog-FieldMask", "places.addressDescriptor");
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = restTemplate.postForObject(url, entity, Map.class);
+
+            return parsePlacesResponse(response, address);
+        } catch (Throwable t) {
+            log.warn("Places API呼び出しエラー: {}", t.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * Places APIレスポンスをパースする
+     */
+    @SuppressWarnings("unchecked")
+    private List<CompanySearchResultDto> parsePlacesResponse(Map<String, Object> response, String address) {
+        List<CompanySearchResultDto> results = new ArrayList<>();
+        if (response == null) {
+            return results;
+        }
+
+        try {
+            List<Map<String, Object>> places = (List<Map<String, Object>>) response.get("places");
+            if (places == null || places.isEmpty()) {
+                return results;
+            }
+
+            for (Map<String, Object> place : places) {
+                // 1. places[].displayName.text
+                Map<String, Object> displayName = (Map<String, Object>) place.get("displayName");
+                if (displayName != null) {
+                    String text = (String) displayName.get("text");
+                    if (text != null && !text.isBlank()) {
+                        results.add(new CompanySearchResultDto(
+                                text.trim(), null, address, "Places API"));
+                    }
+                }
+
+                // 2. places[].addressDescriptor.landmarks[].displayName.text
+                Map<String, Object> addressDescriptor = (Map<String, Object>) place.get("addressDescriptor");
+                if (addressDescriptor != null) {
+                    List<Map<String, Object>> landmarks = (List<Map<String, Object>>) addressDescriptor
+                            .get("landmarks");
+                    if (landmarks != null) {
+                        for (Map<String, Object> landmark : landmarks) {
+                            Map<String, Object> landmarkDisplayName = (Map<String, Object>) landmark.get("displayName");
+                            if (landmarkDisplayName != null) {
+                                String text = (String) landmarkDisplayName.get("text");
+                                if (text != null && !text.isBlank()) {
+                                    results.add(new CompanySearchResultDto(
+                                            text.trim(), null, address, "Places API"));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Placesレスポンスパースエラー: {}", e.getMessage(), e);
+        }
+
         return results;
     }
 

@@ -151,11 +151,41 @@
               placeholder="郵便番号から自動入力されます" name="address" th:field="*{address}" id="address" required />
           </div>
           <div class="text-end mt-2">
-            <button type="button" id="btnCompanySearch"
-              class="inline-flex items-center gap-1 text-base text-primary hover:underline font-bold">
-              <span class="material-symbols-outlined text-xl">search</span>
-              住所から企業名検索
-            </button>
+            <!-- 分割ボタン: 企業名検索 -->
+            <div class="relative inline-flex" id="companySearchSplitContainer">
+              <!-- 左: 検索実行ボタン -->
+              <button type="button" id="btnCompanySearch"
+                class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white bg-primary rounded-l-lg hover:bg-primary/90 transition-colors shadow-sm border-r border-blue-400">
+                <span class="material-symbols-outlined text-base">search</span>
+                企業名検索
+              </button>
+              <!-- 右: ドロップダウントグルボタン -->
+              <button type="button" id="btnApiDropdownToggle"
+                class="inline-flex items-center justify-center px-2.5 py-2 text-sm font-bold text-white bg-primary rounded-r-lg hover:bg-primary/90 transition-colors shadow-sm"
+                aria-haspopup="true" aria-expanded="false" title="API選択">
+                <span class="material-symbols-outlined text-base">arrow_drop_down</span>
+              </button>
+              <!-- ドロップダウンメニュー -->
+              <div id="apiDropdownMenu"
+                class="hidden absolute right-0 top-full mt-1 z-50 min-w-[180px] bg-white border border-gray-200 rounded-xl shadow-lg p-3 flex flex-col gap-2">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">検索に使用するAPI</p>
+                <label class="flex items-center gap-2.5 cursor-pointer">
+                  <input type="checkbox" id="apiUseDb" checked
+                    class="form-checkbox h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/50">
+                  <span class="text-sm text-gray-700">データベース</span>
+                </label>
+                <label class="flex items-center gap-2.5 cursor-pointer">
+                  <input type="checkbox" id="apiUseGemini" checked
+                    class="form-checkbox h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/50">
+                  <span class="text-sm text-gray-700">Gemini API</span>
+                </label>
+                <label class="flex items-center gap-2.5 cursor-pointer">
+                  <input type="checkbox" id="apiUsePlaces" checked
+                    class="form-checkbox h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/50">
+                  <span class="text-sm text-gray-700">Places API</span>
+                </label>
+              </div>
+            </div>
           </div>
         </label>
         <div th:if="${#fields.hasErrors('address')}" th:errors="*{address}" class="text-red-500 text-sm mt-1"></div>
@@ -246,6 +276,9 @@
         <!-- 検索住所表示 -->
         <div id="companySearchAddress" class="mb-4 px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-600">
         </div>
+
+        <!-- 選択されたAPIの表示バッジ -->
+        <div id="selectedApisBadge" class="mb-4 px-3 py-2 bg-blue-50 rounded-lg text-xs text-blue-700 font-bold"></div>
 
         <!-- ローディング -->
         <div id="companySearchLoading" class="hidden py-8 text-center">
@@ -477,8 +510,10 @@
         });
     }
 
-    // --- 3. 住所から企業名検索 (モーダル制御) ---
+    // --- 3. 住所から企業名検索 (分割ボタン & モーダル制御) ---
     const btnCompanySearch = document.getElementById('btnCompanySearch');
+    const btnApiDropdownToggle = document.getElementById('btnApiDropdownToggle');
+    const apiDropdownMenu = document.getElementById('apiDropdownMenu');
     const companyModal = document.getElementById('companySearchModal');
     const closeCompanyModal = document.getElementById('closeCompanyModal');
     const companyModalBackdrop = document.getElementById('companyModalBackdrop');
@@ -486,6 +521,88 @@
     const companySearchLoading = document.getElementById('companySearchLoading');
     const companySearchAddress = document.getElementById('companySearchAddress');
     const companyNameInput = document.querySelector('input[name="companyName"]');
+    const selectedApisBadge = document.getElementById('selectedApisBadge');
+
+    // --- localStorage キー ---
+    const LS_KEY = 'companySearchApiSelection';
+
+    // --- API選択状態の保存・復元 ---
+    function saveApiSelection() {
+      const state = {
+        useDb: document.getElementById('apiUseDb').checked,
+        useGemini: document.getElementById('apiUseGemini').checked,
+        usePlaces: document.getElementById('apiUsePlaces').checked
+      };
+      localStorage.setItem(LS_KEY, JSON.stringify(state));
+      updateSelectedApisBadge(state);
+    }
+
+    function loadApiSelection() {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) {
+        // 初回アクセス時はすべてON（デフォルト値はHTMLのchecked属性で設定済み）
+        return;
+      }
+      try {
+        const state = JSON.parse(raw);
+        document.getElementById('apiUseDb').checked = state.useDb !== false;
+        document.getElementById('apiUseGemini').checked = state.useGemini !== false;
+        document.getElementById('apiUsePlaces').checked = state.usePlaces !== false;
+      } catch (e) {
+        // パース失敗時はデフォルトのまま
+      }
+    }
+
+    function updateSelectedApisBadge(state) {
+      if (!selectedApisBadge) return;
+      const active = [];
+      if (state.useDb) active.push('データベース');
+      if (state.useGemini) active.push('Gemini API');
+      if (state.usePlaces) active.push('Places API');
+      if (active.length === 3) {
+        selectedApisBadge.textContent = '検索API: すべて有効';
+      } else if (active.length === 0) {
+        selectedApisBadge.textContent = '検索API: すべて無効（結果なし）';
+        selectedApisBadge.className = 'mb-4 px-3 py-2 bg-red-50 rounded-lg text-xs text-red-700 font-bold';
+        return;
+      } else {
+        selectedApisBadge.textContent = '検索API: ' + active.join(' / ');
+      }
+      selectedApisBadge.className = 'mb-4 px-3 py-2 bg-blue-50 rounded-lg text-xs text-blue-700 font-bold';
+    }
+
+    // ページ読み込み時に復元
+    loadApiSelection();
+    updateSelectedApisBadge({
+      useDb: document.getElementById('apiUseDb').checked,
+      useGemini: document.getElementById('apiUseGemini').checked,
+      usePlaces: document.getElementById('apiUsePlaces').checked
+    });
+
+    // チェックボックス変更時に自動保存
+    ['apiUseDb', 'apiUseGemini', 'apiUsePlaces'].forEach(id => {
+      document.getElementById(id).addEventListener('change', saveApiSelection);
+    });
+
+    // --- ドロップダウン開閉 ---
+    function toggleApiDropdown(force) {
+      const isOpen = !apiDropdownMenu.classList.contains('hidden');
+      const nextState = force !== undefined ? force : !isOpen;
+      apiDropdownMenu.classList.toggle('hidden', !nextState);
+      btnApiDropdownToggle.setAttribute('aria-expanded', String(nextState));
+    }
+
+    btnApiDropdownToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleApiDropdown();
+    });
+
+    // ボタン外クリックでドロップダウンを閉じる
+    document.addEventListener('click', (e) => {
+      if (!document.getElementById('companySearchSplitContainer').contains(e.target)) {
+        toggleApiDropdown(false);
+      }
+    });
 
     function toggleCompanyModal(show) {
       if (show) {
@@ -497,6 +614,7 @@
 
     btnCompanySearch.addEventListener('click', (e) => {
       e.preventDefault();
+      toggleApiDropdown(false);
       const addr = addressInput.value.trim();
       if (!addr) {
         alert('先に住所を入力してください。');
@@ -517,7 +635,20 @@
       companyResultList.innerHTML = '';
       companySearchLoading.classList.remove('hidden');
 
-      fetch(`/api/companies/search-by-address?address=${encodeURIComponent(address)}`)
+      // API選択状態の取得
+      const useDb = document.getElementById('apiUseDb').checked;
+      const useGemini = document.getElementById('apiUseGemini').checked;
+      const usePlaces = document.getElementById('apiUsePlaces').checked;
+
+      // URLパラメータの構築
+      const params = new URLSearchParams({
+        address: address,
+        useDb: useDb,
+        useGemini: useGemini,
+        usePlaces: usePlaces
+      });
+
+      fetch(`/api/companies/search-by-address?${params.toString()}`)
         .then(res => {
           if (!res.ok) throw new Error('検索に失敗しました');
           return res.json();

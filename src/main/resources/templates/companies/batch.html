@@ -300,7 +300,37 @@
                 </div>
 
                 <!-- 検索住所表示 -->
-                <div id="companySearchAddress" class="mb-4 px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-600">
+                <div id="companySearchAddress" class="mb-3 px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-600">
+                </div>
+
+                <!-- API 選択ドロップダウン -->
+                <div class="relative mb-3" id="batchApiDropdownContainer">
+                    <button type="button" id="batchBtnApiDropdownToggle"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-gray-600 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors"
+                        aria-haspopup="true" aria-expanded="false">
+                        <span class="material-symbols-outlined text-sm">tune</span>
+                        <span id="batchApiDropdownLabel">検索API選択</span>
+                        <span class="material-symbols-outlined text-sm">arrow_drop_down</span>
+                    </button>
+                    <div id="batchApiDropdownMenu"
+                        class="hidden absolute left-0 top-full mt-1 z-50 min-w-[180px] bg-white border border-gray-200 rounded-xl shadow-lg p-3 flex flex-col gap-2">
+                        <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">検索に使用するAPI</p>
+                        <label class="flex items-center gap-2.5 cursor-pointer">
+                            <input type="checkbox" id="batchApiUseDb" checked
+                                class="form-checkbox h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/50">
+                            <span class="text-sm text-gray-700">データベース</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 cursor-pointer">
+                            <input type="checkbox" id="batchApiUseGemini" checked
+                                class="form-checkbox h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/50">
+                            <span class="text-sm text-gray-700">Gemini API</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 cursor-pointer">
+                            <input type="checkbox" id="batchApiUsePlaces" checked
+                                class="form-checkbox h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/50">
+                            <span class="text-sm text-gray-700">Places API</span>
+                        </label>
+                    </div>
                 </div>
 
                 <!-- ローディング -->
@@ -545,6 +575,78 @@
         const companyResultList = document.getElementById('companyResultList');
         const companySearchLoading = document.getElementById('companySearchLoading');
         const companySearchAddress = document.getElementById('companySearchAddress');
+        const batchBtnApiDropdownToggle = document.getElementById('batchBtnApiDropdownToggle');
+        const batchApiDropdownMenu = document.getElementById('batchApiDropdownMenu');
+        const batchApiDropdownLabel = document.getElementById('batchApiDropdownLabel');
+
+        // --- localStorage キー（form.htmlと共通） ---
+        const LS_KEY = 'companySearchApiSelection';
+
+        function saveBatchApiSelection() {
+            const state = {
+                useDb: document.getElementById('batchApiUseDb').checked,
+                useGemini: document.getElementById('batchApiUseGemini').checked,
+                usePlaces: document.getElementById('batchApiUsePlaces').checked
+            };
+            localStorage.setItem(LS_KEY, JSON.stringify(state));
+            updateBatchApiDropdownLabel(state);
+        }
+
+        function loadBatchApiSelection() {
+            const raw = localStorage.getItem(LS_KEY);
+            if (!raw) return;
+            try {
+                const state = JSON.parse(raw);
+                document.getElementById('batchApiUseDb').checked = state.useDb !== false;
+                document.getElementById('batchApiUseGemini').checked = state.useGemini !== false;
+                document.getElementById('batchApiUsePlaces').checked = state.usePlaces !== false;
+            } catch (e) { /* デフォルトのまま */ }
+        }
+
+        function updateBatchApiDropdownLabel(state) {
+            if (!batchApiDropdownLabel) return;
+            const active = [];
+            if (state.useDb) active.push('データベース');
+            if (state.useGemini) active.push('Gemini');
+            if (state.usePlaces) active.push('Places');
+            batchApiDropdownLabel.textContent = active.length === 3
+                ? '検索API: すべて'
+                : active.length === 0 ? '検索API: なし' : '検索API: ' + active.join('/');
+        }
+
+        // ページ読み込み時に復元
+        loadBatchApiSelection();
+        updateBatchApiDropdownLabel({
+            useDb: document.getElementById('batchApiUseDb').checked,
+            useGemini: document.getElementById('batchApiUseGemini').checked,
+            usePlaces: document.getElementById('batchApiUsePlaces').checked
+        });
+
+        // チェック変更時に自動保存
+        ['batchApiUseDb', 'batchApiUseGemini', 'batchApiUsePlaces'].forEach(id => {
+            document.getElementById(id).addEventListener('change', saveBatchApiSelection);
+        });
+
+        // ドロップダウン開閉
+        function toggleBatchApiDropdown(force) {
+            const isOpen = !batchApiDropdownMenu.classList.contains('hidden');
+            const nextState = force !== undefined ? force : !isOpen;
+            batchApiDropdownMenu.classList.toggle('hidden', !nextState);
+            batchBtnApiDropdownToggle.setAttribute('aria-expanded', String(nextState));
+        }
+
+        batchBtnApiDropdownToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleBatchApiDropdown();
+        });
+
+        // モーダル内以外のクリックでドロップダウンを閉じる
+        document.addEventListener('click', (e) => {
+            const container = document.getElementById('batchApiDropdownContainer');
+            if (container && !container.contains(e.target)) {
+                toggleBatchApiDropdown(false);
+            }
+        });
 
         let activeRowForSearch = null;
 
@@ -570,11 +672,17 @@
             companyResultList.innerHTML = '';
             companySearchLoading.classList.remove('hidden');
 
-            fetch(`/api/companies/search-by-address?address=${encodeURIComponent(address)}`)
-                .then(res => {
-                    if (!res.ok) throw new Error('検索に失敗しました');
-                    return res.json();
-                })
+            // API選択状態の取得
+            const useDb = document.getElementById('batchApiUseDb').checked;
+            const useGemini = document.getElementById('batchApiUseGemini').checked;
+            const usePlaces = document.getElementById('batchApiUsePlaces').checked;
+
+            const params = new URLSearchParams({ address, useDb, useGemini, usePlaces });
+
+            fetch(`/api/companies/search-by-address?${params.toString()}`).then(res => {
+                if (!res.ok) throw new Error('検索に失敗しました');
+                return res.json();
+            })
                 .then(data => {
                     companySearchLoading.classList.add('hidden');
                     companyResultList.innerHTML = '';

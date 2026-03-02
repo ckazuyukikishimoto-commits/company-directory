@@ -41,7 +41,7 @@ class CompanySearchServiceTest {
 
         ReflectionTestUtils.setField(companySearchService, "geminiApiKey", "");
 
-        List<CompanySearchResultDto> results = companySearchService.searchByAddress("高岡市宮田町8-29");
+        List<CompanySearchResultDto> results = companySearchService.searchByAddress("高岡市宮田町8-29", true, true, true);
 
         assertThat(results)
                 .extracting(CompanySearchResultDto::getCompanyName)

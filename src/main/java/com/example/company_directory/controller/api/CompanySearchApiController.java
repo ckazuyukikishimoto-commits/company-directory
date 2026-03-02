@@ -24,13 +24,18 @@ public class CompanySearchApiController {
      * GET /api/companies/search-by-address?address=東京都千代田区丸の内１丁目
      */
     @GetMapping("/search-by-address")
-    public ResponseEntity<?> searchByAddress(@RequestParam("address") String address) {
+    public ResponseEntity<?> searchByAddress(
+            @RequestParam("address") String address,
+            @RequestParam(value = "useDb", defaultValue = "true") boolean useDb,
+            @RequestParam(value = "useGemini", defaultValue = "true") boolean useGemini,
+            @RequestParam(value = "usePlaces", defaultValue = "true") boolean usePlaces) {
         if (address == null || address.trim().isEmpty()) {
             return ResponseEntity.badRequest()
                     .body(Map.of("error", "住所を入力してください"));
         }
 
-        List<CompanySearchResultDto> results = companySearchService.searchByAddress(address.trim());
+        List<CompanySearchResultDto> results = companySearchService.searchByAddress(address.trim(), useDb, useGemini,
+                usePlaces);
         return ResponseEntity.ok(results);
     }
 }
