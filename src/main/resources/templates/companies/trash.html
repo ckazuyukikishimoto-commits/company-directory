@@ -938,6 +938,7 @@
             (function () {
                 const MIN_COL_WIDTH = 60;
                 const MIN_ROW_HEIGHT = 28;
+                const DRAG_THRESHOLD = 2;
                 window.__isResizingColumn = false;
 
                 function initResizableTable(table) {
@@ -949,12 +950,18 @@
                             resizer.className = 'col-resizer';
                             th.appendChild(resizer);
 
-                            let startX = 0;
-                            let startWidth = 0;
+                        let startX = 0;
+                        let startLeft = 0;
+                        let startWidth = 0;
+                            let hasMoved = false;
 
-                            const onMouseMove = (event) => {
-                                const newWidth = Math.max(MIN_COL_WIDTH, startWidth + (event.pageX - startX));
-                                th.style.width = `${newWidth}px`;
+                        const onMouseMove = (event) => {
+                            if (!window.__isResizingColumn) return;
+                            const deltaX = event.clientX - startX;
+                            if (!hasMoved && Math.abs(deltaX) < DRAG_THRESHOLD) return;
+                            hasMoved = true;
+                            const newWidth = Math.max(MIN_COL_WIDTH, event.clientX - startLeft);
+                            th.style.width = `${newWidth}px`;
                                 Array.from(table.tBodies[0]?.rows || []).forEach(row => {
                                     const cell = row.children[index];
                                     if (cell) {
@@ -974,8 +981,11 @@
                                 event.preventDefault();
                                 event.stopPropagation();
                                 window.__isResizingColumn = true;
-                                startX = event.pageX;
-                                startWidth = th.offsetWidth;
+                            const rect = th.getBoundingClientRect();
+                            startX = event.clientX;
+                            startLeft = rect.left;
+                            startWidth = rect.width;
+                            hasMoved = false;
                                 document.addEventListener('mousemove', onMouseMove);
                                 document.addEventListener('mouseup', onMouseUp);
                                 document.body.classList.add('resizing-col');
@@ -997,9 +1007,13 @@
 
                         let startY = 0;
                         let startHeight = 0;
+                        let hasMoved = false;
 
                         const onMouseMove = (event) => {
-                            const newHeight = Math.max(MIN_ROW_HEIGHT, startHeight + (event.pageY - startY));
+                            const deltaY = event.pageY - startY;
+                            if (!hasMoved && Math.abs(deltaY) < DRAG_THRESHOLD) return;
+                            hasMoved = true;
+                            const newHeight = Math.max(MIN_ROW_HEIGHT, startHeight + deltaY);
                             row.style.height = `${newHeight}px`;
                             Array.from(row.cells).forEach(cell => {
                                 cell.style.height = `${newHeight}px`;
@@ -1016,6 +1030,7 @@
                             event.preventDefault();
                             startY = event.pageY;
                             startHeight = row.offsetHeight;
+                            hasMoved = false;
                             document.addEventListener('mousemove', onMouseMove);
                             document.addEventListener('mouseup', onMouseUp);
                             document.body.classList.add('resizing-row');

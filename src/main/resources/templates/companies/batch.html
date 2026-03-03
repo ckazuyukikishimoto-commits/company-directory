@@ -36,6 +36,48 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
+        .resizable-table {
+            table-layout: fixed;
+        }
+
+        .resizable-table th,
+        .resizable-table td {
+            position: relative;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .resizable-table .col-resizer {
+            position: absolute;
+            top: 0;
+            right: -2px;
+            width: 6px;
+            height: 100%;
+            cursor: col-resize;
+            user-select: none;
+        }
+
+        .resizable-table .row-resizer {
+            position: absolute;
+            left: 0;
+            bottom: -2px;
+            width: 100%;
+            height: 6px;
+            cursor: row-resize;
+            user-select: none;
+        }
+
+        body.resizing-col {
+            cursor: col-resize;
+            user-select: none;
+        }
+
+        body.resizing-row {
+            cursor: row-resize;
+            user-select: none;
+        }
+
         .grid-input {
             background-color: transparent !important;
             border: none !important;
@@ -172,7 +214,7 @@
         <main class="flex-1 overflow-auto p-4">
             <div
                 class="bg-white dark:bg-[#1c2126] rounded-xl border border-[#e7e9eb] dark:border-[#283039] shadow-sm overflow-hidden min-w-[1000px]">
-                <table class="w-full border-collapse">
+                <table class="resizable-table w-full border-collapse">
                     <thead>
                         <tr class="bg-gray-100 border-b border-gray-300">
                             <th
@@ -442,9 +484,120 @@
         const confirmModal = document.getElementById('confirmModal');
         const csrfTokenValue = document.getElementById('csrfToken').value;
         const csrfHeaderName = document.getElementById('csrfHeader').value;
+        const resizableTable = document.querySelector('table.resizable-table');
 
         let rowCount = 0;
         let lastValidationResult = null;
+
+        (function () {
+            const MIN_COL_WIDTH = 60;
+            const MIN_ROW_HEIGHT = 28;
+            const DRAG_THRESHOLD = 2;
+            window.__isResizingColumn = false;
+
+            function initResizableTable(table) {
+                const headerRow = table.tHead && table.tHead.rows[0];
+                if (headerRow) {
+                    Array.from(headerRow.cells).forEach((th, index) => {
+                        if (th.querySelector('.col-resizer')) return;
+                        const resizer = document.createElement('div');
+                        resizer.className = 'col-resizer';
+                        th.appendChild(resizer);
+
+                        let startX = 0;
+                        let startWidth = 0;
+                        let hasMoved = false;
+
+                        const onMouseMove = (event) => {
+                            const deltaX = event.pageX - startX;
+                            if (!hasMoved && Math.abs(deltaX) < DRAG_THRESHOLD) return;
+                            hasMoved = true;
+                            const newWidth = Math.max(MIN_COL_WIDTH, startWidth + deltaX);
+                            th.style.width = `${newWidth}px`;
+                            Array.from(table.tBodies[0]?.rows || []).forEach(row => {
+                                const cell = row.children[index];
+                                if (cell) {
+                                    cell.style.width = `${newWidth}px`;
+                                }
+                            });
+                        };
+
+                        const onMouseUp = () => {
+                            document.removeEventListener('mousemove', onMouseMove);
+                            document.removeEventListener('mouseup', onMouseUp);
+                            document.body.classList.remove('resizing-col');
+                            setTimeout(() => { window.__isResizingColumn = false; }, 0);
+                        };
+
+                        resizer.addEventListener('mousedown', (event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            window.__isResizingColumn = true;
+                            startX = event.pageX;
+                            startWidth = th.offsetWidth;
+                            hasMoved = false;
+                            document.addEventListener('mousemove', onMouseMove);
+                            document.addEventListener('mouseup', onMouseUp);
+                            document.body.classList.add('resizing-col');
+                        });
+                        resizer.addEventListener('click', (event) => {
+                            event.stopPropagation();
+                        });
+                    });
+                }
+
+                Array.from(table.tBodies[0]?.rows || []).forEach(row => {
+                    if (row.classList.contains('js-empty-row')) return;
+                    const lastCell = row.cells[row.cells.length - 1];
+                    if (!lastCell || lastCell.querySelector('.row-resizer')) return;
+
+                    const resizer = document.createElement('div');
+                    resizer.className = 'row-resizer';
+                    lastCell.appendChild(resizer);
+
+                    let startY = 0;
+                    let startHeight = 0;
+                    let hasMoved = false;
+
+                    const onMouseMove = (event) => {
+                        const deltaY = event.pageY - startY;
+                        if (!hasMoved && Math.abs(deltaY) < DRAG_THRESHOLD) return;
+                        hasMoved = true;
+                        const newHeight = Math.max(MIN_ROW_HEIGHT, startHeight + deltaY);
+                        row.style.height = `${newHeight}px`;
+                        Array.from(row.cells).forEach(cell => {
+                            cell.style.height = `${newHeight}px`;
+                        });
+                    };
+
+                    const onMouseUp = () => {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                        document.body.classList.remove('resizing-row');
+                    };
+
+                    resizer.addEventListener('mousedown', (event) => {
+                        event.preventDefault();
+                        startY = event.pageY;
+                        startHeight = row.offsetHeight;
+                        hasMoved = false;
+                        document.addEventListener('mousemove', onMouseMove);
+                        document.addEventListener('mouseup', onMouseUp);
+                        document.body.classList.add('resizing-row');
+                    });
+                });
+            }
+
+            window.addEventListener('load', () => {
+                if (resizableTable) {
+                    initResizableTable(resizableTable);
+                }
+            });
+
+            if (resizableTable) {
+                resizableTable.__initResizableTable = initResizableTable;
+            }
+        })();
 
         function showStatusMessage(message, type = 'info') {
             const colorClassMap = {
@@ -516,6 +669,9 @@
             }
             updateNo();
             bindRowEvents(newRow);
+            if (resizableTable && typeof resizableTable.__initResizableTable === 'function') {
+                resizableTable.__initResizableTable(resizableTable);
+            }
             return newRow;
         }
 
