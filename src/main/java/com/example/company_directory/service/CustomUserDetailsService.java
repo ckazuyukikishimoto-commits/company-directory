@@ -14,12 +14,22 @@ import com.example.company_directory.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * ユーザー情報を管理するサービス。
+ * ユーザー情報の検索を行います。
+ */
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
+    /**
+     * ユーザー名でユーザー情報を取得する。
+     * @param username
+     * @return ユーザー情報
+     * @throws UsernameNotFoundException ユーザーが見つからない場合
+     */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUserId(username)

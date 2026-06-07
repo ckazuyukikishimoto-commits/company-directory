@@ -6,6 +6,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+/**
+ * 企業マスタリポジトリ。
+ * 企業マスタの検索を行います。
+ */
 @Repository
 public interface CompanyMasterRepository extends JpaRepository<CompanyMaster, String> {
     /**

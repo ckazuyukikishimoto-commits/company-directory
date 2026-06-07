@@ -27,14 +27,30 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import com.example.company_directory.dto.ImportRowDto;
 import com.example.company_directory.entity.Company;
 
+/**
+ * Excelファイルの読み書きを行うヘルパークラス。
+ * Excelファイルの読み込み、書き込み、テンプレートの作成を行います。
+ */
 public class ExcelHelper {
 
+    /**
+     * 企業情報をExcelファイルに書き込む。
+     * @param companies
+     * @return 企業情報をExcelファイルに書き込んだバイト配列
+     */
     public static ByteArrayInputStream companiesToExcel(List<Company> companies) {
         return companiesToExcel(companies, null);
     }
 
+    /**
+     * 企業情報をExcelファイルに書き込む。
+     * @param companies
+     * @param columnKeys 表示する列のキーリスト
+     * @return 企業情報をExcelファイルに書き込んだバイト配列
+     */
     public static ByteArrayInputStream companiesToExcel(List<Company> companies, List<String> columnKeys) {
         XSSFWorkbook workbook = new XSSFWorkbook();
+
         XSSFSheet sheet = workbook.createSheet("Companies");
 
         // Column Definitions (Order matters)
@@ -112,6 +128,11 @@ public class ExcelHelper {
         }
     }
 
+    /**
+     * Excelファイルを読み込む。
+     * @param inputStream
+     * @return 読み込んだExcelファイルのデータ
+     */
     public static List<ImportRowDto> parseExcel(InputStream inputStream) {
         Workbook workbook;
         try {
@@ -233,6 +254,11 @@ public class ExcelHelper {
         return rows;
     }
 
+    /**
+     * Excelファイルの作成エラーを分析する。
+     * @param e
+     * @return エラーメッセージ
+     */
     private static String analyzeWorkbookCreationError(Exception e) {
         String message = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
 
@@ -249,7 +275,13 @@ public class ExcelHelper {
         }
     }
 
-    /** セル値を安全に取得（セル結合・破損対策） */
+    /**
+     * セル値を安全に取得（セル結合・破損対策）
+     * @param row
+     * @param index
+     * @param formatter
+     * @return セル値
+     */
     private static String safeFormatCell(Row row, int index, DataFormatter formatter) {
         try {
             Cell cell = row.getCell(index, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
@@ -279,7 +311,14 @@ public class ExcelHelper {
         }
     }
 
-    /** 列名が存在すれば取得 */
+    /**
+     * 列名が存在すれば取得
+     * @param row
+     * @param columnIndex
+     * @param columnName
+     * @param formatter
+     * @return セル値
+     */
     private static String getValue(Row row, Map<String, Integer> columnIndex,
             String columnName, DataFormatter formatter) {
         if (!columnIndex.containsKey(columnName)) {
@@ -289,8 +328,12 @@ public class ExcelHelper {
         return safeFormatCell(row, idx, formatter);
     }
 
-    // ExcelHelper.java
 
+    /**
+     * インポート結果をExcelファイルに書き込む。
+     * @param rows
+     * @return インポート結果をExcelファイルに書き込んだバイト配列
+     */
     public static ByteArrayInputStream dtosToExcel(List<ImportRowDto> rows) {
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("Errors_Warnings");
@@ -337,6 +380,10 @@ public class ExcelHelper {
         }
     }
 
+    /**
+     * インポート用テンプレートを作成する。
+     * @return インポート用テンプレートをExcelファイルに書き込んだバイト配列
+     */
     public static ByteArrayInputStream createTemplate() {
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("インポート用テンプレート");
@@ -366,7 +413,11 @@ public class ExcelHelper {
         }
     }
 
-    /** 郵便番号の正規化（全角ハイフンを半角に、全角数字を半角に） */
+    /**
+     * 郵便番号の正規化（全角ハイフンを半角に、全角数字を半角に）
+     * @param input
+     * @return 正規化された郵便番号
+     */
     private static String normalizeZipCode(String input) {
         if (input == null)
             return null;

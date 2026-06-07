@@ -364,7 +364,7 @@ public class ExcelImportService {
         }
 
         // --- ① 市区町村まで ---
-        String expectedBase = master.getCity() + master.getPrefecture();
+        String expectedBase = master.getPrefecture() + master.getCity();
         String masterTown = master.getTown();
         if (!inputAddress.startsWith(expectedBase)) {
             warnings.add(String.format(

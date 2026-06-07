@@ -23,6 +23,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import org.springframework.data.domain.Sort;
 
+/**
+ * 企業情報を管理するサービス。
+ * 企業情報のCRUD、検索、エクスポートを行います。
+ */
 @Service
 public class CompanyService {
     private final CompanyRepository companyRepository;
@@ -31,10 +35,17 @@ public class CompanyService {
         this.companyRepository = companyRepository;
     }
 
+    /**
+     * すべての企業情報を取得する。
+     * @return すべての企業情報
+     */
     public List<Company> getAllCompanies() {
         return companyRepository.findAllByIsDeletedFalse();
     }
 
+    /**
+     * 表示番号を初期化する。
+     */
     @PostConstruct
     @Transactional
     public void initDisplayNumbers() {
@@ -50,6 +61,11 @@ public class CompanyService {
         }
     }
 
+    /**
+     * 企業情報を保存する。
+     * @param form
+     * @return 保存された企業情報
+     */
     public Company save(CompanyForm form) {
         Company company = new Company();
 
@@ -65,6 +81,11 @@ public class CompanyService {
         return companyRepository.save(company);
     }
 
+    /**
+     * 削除された重複企業情報を検索する。
+     * @param form
+     * @return 削除された重複企業情報が存在するかどうか
+     */
     public boolean hasDeletedDuplicate(CompanyForm form) {
         if (form == null) {
             return false;
@@ -82,6 +103,11 @@ public class CompanyService {
         return hasDuplicate;
     }
 
+    /**
+     * 企業情報をIDで取得する。
+     * @param id
+     * @return 企業情報
+     */
     public Company findById(Integer id) {
         return companyRepository.findById(id).orElseThrow(() -> new RuntimeException("Company not found"));
     }
@@ -98,6 +124,11 @@ public class CompanyService {
 
     }
 
+    /**
+     * 企業情報を削除する。
+     * @param id
+     * @param userId
+     */
     @Transactional
     public void delete(Integer id, String userId) {
         Company company = this.findById(id);
@@ -114,16 +145,30 @@ public class CompanyService {
         }
     }
 
+    /**
+     * 削除された企業情報を取得する。
+     * @return 削除された企業情報
+     */
     public List<Company> findAllTrash() {
         return companyRepository.findAllByIsDeletedTrueOrderByDeletedAtDesc();
     }
 
+    /**
+     * 削除された企業情報を検索する。
+     * @param form
+     * @param pageable
+     * @return 削除された企業情報
+     */
     public Page<Company> searchTrashCompanies(CompanySearchForm form, Pageable pageable) {
         // Specificationを使って検索 (isDeleted = true)
         Specification<Company> spec = CompanySpecification.search(form, true);
         return companyRepository.findAll(spec, pageable);
     }
 
+    /**
+     * 削除された企業情報を復元する。
+     * @param id
+     */
     @Transactional
     public void restore(Integer id) {
         Company company = this.findById(id);
@@ -139,6 +184,11 @@ public class CompanyService {
 
     }
 
+    /**
+     * 企業情報をエクスポートする。
+     * @param form
+     * @return エクスポートされた企業情報
+     */
     public ByteArrayInputStream exportExcel(ExportForm form) {
         List<Company> companies;
 
@@ -184,6 +234,12 @@ public class CompanyService {
         return ExcelHelper.companiesToExcel(companies, form.resolveOrderedColumns());
     }
 
+    /**
+     * 企業情報を検索する。
+     * @param form
+     * @param pageable
+     * @return 検索された企業情報
+     */
     public Page<Company> searchCompanies(CompanySearchForm form, Pageable pageable) {
         // Specificationを使って検索
         Specification<Company> spec = CompanySpecification.search(form);

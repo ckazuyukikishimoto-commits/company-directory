@@ -106,6 +106,9 @@ public class CompanySearchService {
      * Gemini API (Google Search Grounding) で住所から企業を検索
      */
     private List<CompanySearchResultDto> searchByGeminiApi(String address) {
+
+        System.out.println("APIKEY=" + geminiApiKey);
+
         if (geminiApiKey == null || geminiApiKey.isBlank()) {
             log.warn("Gemini APIキーが設定されていません");
             return Collections.emptyList();

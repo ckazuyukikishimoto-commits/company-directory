@@ -11,6 +11,9 @@ import com.example.company_directory.repository.LoginAttemptRepository;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * ブルードフォース攻撃対策クラス
+ */
 @Service
 @RequiredArgsConstructor
 public class LoginAttemptService {

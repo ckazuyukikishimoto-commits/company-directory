@@ -20,6 +20,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * カスタムPersistentTokenBasedRememberMeServices。
+ * カスタムRememberMeAuthenticationExceptionを使用して、RememberMeAuthenticationExceptionをスローします。
+ */
 @Slf4j
 public class CustomPersistentTokenBasedRememberMeServices extends PersistentTokenBasedRememberMeServices {
 
@@ -35,12 +39,25 @@ public class CustomPersistentTokenBasedRememberMeServices extends PersistentToke
         this.random = new SecureRandom();
     }
 
+    /**
+     * 自動ログインを処理する。
+     * @param request
+     * @param response
+     * @return 自動ログインされたユーザー情報
+     */
     @Override
     @Transactional
     public Authentication autoLogin(HttpServletRequest request, HttpServletResponse response) {
         return super.autoLogin(request, response);
     }
 
+    /**
+     * 自動ログインCookieを処理する。
+     * @param cookieTokens
+     * @param request
+     * @param response
+     * @return 自動ログインされたユーザー情報
+     */
     @Override
     protected UserDetails processAutoLoginCookie(String[] cookieTokens, HttpServletRequest request,
             HttpServletResponse response) {

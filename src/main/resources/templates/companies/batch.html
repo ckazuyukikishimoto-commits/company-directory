@@ -37,7 +37,7 @@
         }
 
         .resizable-table {
-            table-layout: fixed;
+            table-layout: auto;
         }
 
         .resizable-table th,
@@ -143,6 +143,25 @@
             border-color: #0066cc;
             background-color: #eff6ff;
         }
+
+        table {
+            table-layout: auto;
+            width: 100%;
+        }
+
+        th, td {
+            white-space: nowrap;
+            width: auto;
+        }
+
+        /* NO列（1番目）*/
+        .resizable-table th:nth-child(1) .col-resizer,
+        /* ステータス列（2番目）*/
+        .resizable-table th:nth-child(2) .col-resizer,
+        /* 操作列（最後）*/
+        .resizable-table th:last-child .col-resizer {
+            display: none;
+        }
     </style>
 </head>
 
@@ -212,8 +231,7 @@
 
         <!-- Main Grid Area -->
         <main class="flex-1 overflow-auto p-4">
-            <div
-                class="bg-white dark:bg-[#1c2126] rounded-xl border border-[#e7e9eb] dark:border-[#283039] shadow-sm overflow-hidden min-w-[1000px]">
+            <div class="bg-white dark:bg-[#1c2126] rounded-xl border border-[#e7e9eb] dark:border-[#283039] shadow-sm overflow-x-auto min-w-[1000px]">
                 <table class="resizable-table w-full border-collapse">
                     <thead>
                         <tr class="bg-gray-100 border-b border-gray-300">
@@ -675,11 +693,63 @@
             return newRow;
         }
 
+        function autoResizeColumn(input) {
+            const table = resizableTable;
+
+            // 全列に対して最低限必要な幅を計算してセット
+            Array.from(table.tHead.rows[0].cells).forEach((th, colIndex) => {
+                // ヘッダーのテキスト幅を計測
+                const span = document.createElement('span');
+                span.style.cssText = 'visibility:hidden;position:absolute;white-space:nowrap;';
+                span.style.font = window.getComputedStyle(th).font;
+                span.textContent = th.textContent.trim();
+                document.body.appendChild(span);
+                let maxWidth = span.offsetWidth + 32;
+                document.body.removeChild(span);
+
+                // 各行の入力値の幅を計測して最大値を取る
+                Array.from(table.tBodies[0].rows).forEach(row => {
+                    const cell = row.children[colIndex];
+                    if (!cell) return;
+                    const cellInput = cell.querySelector('.grid-input');
+                    const span2 = document.createElement('span');
+                    span2.style.cssText = 'visibility:hidden;position:absolute;white-space:nowrap;';
+                    span2.style.font = window.getComputedStyle(cellInput || cell).font;
+                    span2.textContent = cellInput
+                        ? (cellInput.value || cellInput.placeholder)
+                        : cell.textContent.trim();
+                    document.body.appendChild(span2);
+                    const w = span2.offsetWidth + 32;
+                    document.body.removeChild(span2);
+                    if (w > maxWidth) maxWidth = w;
+                });
+
+                // 最低幅をセット
+                th.style.minWidth = `${maxWidth}px`;
+                th.style.width = `${maxWidth}px`;
+                Array.from(table.tBodies[0].rows).forEach(row => {
+                    const cell = row.children[colIndex];
+                    if (cell) {
+                        cell.style.minWidth = `${maxWidth}px`;
+                        cell.style.width = `${maxWidth}px`;
+                    }
+                });
+            });
+
+            // テーブル全体のminWidthを全列の合計にセット
+            const totalWidth = Array.from(table.tHead.rows[0].cells)
+                .reduce((sum, th) => sum + th.offsetWidth, 0);
+            table.style.minWidth = `${totalWidth}px`;
+        }
+
         function bindRowEvents(row) {
             // Auto-save on input and update validation button state
-            row.addEventListener('input', () => {
+            row.addEventListener('input', (e) => {
                 saveDraft();
                 updateValidateButtonState();
+                if (e.target.classList.contains('grid-input')) {
+                    autoResizeColumn(e.target);
+                }
             });
 
             // 削除
@@ -755,10 +825,14 @@
                     }
 
                     const data = await res.json();
-                    addressInput.value = (data.prefecture || '') + (data.city || '') + (data.town || '');
+                    if (addressInput.value === '') {
+                        addressInput.value = (data.prefecture || '') + (data.city || '') + (data.town || '');
+                        showStatusMessage(`行${row.querySelector('.row-no').textContent}: 住所を自動入力しました。`, 'success');
+                    } else {
+                        showStatusMessage(`行${row.querySelector('.row-no').textContent}: 住所が入力済みのため自動入力をスキップしました。`, 'info');
+                    }
                     zipInput.classList.remove('ring-2', 'ring-red-500');
                     lastFetchedZip = zip;
-                    showStatusMessage(`行${row.querySelector('.row-no').textContent}: 住所を自動入力しました。`, 'success');
                     saveDraft();
                 } catch (e) {
                     zipInput.classList.add('ring-2', 'ring-red-500');
@@ -839,6 +913,7 @@
                 normalizeZipValue(targetRow.querySelector('.col-zip'));
                 targetRow.querySelector('.col-address').value = (company.address || '').trim();
                 appliedCount += 1;
+                targetRow.querySelectorAll('.grid-input').forEach(input => autoResizeColumn(input));
             }
 
             saveDraft();

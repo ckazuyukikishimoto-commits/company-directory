@@ -48,7 +48,8 @@ public class CompanyController {
     }
 
     @GetMapping
-    public String list(@ModelAttribute CompanySearchForm searchForm, @RequestParam(defaultValue = "100") int size,
+    public String list(@ModelAttribute CompanySearchForm searchForm,
+            @RequestParam(name = "size", defaultValue = "100") int size,
             @PageableDefault(size = 100, sort = "displayNumber", direction = Sort.Direction.ASC) Pageable pageable,
             Model model) {
 
@@ -79,7 +80,7 @@ public class CompanyController {
 
     @PostMapping("/add")
     public String create(@Validated CompanyForm form, BindingResult result, RedirectAttributes redirectAttributes,
-            @RequestParam(required = false) String returnUrl, Model model) {
+            @RequestParam(value = "resultUrl", required = false) String returnUrl, Model model) {
         if (result.hasErrors()) {
             model.addAttribute("companyForm", form);
             return "companies/form";
@@ -105,7 +106,7 @@ public class CompanyController {
     }
 
     @GetMapping("/edit/{id}")
-    public String form(@PathVariable Integer id, Model model) {
+    public String form(@PathVariable("id") Integer id, Model model) {
         Company company = companyService.findById(id);
         CompanyForm form = new CompanyForm();
 
@@ -122,7 +123,7 @@ public class CompanyController {
 
     @PostMapping("/edit/{id}")
     public String update(@Validated CompanyForm form, BindingResult result, RedirectAttributes redirectAttributes,
-            @RequestParam(required = false) String returnUrl, Model model) {
+            @RequestParam(value = "resultUrl", required = false) String returnUrl, Model model) {
         if (result.hasErrors()) {
             model.addAttribute("companyForm", form);
             return "companies/form";
@@ -147,8 +148,8 @@ public class CompanyController {
     }
 
     @PostMapping("/delete/{id}")
-    public String delete(@PathVariable Integer id, Principal principal, RedirectAttributes redirectAttributes,
-            @RequestParam(required = false) String returnUrl, Model model) {
+    public String delete(@PathVariable("id") Integer id, Principal principal, RedirectAttributes redirectAttributes,
+            @RequestParam(value = "resultUrl", required = false) String returnUrl, Model model) {
         try {
             companyService.delete(id, principal.getName());
             redirectAttributes.addFlashAttribute("successMessage", "企業情報を削除しました。");
@@ -167,7 +168,8 @@ public class CompanyController {
     }
 
     @GetMapping("/trash")
-    public String trash(@ModelAttribute CompanySearchForm searchForm, @RequestParam(defaultValue = "100") int size,
+    public String trash(@ModelAttribute CompanySearchForm searchForm,
+            @RequestParam(value = "size", defaultValue = "100") int size,
             @PageableDefault(size = 100, sort = "displayNumber", direction = Sort.Direction.ASC) Pageable pageable,
             Model model) {
 
@@ -182,8 +184,8 @@ public class CompanyController {
     }
 
     @PostMapping("/trash/restore/{id}")
-    public String restore(@PathVariable Integer id, RedirectAttributes redirectAttributes,
-            @RequestParam(required = false) String returnUrl) {
+    public String restore(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes,
+            @RequestParam(value = "resultUrl", required = false) String returnUrl) {
         try {
             companyService.restore(id);
             redirectAttributes.addFlashAttribute("successMessage", "企業情報を復元しました。");

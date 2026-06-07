@@ -21,7 +21,7 @@ public class ZipApiController {
      * GET /api/zip/1000005
      */
     @GetMapping("/{zipCode}")
-    public ResponseEntity<?> getAddress(@PathVariable String zipCode) {
+    public ResponseEntity<?> getAddress(@PathVariable("zipCode") String zipCode) {
         // ハイフン除去
         String cleanZip = zipCode.replace("-", "");
 
