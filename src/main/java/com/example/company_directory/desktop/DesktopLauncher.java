@@ -148,15 +148,14 @@ public final class DesktopLauncher {
             return;
         }
         // 127.0.0.1 で待ち受けているので、localhost（IPv6 の ::1 になることがある）ではなく数字で書く
-        String url = "http://127.0.0.1:" + port + "/login";
+        String url = startUrl(port);
         try {
             context = new SpringApplicationBuilder(CompanyDirectoryApplication.class)
                     .profiles("desktop")
                     .headless(!hasScreen)
                     .properties(
-                            "server.port=" + port,
                             "logging.file.name=" + paths.logDir().resolve("app.log").toAbsolutePath())
-                    .run(args);
+                    .run(withServerArgs(args, port));
         } catch (Throwable e) {
             if (exiting.get()) {
                 return;
@@ -173,7 +172,7 @@ public final class DesktopLauncher {
             boolean dbProblem = looksLikeDatabaseProblem(e);
             DatabaseCheck.Result c = DatabaseCheck.classify(e);
             fatal(dbProblem ? c.title() : "起動できませんでした",
-                    (dbProblem ? c.detail() : shorten(String.valueOf(e.getMessage())))
+                    (dbProblem ? c.detail() : shorten(DatabaseCheck.maskSecrets(String.valueOf(e.getMessage()))))
                             + "\n\n詳しくはログを見てください: " + paths.logDir().resolve("app.log"),
                     dbProblem);
             return;
@@ -266,10 +265,13 @@ public final class DesktopLauncher {
         // もう 1 つが起動途中かもしれないので、ポート番号が書かれるまで少し待つ
         for (int i = 0; i < 120; i++) {
             try {
-                if (Files.exists(paths.portFile())) {
-                    String port = Files.readString(paths.portFile(), StandardCharsets.UTF_8).strip();
+                String port = Files.exists(paths.portFile())
+                        ? Files.readString(paths.portFile(), StandardCharsets.UTF_8).strip()
+                        : "";
+                // 書き込みの途中（空など）なら、数字になるまで待つ
+                if (port.matches("\\d{2,5}")) {
                     closeSplash();
-                    new AppWindow(paths.browserProfileDir()).open("http://127.0.0.1:" + port + "/login");
+                    new AppWindow(paths.browserProfileDir()).open(startUrl(Integer.parseInt(port)));
                     System.exit(0);
                     return;
                 }
@@ -405,6 +407,29 @@ public final class DesktopLauncher {
     }
 
     /** 長すぎるエラーメッセージはダイアログに全部出さない（詳しくはログ）。 */
+    /**
+     * 最初に開く画面。ログイン画面ではなく企業一覧を開く。
+     * 「ログイン状態を保持する」が効いていればそのまま一覧が出て、
+     * そうでなければ Spring Security がログイン画面へ回す（仕様書の「自動ログイン」のとおり）。
+     * 127.0.0.1 で待ち受けているので、localhost（IPv6 の ::1 になることがある）ではなく数字で書く。
+     */
+    static String startUrl(int port) {
+        return "http://127.0.0.1:" + port + "/companies";
+    }
+
+    /**
+     * 待ち受けのアドレスとポートを、いちばん強い「コマンドライン引数」で渡す。
+     * こうしておけば、PC に SERVER_ADDRESS や SERVER_PORT の環境変数があっても、
+     * 127.0.0.1 以外で待ち受けたり、別のポートで起動したりしない。
+     */
+    static String[] withServerArgs(String[] args, int port) {
+        String[] all = new String[args.length + 2];
+        all[0] = "--server.address=127.0.0.1";
+        all[1] = "--server.port=" + port;
+        System.arraycopy(args, 0, all, 2, args.length);
+        return all;
+    }
+
     private static String shorten(String message) {
         return message.length() > 300 ? message.substring(0, 300) + "…" : message;
     }
@@ -434,6 +459,7 @@ public final class DesktopLauncher {
                 # このファイルには秘密の値が入るので、人に送ったり Git に入れたりしないでください。
 
                 # Supabase の接続情報（Supabase の画面の Connect → JDBC からコピー）
+                # URL の後ろに ?user=...&password=... が付いていたら、その部分は消して下の 2 行に書きます
                 SPRING_DATASOURCE_URL=
                 SPRING_DATASOURCE_USERNAME=
                 SPRING_DATASOURCE_PASSWORD=

@@ -70,7 +70,9 @@ final class DotEnvLoader {
         int count = 0;
         for (Map.Entry<String, String> e : values.entrySet()) {
             String key = e.getKey();
-            if (System.getenv(key) != null || System.getProperty(key) != null) {
+            // 環境変数が「空」のときは決まっていないとみなして .env の値を使う（isDefined と同じ考え方）
+            String env = System.getenv(key);
+            if ((env != null && !env.isBlank()) || System.getProperty(key) != null) {
                 continue;
             }
             System.setProperty(key, e.getValue());
