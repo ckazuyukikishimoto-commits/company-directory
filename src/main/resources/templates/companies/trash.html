@@ -6,36 +6,7 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>廃棄データ・アーカイブ</title>
     <link rel="icon" type="image/svg+xml" th:href="@{/images/app-icon.svg}">
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap"
-        rel="stylesheet" />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
-        rel="stylesheet" />
-    <script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#0066cc",
-                        "background-light": "#fffbf0",
-                        "background-dark": "#fffbf0",
-                        "text-light-primary": "#222222",
-                    },
-                    fontFamily: {
-                        "display": ["Noto Sans JP", "Inter", "sans-serif"]
-                    },
-                    borderRadius: {
-                        "DEFAULT": "0.5rem",
-                        "lg": "0.75rem",
-                        "xl": "1rem",
-                        "full": "9999px"
-                    },
-                },
-            },
-        }
-    </script>
+    <link rel="stylesheet" th:href="@{/css/fonts/fonts.css}" />
     <style>
         body {
             -webkit-font-smoothing: antialiased;
@@ -214,6 +185,8 @@
                 sessionStorage.setItem('lastTrashUrl', currentUrl);
             })();
     </script>
+    <!-- 画面の CSS とフォントはアプリに同梱（オフラインでも崩れないように）。作り方は frontend/README.md -->
+    <link rel="stylesheet" th:href="@{/css/app.css}" />
 </head>
 
 <body class="font-display bg-background-light dark:bg-archive-dark">
