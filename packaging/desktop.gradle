@@ -1,0 +1,163 @@
+// =====================================================================
+// デスクトップ版（jpackage）を作るための Gradle タスク。build.gradle から読み込む。
+//
+//   ./gradlew desktopAppImage   … インストール不要のフォルダ版（build/desktop/dist/CompanyDirectory/）
+//   ./gradlew desktopInstaller  … インストーラー（Windows: .msi / Linux: .deb）
+//
+// jpackage は「今動いている OS 向け」しか作れない。Windows 版は GitHub Actions の
+// windows-latest で作る（.github/workflows/desktop-windows.yml）。
+//
+// 主な値は -P で変えられる:
+//   -PdesktopVersion=1.0.5      アプリの版（Windows のインストーラーは数字 3 つまで）
+//   -PdesktopInstallerType=msi  msi / exe / deb など
+// =====================================================================
+
+// 外部コマンド（java / jlink / jpackage）を動かすための道具。出力はそのまま画面に出る
+interface DesktopOps {
+    @javax.inject.Inject
+    ExecOperations getExecOps()
+    @javax.inject.Inject
+    FileSystemOperations getFs()
+}
+def ops = project.objects.newInstance(DesktopOps)
+def execOps = ops.execOps
+def fs = ops.fs
+def splashImage = file('packaging/images/splash.png')
+def windowsIcon = file('packaging/images/app.ico')
+def linuxIcon = file('packaging/images/icon-256.png')
+def bootJarFile = tasks.named('bootJar').flatMap { it.archiveFile }
+
+def isWindows = org.gradle.internal.os.OperatingSystem.current().isWindows()
+def desktopDir = layout.buildDirectory.dir('desktop')
+def appName = 'CompanyDirectory'
+def desktopVersion = (project.findProperty('desktopVersion') ?: '1.0.0').toString()
+def installerType = (project.findProperty('desktopInstallerType') ?: (isWindows ? 'msi' : 'deb')).toString()
+
+// JDK のツール（jlink / jpackage）は、ビルドに使う JDK 21 のものを使う
+def toolchainHome = javaToolchains.launcherFor {
+    languageVersion = JavaLanguageVersion.of(21)
+}.map { it.metadata.installationPath.asFile.absolutePath }
+def jdkTool = { String name -> "${toolchainHome.get()}/bin/${name}${isWindows ? '.exe' : ''}" }
+
+// アプリが使う Java のモジュール。jlink で「必要な分だけの Java 実行環境」を作る
+def runtimeModules = [
+    'java.base', 'java.compiler', 'java.datatransfer', 'java.desktop', 'java.instrument',
+    'java.logging', 'java.management', 'java.naming', 'java.net.http', 'java.prefs',
+    'java.rmi', 'java.scripting', 'java.security.jgss', 'java.security.sasl', 'java.sql',
+    'java.transaction.xa', 'java.xml', 'java.xml.crypto',
+    'jdk.charsets', 'jdk.crypto.cryptoki', 'jdk.crypto.ec', 'jdk.jfr', 'jdk.localedata',
+    'jdk.management', 'jdk.naming.dns', 'jdk.net', 'jdk.unsupported', 'jdk.zipfs',
+]
+if (isWindows) {
+    runtimeModules += ['jdk.crypto.mscapi'] // Windows の証明書ストア
+}
+
+// 1. Spring Boot の jar を「展開した形」にする（CDS を使うにはこの形が必要）
+tasks.register('desktopInput') {
+    group = 'desktop'
+    description = 'bootJar を展開して jpackage の入力フォルダを作る'
+    dependsOn tasks.named('bootJar')
+    def outDir = desktopDir.map { it.dir('input') }
+    outputs.dir(outDir)
+    doLast {
+        def input = outDir.get().asFile
+        fs.delete { delete input }
+        def bootJar = bootJarFile.get().asFile
+        execOps.exec {
+            commandLine jdkTool('java'), '-Djarmode=tools', '-jar', bootJar.absolutePath,
+                    'extract', '--destination', input.absolutePath
+        }
+        // jar の名前を版に関係なく決まった名前にする
+        def mainJar = new File(input, bootJar.name)
+        mainJar.renameTo(new File(input, 'company-directory.jar'))
+        fs.copy {
+            from splashImage
+            into input
+        }
+    }
+}
+
+// 2. jlink で小さな Java 実行環境を作る（CDS の土台のアーカイブも作る）
+tasks.register('desktopRuntime') {
+    group = 'desktop'
+    description = 'jlink でアプリ専用の Java 実行環境を作る'
+    def outDir = desktopDir.map { it.dir('runtime') }
+    outputs.dir(outDir)
+    inputs.property('modules', runtimeModules)
+    doLast {
+        fs.delete { delete outDir }
+        execOps.exec {
+            commandLine jdkTool('jlink'),
+                    '--add-modules', runtimeModules.join(','),
+                    '--strip-debug', '--no-header-files', '--no-man-pages',
+                    '--generate-cds-archive',
+                    '--output', outDir.get().asFile.absolutePath
+        }
+    }
+}
+
+def jpackageArgs = { String type ->
+    def args = [
+        jdkTool('jpackage'),
+        '--type', type,
+        '--name', appName,
+        '--app-version', desktopVersion,
+        '--vendor', 'company-directory',
+        '--description', '企業名簿（デスクトップ版）',
+        '--input', desktopDir.get().dir('input').asFile.absolutePath,
+        '--main-jar', 'company-directory.jar',
+        '--main-class', 'com.example.company_directory.desktop.DesktopLauncher',
+        '--runtime-image', desktopDir.get().dir('runtime').asFile.absolutePath,
+        '--dest', desktopDir.get().dir('dist').asFile.absolutePath,
+        // 起動してすぐ「起動しています…」の画像を出す（Java が動き出す前に表示される）
+        '--java-options', '-splash:$APPDIR/splash.png',
+        // CDS: 1 回目の終了時にクラスの読み込み結果を保存し、2 回目から速く起動する
+        '--java-options', '-XX:+AutoCreateSharedArchive',
+        // jar が変わっても JVM は古いファイルを作り直さないので、ビルドごとに名前を変える。
+        // 古いファイルは DesktopLauncher が起動時に消す
+        '--java-options', "-XX:SharedArchiveFile=\$APPDIR/company-directory-${desktopVersion}-${System.currentTimeMillis()}.jsa",
+    ]
+    if (isWindows) {
+        args += ['--icon', windowsIcon.absolutePath]
+        if (type != 'app-image') {
+            args += [
+                // ユーザーごとのインストール（管理者権限が要らない。CDS のファイルも書き込める）
+                '--win-per-user-install',
+                '--win-menu', '--win-menu-group', appName,
+                '--win-shortcut',
+                // 同じ UUID にしておくと、新しい版を入れたときに古い版と置き換わる
+                '--win-upgrade-uuid', '5b0f8f43-3c2a-4b7e-9a55-2f6d0c6c4e21',
+            ]
+        }
+    } else {
+        args += ['--icon', linuxIcon.absolutePath]
+    }
+    return args
+}
+
+tasks.register('desktopAppImage') {
+    group = 'desktop'
+    description = 'インストール不要のフォルダ版を作る（build/desktop/dist/CompanyDirectory）'
+    dependsOn 'desktopInput', 'desktopRuntime'
+    doLast {
+        fs.delete { delete desktopDir.map { it.dir("dist/${appName}") } }
+        execOps.exec { commandLine jpackageArgs('app-image') }
+    }
+}
+
+tasks.register('desktopInstaller') {
+    group = 'desktop'
+    description = 'インストーラーを作る（Windows は .msi。WiX Toolset 3 が必要）'
+    dependsOn 'desktopInput', 'desktopRuntime'
+    doLast {
+        execOps.exec { commandLine jpackageArgs(installerType) }
+    }
+}
+
+// 開発中に、パッケージにせずデスクトップ版を動かす: ./gradlew desktopRun
+tasks.register('desktopRun', JavaExec) {
+    group = 'desktop'
+    description = 'デスクトップ版をパッケージにせずに起動する（開発用）'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.example.company_directory.desktop.DesktopLauncher'
+}

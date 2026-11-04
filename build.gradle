@@ -55,3 +55,6 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+// デスクトップ版（Windows アプリ）を作るタスク。詳しくは docs/desktop-app.md
+apply from: 'packaging/desktop.gradle'

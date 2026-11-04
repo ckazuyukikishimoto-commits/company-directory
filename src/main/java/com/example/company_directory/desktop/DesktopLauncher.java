@@ -160,6 +160,7 @@ public final class DesktopLauncher {
 
         // 4. 画面を開く
         closeSplash();
+        CompletableFuture.runAsync(DesktopLauncher::deleteOldCdsArchives);
         AppWindow window = new AppWindow(paths.browserProfileDir());
         installTrayIcon(window, url, paths);
         Optional<Process> windowProcess = window.open(url);
@@ -383,6 +384,37 @@ public final class DesktopLauncher {
         } catch (IOException ignored) {
             // 作れなくても、案内のダイアログは出る
         }
+    }
+
+    /**
+     * 前の版の CDS ファイル（company-directory-*.jsa。1 つ 100MB 近くある）を消す。
+     * 今使っているファイルは JVM の起動オプション -XX:SharedArchiveFile から分かる。
+     */
+    static void deleteOldCdsArchives() {
+        String prefix = "-XX:SharedArchiveFile=";
+        java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments().stream()
+                .filter(a -> a.startsWith(prefix))
+                .map(a -> Path.of(a.substring(prefix.length())).toAbsolutePath())
+                .findFirst()
+                .ifPresent(current -> {
+                    Path dir = current.getParent();
+                    if (dir == null) {
+                        return;
+                    }
+                    try (var files = Files.list(dir)) {
+                        files.filter(f -> {
+                            String name = f.getFileName().toString();
+                            return name.startsWith("company-directory") && name.endsWith(".jsa")
+                                    && !f.toAbsolutePath().equals(current);
+                        }).forEach(f -> {
+                            // JVM は読み取り専用で作る。Windows では読み取り専用のままだと消せない
+                            f.toFile().setWritable(true);
+                            deleteQuietly(f);
+                        });
+                    } catch (IOException ignored) {
+                        // 消せなくても動作には影響しない
+                    }
+                });
     }
 
     private static void deleteQuietly(Path file) {
