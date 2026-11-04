@@ -18,7 +18,7 @@ for run in 1 2; do
   pid=$!
   ok=0
   for _ in $(seq 1 600); do
-    if curl -s -o /dev/null -f http://localhost:18080/login; then ok=1; break; fi
+    if curl -s -o /dev/null -f --max-time 20 http://127.0.0.1:18080/login; then ok=1; break; fi
     if ! kill -0 "$pid" 2>/dev/null; then break; fi
     sleep 0.1
   done
@@ -30,7 +30,7 @@ for run in 1 2; do
     exit 1
   fi
   echo "${run} 回目: /login が応答するまで $(( (end - start) / 1000000 )) ms / $(grep -o 'Started .*' "$LOG" | head -1)"
-  wait "$pid"   # DESKTOP_SMOKE_TEST=1 なので数秒後に自分で正しく終了する
+  wait "$pid"   # DESKTOP_SMOKE_TEST=1 なので 30 秒後に自分で正しく終了する
   if [ "$run" = 1 ]; then
     ls "$APP_DIR"/lib/app/*.jsa > /dev/null || { echo "::error::CDS ファイルが作られていません"; exit 1; }
     echo "CDS ファイル: $(ls -sh "$APP_DIR"/lib/app/*.jsa)"

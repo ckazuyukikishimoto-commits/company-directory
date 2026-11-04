@@ -61,7 +61,7 @@ jobs:
           packaging/ci/smoke-test.sh build/desktop/dist/CompanyDirectory "$RUNNER_TEMP/cd-home"
       - name: テスト結果（失敗したとき用）
         if: failure()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: linux-test-reports
           path: build/reports/
@@ -105,7 +105,6 @@ jobs:
           & "$env:PGBIN\psql.exe" -U postgres -h localhost -c "create database company_directory"
       - name: 起動を確かめる（2 回起動して、CDS で速くなるかも見る）
         if: steps.pg.outcome == 'success'
-        continue-on-error: true
         shell: pwsh
         run: |
           $homeDir = Join-Path $env:RUNNER_TEMP 'cd-home'
@@ -124,7 +123,7 @@ jobs:
         run: |
           Remove-Item build/desktop/dist/CompanyDirectory/app/*.jsa -ErrorAction SilentlyContinue
           Compress-Archive -Path build/desktop/dist/CompanyDirectory -DestinationPath "CompanyDirectory-$env:DESKTOP_VERSION-windows.zip"
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: CompanyDirectory-windows-zip
           path: |
@@ -152,7 +151,7 @@ jobs:
         continue-on-error: true
         shell: bash
         run: ./gradlew desktopInstaller "-PdesktopVersion=$DESKTOP_VERSION" -PdesktopInstallerType=msi
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         if: steps.wix.outcome == 'success'
         with:
           name: CompanyDirectory-windows-msi

@@ -17,7 +17,7 @@ foreach ($run in 1, 2) {
     $ok = $false
     for ($i = 0; $i -lt 600; $i++) {
         try {
-            $r = Invoke-WebRequest -Uri 'http://localhost:18080/login' -UseBasicParsing -TimeoutSec 2
+            $r = Invoke-WebRequest -Uri 'http://127.0.0.1:18080/login' -UseBasicParsing -TimeoutSec 20
             if ($r.StatusCode -eq 200) { $ok = $true; break }
         } catch { }
         if ($p.HasExited) { break }
@@ -31,8 +31,8 @@ foreach ($run in 1, 2) {
     }
     $started = (Select-String -Path $log -Pattern 'Started .*' | Select-Object -First 1).Matches.Value
     Write-Host "$run 回目: /login が応答するまで $($sw.ElapsedMilliseconds) ms / $started"
-    # DESKTOP_SMOKE_TEST=1 なので数秒後に自分で正しく終了する
-    if (-not $p.WaitForExit(60000)) { Write-Host '::error::自分で終了しませんでした'; Stop-Process $p; exit 1 }
+    # DESKTOP_SMOKE_TEST=1 なので 30 秒後に自分で正しく終了する
+    if (-not $p.WaitForExit(90000)) { Write-Host '::error::自分で終了しませんでした'; Stop-Process $p; exit 1 }
     if ($run -eq 1) {
         $jsa = Get-ChildItem (Join-Path $AppDir 'app') -Filter '*.jsa'
         if (-not $jsa) { Write-Host '::error::CDS ファイルが作られていません'; exit 1 }

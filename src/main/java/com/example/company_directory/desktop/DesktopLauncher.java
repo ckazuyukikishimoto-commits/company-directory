@@ -121,7 +121,8 @@ public final class DesktopLauncher {
         });
 
         int port = choosePort();
-        String url = "http://localhost:" + port + "/login";
+        // 127.0.0.1 で待ち受けているので、localhost（IPv6 の ::1 になることがある）ではなく数字で書く
+        String url = "http://127.0.0.1:" + port + "/login";
         try {
             context = new SpringApplicationBuilder(CompanyDirectoryApplication.class)
                     .profiles("desktop")
@@ -163,9 +164,10 @@ public final class DesktopLauncher {
         CompletableFuture.runAsync(DesktopLauncher::deleteOldCdsArchives);
         if ("1".equals(System.getenv("DESKTOP_SMOKE_TEST"))) {
             // GitHub Actions の動作確認用: 画面は開かず、少し待ってから正しく終了する
+            // （CI のマシンは遅いので、確認スクリプトが画面を取りに来るまで 30 秒待つ）
             Thread t = new Thread(() -> {
                 try {
-                    TimeUnit.SECONDS.sleep(5);
+                    TimeUnit.SECONDS.sleep(30);
                 } catch (InterruptedException ignored) {
                     Thread.currentThread().interrupt();
                 }
@@ -228,7 +230,7 @@ public final class DesktopLauncher {
                 if (Files.exists(paths.portFile())) {
                     String port = Files.readString(paths.portFile(), StandardCharsets.UTF_8).strip();
                     closeSplash();
-                    new AppWindow(paths.browserProfileDir()).open("http://localhost:" + port + "/login");
+                    new AppWindow(paths.browserProfileDir()).open("http://127.0.0.1:" + port + "/login");
                     System.exit(0);
                     return;
                 }
