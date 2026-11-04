@@ -93,7 +93,22 @@ GitHub Actions が作った `.msi`（インストーラー）を入れて、ダ�
 docker build -t company-directory .
 docker run --env-file .env -p 8080:8080 company-directory
 ```
-*   `compose.yaml` は以前の MySQL 構成のままで、今のアプリ（PostgreSQL）とは合っていません。
+*   この方法は `.env` の DB（Supabase など）につなぎます。
+
+#### Docker Compose で動かす場合（ローカルの PostgreSQL を使う）
+本番の Supabase を使わずに、この PC の中に PostgreSQL を立てて試せます（データは Docker の `pg_data` に残ります）。
+1. `.env` に `LOCAL_DB_PASSWORD=<自分で決めたパスワード>` を足す（ローカル DB 専用。Supabase のパスワードとは別のものにする）
+2. 起動
+   ```bash
+   docker compose up --build
+   ```
+3. `http://localhost:8080/login` を開く
+*   `.env` の `SPRING_DATASOURCE_*`（Supabase の接続先）はこのときは使いません。`HOJIN_BANGOU_APP_ID`・`GEMINI_API_KEY` は `.env` にあれば使います。
+*   はじめは DB が空なので、ログイン用のユーザーがいません。アプリが一度起動したあと（表が作られたあと）、次のように 1 人追加してください（`demo` と `好きなパスワード` は自分で決める）。
+    ```bash
+    docker compose exec db psql -U postgres -d company_directory -c "CREATE EXTENSION IF NOT EXISTS pgcrypto; INSERT INTO users (user_id, password_hash, failed_login_count, enabled) VALUES ('demo', crypt('好きなパスワード', gen_salt('bf')), 0, true);"
+    ```
+*   止めるときは `docker compose down`（データも消すときは `docker compose down -v`）。
 
 #### テスト
 ```bash
