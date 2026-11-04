@@ -12,7 +12,8 @@ import org.springframework.test.context.ActiveProfiles;
  * デスクトップ版の設定（desktop プロファイル）でアプリが起動できるかを確かめる。
  * CompanyDirectoryApplicationTests と同じく、DB（SPRING_DATASOURCE_URL など）が必要。
  */
-@SpringBootTest
+// テストで本番の DB につないでいても、ゴミ箱のデータを消さないよう起動時パージは止める
+@SpringBootTest(properties = "app.trash.purge-on-startup=false")
 @ActiveProfiles("desktop")
 class DesktopProfileContextTests {
 

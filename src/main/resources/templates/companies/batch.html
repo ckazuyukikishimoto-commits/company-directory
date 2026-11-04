@@ -142,6 +142,12 @@
     </style>
     <!-- 画面の CSS とフォントはアプリに同梱（オフラインでも崩れないように）。作り方は frontend/README.md -->
     <link rel="stylesheet" th:href="@{/css/app.css}" />
+    <!-- この画面だけは以前から角丸を大きくしていなかったので、Tailwind の標準の大きさに戻す -->
+    <style>
+        .rounded { border-radius: 0.25rem; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded-xl { border-radius: 0.75rem; }
+    </style>
 </head>
 
 <body class="font-display bg-background-light min-h-screen">

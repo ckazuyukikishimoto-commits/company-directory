@@ -116,12 +116,14 @@ jobs:
           ) | Set-Content -Encoding utf8 (Join-Path $homeDir '.env')
           pwsh packaging/ci/smoke-test.ps1 -AppDir build/desktop/dist/CompanyDirectory -HomeDir $homeDir
           # 確認で作られた CDS ファイルは配らない（各 PC の 1 回目の終了時に作られる）
-          Remove-Item build/desktop/dist/CompanyDirectory/app/*.jsa -ErrorAction SilentlyContinue
+          # CDS ファイルは読み取り専用で作られるので -Force を付けないと消えない
+          Remove-Item build/desktop/dist/CompanyDirectory/app/*.jsa -Force -ErrorAction SilentlyContinue
 
       - name: フォルダ版を zip にする
         shell: pwsh
         run: |
-          Remove-Item build/desktop/dist/CompanyDirectory/app/*.jsa -ErrorAction SilentlyContinue
+          Remove-Item build/desktop/dist/CompanyDirectory/app/*.jsa -Force -ErrorAction SilentlyContinue
+          if (Get-ChildItem build/desktop/dist/CompanyDirectory/app -Filter *.jsa) { throw 'CDS ファイルが消せませんでした（配布物に入ってしまいます）' }
           Compress-Archive -Path build/desktop/dist/CompanyDirectory -DestinationPath "CompanyDirectory-$env:DESKTOP_VERSION-windows.zip"
       - uses: actions/upload-artifact@v6
         with:
