@@ -25,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.JOptionPane;
 
@@ -59,11 +60,22 @@ public final class DesktopLauncher {
     private static final int DEFAULT_PORT = 18080;
     private static final String SUPABASE_DASHBOARD = "https://supabase.com/dashboard/projects";
 
-    /** 専用ウィンドウがこれより早く閉じたら「別の Edge に引き継がれた」と見なして、終了しない。 */
-    private static final long HANDOFF_THRESHOLD_MILLIS = 5_000;
+    /**
+     * 専用ウィンドウのプロセスがこれより早く終わったら「すでに動いている Edge に引き継がれた」と見なして、終了しない。
+     * （引き継ぎのときは 1 秒もかからずに終わる。人がウィンドウを閉じるのはふつうもっと後）
+     */
+    private static final long HANDOFF_THRESHOLD_MILLIS = 2_000;
 
     private static volatile ConfigurableApplicationContext context;
-    private static volatile boolean exiting;
+    /** 終了処理を 1 回だけ行うための印。synchronized を使わないのは、ダイアログ表示中に終了処理を止めないため。 */
+    private static final AtomicBoolean exiting = new AtomicBoolean();
+    /**
+     * 二重起動を防ぐロック。static で持ち続ける（ローカル変数だと GC でファイルが閉じられ、ロックが外れてしまう）。
+     */
+    private static FileChannel lockChannel;
+    /** タスクトレイのアイコン（使えない環境では null）。 */
+    private static volatile TrayIcon trayIcon;
+    private static FileLock instanceLock;
     /** エラーのダイアログを閉じたあとに開くフォルダ（無ければ null）。 */
     private static volatile Path openFolderAfterDialog;
 
@@ -71,8 +83,10 @@ public final class DesktopLauncher {
     }
 
     public static void main(String[] args) {
-        boolean hasScreen = DesktopPaths.isWindows() || System.getenv("DISPLAY") != null
-                || System.getenv("WAYLAND_DISPLAY") != null;
+        boolean smokeTest = "1".equals(System.getenv("DESKTOP_SMOKE_TEST"));
+        // CI の動作確認ではダイアログを出さない（誰も閉じないので止まってしまう）
+        boolean hasScreen = !smokeTest && (DesktopPaths.isWindows() || System.getenv("DISPLAY") != null
+                || System.getenv("WAYLAND_DISPLAY") != null);
         System.setProperty("java.awt.headless", String.valueOf(!hasScreen));
         DesktopPaths paths = DesktopPaths.detect();
         try {
@@ -83,11 +97,17 @@ public final class DesktopLauncher {
         }
 
         // 1. 二重起動の確認
-        FileLock lock = tryLock(paths.lockFile());
-        if (lock == null) {
-            openRunningInstance(paths);
+        try {
+            if (!tryLock(paths.lockFile())) {
+                openRunningInstance(paths);
+                return;
+            }
+        } catch (IOException e) {
+            fatal("起動の準備ができませんでした", "ロックファイルを作れません: " + paths.lockFile() + "\n" + e.getMessage(), false);
             return;
         }
+        // 前回、強制終了などで残ったポート番号のファイルを消す（2 回目の起動が古い番号を開かないように）
+        deleteQuietly(paths.portFile());
 
         // 2. 設定ファイル（.env）
         try {
@@ -114,13 +134,19 @@ public final class DesktopLauncher {
                 .supplyAsync(() -> DatabaseCheck.run(10), checker);
         checker.shutdown();
         dbCheck.thenAccept(r -> {
-            if (!r.ok() && context == null) {
+            if (!r.ok() && context == null && !exiting.get()) {
                 // Spring の起動を待たずに知らせる（つながらない DB を何十秒も待たせない）
                 fatal(r.title(), r.detail(), r.maybePaused());
             }
         });
 
-        int port = choosePort();
+        int port;
+        try {
+            port = choosePort();
+        } catch (RuntimeException e) {
+            fatal("ポートを用意できませんでした", String.valueOf(e.getMessage()), false);
+            return;
+        }
         // 127.0.0.1 で待ち受けているので、localhost（IPv6 の ::1 になることがある）ではなく数字で書く
         String url = "http://127.0.0.1:" + port + "/login";
         try {
@@ -132,7 +158,7 @@ public final class DesktopLauncher {
                             "logging.file.name=" + paths.logDir().resolve("app.log").toAbsolutePath())
                     .run(args);
         } catch (Throwable e) {
-            if (exiting) {
+            if (exiting.get()) {
                 return;
             }
             DatabaseCheck.Result r;
@@ -147,12 +173,12 @@ public final class DesktopLauncher {
             boolean dbProblem = looksLikeDatabaseProblem(e);
             DatabaseCheck.Result c = DatabaseCheck.classify(e);
             fatal(dbProblem ? c.title() : "起動できませんでした",
-                    (dbProblem ? c.detail() : String.valueOf(e.getMessage()))
-                            + "\n\nログ: " + paths.logDir().resolve("app.log"),
+                    (dbProblem ? c.detail() : shorten(String.valueOf(e.getMessage())))
+                            + "\n\n詳しくはログを見てください: " + paths.logDir().resolve("app.log"),
                     dbProblem);
             return;
         }
-        if (exiting) {
+        if (exiting.get()) {
             return;
         }
 
@@ -162,7 +188,7 @@ public final class DesktopLauncher {
         // 4. 画面を開く
         closeSplash();
         CompletableFuture.runAsync(DesktopLauncher::deleteOldCdsArchives);
-        if ("1".equals(System.getenv("DESKTOP_SMOKE_TEST"))) {
+        if (smokeTest) {
             // GitHub Actions の動作確認用: 画面は開かず、少し待ってから正しく終了する
             // （CI のマシンは遅いので、確認スクリプトが画面を取りに来るまで 30 秒待つ）
             Thread t = new Thread(() -> {
@@ -185,8 +211,11 @@ public final class DesktopLauncher {
             long startedAt = System.currentTimeMillis();
             p.onExit().thenRun(() -> {
                 long alive = System.currentTimeMillis() - startedAt;
-                if (alive < HANDOFF_THRESHOLD_MILLIS) {
+                if (alive < HANDOFF_THRESHOLD_MILLIS && trayIcon != null) {
                     // 古い Edge がまだ残っていて、そちらに引き継がれた等。トレイの「終了」で止めてもらう
+                    trayIcon.displayMessage(APP_TITLE,
+                            "画面は開いています。終了するときは、このアイコンを右クリックして「終了」を選んでください。",
+                            TrayIcon.MessageType.INFO);
                     return;
                 }
                 shutdown(0);
@@ -195,11 +224,10 @@ public final class DesktopLauncher {
     }
 
     /** アプリを止めて JVM を終わらせる。 */
-    static synchronized void shutdown(int code) {
-        if (exiting) {
+    static void shutdown(int code) {
+        if (!exiting.compareAndSet(false, true)) {
             return;
         }
-        exiting = true;
         ConfigurableApplicationContext ctx = context;
         if (ctx != null) {
             // SpringApplication.exit で正しく止める（CDS のキャッシュもこのとき保存される）
@@ -210,17 +238,28 @@ public final class DesktopLauncher {
 
     // ---------------------------------------------------------------- 二重起動
 
-    private static FileLock tryLock(Path lockFile) {
+    /**
+     * @return ロックを取れたら true。ほかのアプリ（もう 1 つの企業名簿）が持っていたら false
+     * @throws IOException ファイルを作れないなど、それ以外の理由で失敗したとき
+     */
+    private static boolean tryLock(Path lockFile) throws IOException {
+        FileChannel ch = FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+        FileLock lock;
         try {
-            FileChannel ch = FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-            FileLock lock = ch.tryLock();
-            if (lock == null) {
-                ch.close();
-            }
-            return lock; // JVM が終わるまで持ち続ける（終われば OS が外す）
-        } catch (Exception e) {
-            return null;
+            lock = ch.tryLock();
+        } catch (java.nio.channels.OverlappingFileLockException e) {
+            lock = null;
+        } catch (IOException e) {
+            ch.close();
+            throw e;
         }
+        if (lock == null) {
+            ch.close();
+            return false;
+        }
+        lockChannel = ch; // JVM が終わるまで持ち続ける（終われば OS が外す）
+        instanceLock = lock;
+        return true;
     }
 
     private static void openRunningInstance(DesktopPaths paths) {
@@ -248,8 +287,11 @@ public final class DesktopLauncher {
     static int choosePort() {
         int preferred = DEFAULT_PORT;
         String env = System.getenv("DESKTOP_PORT");
-        if (env != null && env.matches("\\d{2,5}")) {
-            preferred = Integer.parseInt(env);
+        if (env != null && env.matches("\\d{4,5}")) {
+            int p = Integer.parseInt(env);
+            if (p >= 1024 && p <= 65535) {
+                preferred = p;
+            }
         }
         if (isFree(preferred)) {
             return preferred;
@@ -304,6 +346,7 @@ public final class DesktopLauncher {
             icon.setImageAutoSize(true);
             icon.addActionListener(e -> window.open(url)); // ダブルクリックで画面を開く
             SystemTray.getSystemTray().add(icon);
+            trayIcon = icon;
         } catch (AWTException | RuntimeException e) {
             // トレイが使えなくても、ウィンドウを閉じれば終了できる
         }
@@ -331,11 +374,10 @@ public final class DesktopLauncher {
     }
 
     /** エラーを日本語のダイアログで知らせて終了する。 */
-    private static synchronized void fatal(String title, String detail, boolean offerSupabase) {
-        if (exiting) {
+    private static void fatal(String title, String detail, boolean offerSupabase) {
+        if (!exiting.compareAndSet(false, true)) {
             return;
         }
-        exiting = true;
         closeSplash();
         if (GraphicsEnvironment.isHeadless()) {
             System.err.println(title + ": " + detail);
@@ -362,6 +404,11 @@ public final class DesktopLauncher {
         System.exit(1);
     }
 
+    /** 長すぎるエラーメッセージはダイアログに全部出さない（詳しくはログ）。 */
+    private static String shorten(String message) {
+        return message.length() > 300 ? message.substring(0, 300) + "…" : message;
+    }
+
     private static boolean looksLikeDatabaseProblem(Throwable e) {
         for (Throwable t = e; t != null; t = t.getCause()) {
             String name = t.getClass().getName();
@@ -382,7 +429,8 @@ public final class DesktopLauncher {
         }
         String template = """
                 # 企業名簿（デスクトップ版）の設定ファイル
-                # 「キー=値」の形で書きます。値に空白があっても " で囲む必要はありません。
+                # 「キー=値」の形で書きます。コメントは行の先頭に # を付けて別の行に書きます。
+                # 値の前後に空白があるときだけ " で囲みます。
                 # このファイルには秘密の値が入るので、人に送ったり Git に入れたりしないでください。
 
                 # Supabase の接続情報（Supabase の画面の Connect → JDBC からコピー）

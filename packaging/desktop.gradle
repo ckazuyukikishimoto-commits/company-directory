@@ -5,7 +5,7 @@
 //   ./gradlew desktopInstaller  … インストーラー（Windows: .msi / Linux: .deb）
 //
 // jpackage は「今動いている OS 向け」しか作れない。Windows 版は GitHub Actions の
-// windows-latest で作る（.github/workflows/desktop-windows.yml）。
+// windows-latest で作る（.github/workflows/desktop-build.yml）。
 //
 // 主な値は -P で変えられる:
 //   -PdesktopVersion=1.0.5      アプリの版（Windows のインストーラーは数字 3 つまで）
@@ -71,7 +71,9 @@ tasks.register('desktopInput') {
         }
         // jar の名前を版に関係なく決まった名前にする
         def mainJar = new File(input, bootJar.name)
-        mainJar.renameTo(new File(input, 'company-directory.jar'))
+        if (!mainJar.renameTo(new File(input, 'company-directory.jar'))) {
+            throw new GradleException("jar の名前を変えられませんでした: ${mainJar}")
+        }
         fs.copy {
             from splashImage
             into input
@@ -86,6 +88,8 @@ tasks.register('desktopRuntime') {
     def outDir = desktopDir.map { it.dir('runtime') }
     outputs.dir(outDir)
     inputs.property('modules', runtimeModules)
+    // JDK を更新したら作り直す（古い Java を同梱し続けないように）
+    inputs.property('jdk', toolchainHome)
     doLast {
         fs.delete { delete outDir }
         execOps.exec {

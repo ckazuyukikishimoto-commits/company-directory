@@ -27,9 +27,10 @@ foreach ($run in 1, 2) {
     if (-not $ok) {
         Write-Host "::error::$run 回目: /login に届きませんでした"
         if (Test-Path $log) { Get-Content $log -Tail 80 }
+        if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
         exit 1
     }
-    $started = (Select-String -Path $log -Pattern 'Started .*' | Select-Object -First 1).Matches.Value
+    $started = (Select-String -Path $log -CaseSensitive -Pattern 'Started .*' | Select-Object -First 1).Matches.Value
     Write-Host "$run 回目: /login が応答するまで $($sw.ElapsedMilliseconds) ms / $started"
     # DESKTOP_SMOKE_TEST=1 なので 30 秒後に自分で正しく終了する
     if (-not $p.WaitForExit(90000)) { Write-Host '::error::自分で終了しませんでした'; Stop-Process $p; exit 1 }

@@ -27,6 +27,7 @@ for run in 1 2; do
     echo "::error::${run} 回目: /login に届きませんでした"
     cat "$COMPANY_DIRECTORY_HOME/stdout-$run.log" || true
     tail -50 "$LOG" || true
+    kill "$pid" 2>/dev/null || true
     exit 1
   fi
   echo "${run} 回目: /login が応答するまで $(( (end - start) / 1000000 )) ms / $(grep -o 'Started .*' "$LOG" | head -1)"

@@ -144,6 +144,7 @@ jobs:
               choco install wixtoolset --no-progress -y
               $found = Get-ChildItem 'C:\Program Files (x86)' -Filter 'WiX Toolset v3*' -Directory | Select-Object -First 1
             }
+            if (-not $found) { throw 'WiX Toolset 3 が見つかりません' }
             Add-Content -Path $env:GITHUB_PATH -Value (Join-Path $found.FullName 'bin')
           }
       - name: インストーラーを作る（jpackage --type msi）

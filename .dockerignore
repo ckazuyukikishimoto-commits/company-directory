@@ -1,0 +1,7 @@
+# Docker のビルドに要らないもの（イメージを小さく、ビルドを速くする）
+.git
+.gradle
+build
+frontend/node_modules
+.env
+*.local
