@@ -285,6 +285,22 @@ public final class DesktopLauncher {
 
     // ---------------------------------------------------------------- ポート
 
+    /**
+     * 空いているかを確かめるアドレス。サーバーが待ち受けるアドレス（server.address=127.0.0.1）と同じにする。
+     * InetAddress.getLoopbackAddress() は、JVM が IPv6 を優先する設定（java.net.preferIPv6Addresses=true）だと
+     * ::1 を返すので使わない。::1 で確かめると、別のソフトが 127.0.0.1:18080 を使っていても「空き」と判断してしまう。
+     * 名前の解決（DNS など）をしないよう、数字から作る。
+     */
+    static final InetAddress LISTEN_ADDRESS = ipv4Loopback();
+
+    private static InetAddress ipv4Loopback() {
+        try {
+            return InetAddress.getByAddress(new byte[] { 127, 0, 0, 1 });
+        } catch (IOException e) {
+            throw new UncheckedIOException(e); // 4 バイトを渡しているので起きない
+        }
+    }
+
     /** 18080（環境変数 DESKTOP_PORT で変更可）が空いていれば使い、使われていれば空いている番号を選ぶ。 */
     static int choosePort() {
         int preferred = DEFAULT_PORT;
@@ -295,19 +311,23 @@ public final class DesktopLauncher {
                 preferred = p;
             }
         }
+        return choosePort(preferred);
+    }
+
+    /** preferred が 127.0.0.1 で空いていればそれを、使われていれば 127.0.0.1 で空いている番号を返す。 */
+    static int choosePort(int preferred) {
         if (isFree(preferred)) {
             return preferred;
         }
-        try (ServerSocket s = new ServerSocket(0, 0, InetAddress.getLoopbackAddress())) {
+        try (ServerSocket s = new ServerSocket(0, 0, LISTEN_ADDRESS)) {
             return s.getLocalPort();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
-    private static boolean isFree(int port) {
-        try (ServerSocket s = new ServerSocket(port, 0, InetAddress.getLoopbackAddress())) {
-            s.setReuseAddress(true);
+    static boolean isFree(int port) {
+        try (ServerSocket s = new ServerSocket(port, 0, LISTEN_ADDRESS)) {
             return true;
         } catch (IOException e) {
             return false;
@@ -424,7 +444,7 @@ public final class DesktopLauncher {
      */
     static String[] withServerArgs(String[] args, int port) {
         String[] all = new String[args.length + 2];
-        all[0] = "--server.address=127.0.0.1";
+        all[0] = "--server.address=" + LISTEN_ADDRESS.getHostAddress();
         all[1] = "--server.port=" + port;
         System.arraycopy(args, 0, all, 2, args.length);
         return all;
