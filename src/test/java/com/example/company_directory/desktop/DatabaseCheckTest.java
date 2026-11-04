@@ -45,4 +45,19 @@ class DatabaseCheckTest {
         var r = DatabaseCheck.run("jdbc:postgresql://127.0.0.1:1/none", "u", "p", 2);
         assertThat(r.ok()).isFalse();
     }
+
+    @Test
+    void urlの書きまちがいでもパスワードは画面に出さない() {
+        var r = DatabaseCheck.classify(new SQLException(
+                "No suitable driver found for postgresql://h:5432/postgres?user=postgres.abc&password=S3cret!x&sslmode=require"));
+        assertThat(r.detail()).doesNotContain("S3cret!x").contains("password=***").contains("sslmode=require");
+    }
+
+    @Test
+    void userとパスワード入りのurlも隠す() {
+        assertThat(DatabaseCheck.maskSecrets("bad url postgresql://postgres:S3cret@h:5432/db"))
+                .isEqualTo("bad url postgresql://postgres:***@h:5432/db");
+        assertThat(DatabaseCheck.maskSecrets("jdbc:postgresql://h:5432/db?sslmode=require"))
+                .isEqualTo("jdbc:postgresql://h:5432/db?sslmode=require");
+    }
 }

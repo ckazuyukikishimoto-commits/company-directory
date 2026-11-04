@@ -109,6 +109,7 @@ CompanyDirectory.exe をダブルクリック
    ```
 
    - 自宅の回線が IPv6 に対応していないと、Supabase の「Direct connection」につながらないことがあります。そのときは Supabase の画面の **Connect → Session pooler** の接続情報を使います（ユーザー名が `postgres.プロジェクトID` の形になります）。
+   - パスワードは URL の中（`?password=...`）ではなく、`SPRING_DATASOURCE_PASSWORD` の行に書いてください。URL に入れておくと、URL の書きまちがいのときにログへパスワードが残ることがあります（画面のメッセージでは `***` に隠します）。
    - `.env` は秘密の値なので、人に送ったり Git に入れたりしないでください。
 3. もう一度アプリを起動します。
 

@@ -74,13 +74,29 @@ final class DatabaseCheck {
             return new Result(false, "データベースにつながりませんでした（時間切れ・接続拒否）",
                     "インターネット接続を確かめてください。Supabase のプロジェクトが一時停止している可能性もあります。", true);
         }
-        String first = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+        String first = e.getMessage() == null ? e.getClass().getSimpleName() : maskSecrets(e.getMessage());
         return new Result(false, "データベースにつながりませんでした", "詳しい理由: " + first, true);
+    }
+
+    /**
+     * メッセージの中の、URL に書かれたパスワードを「***」に置き換える。
+     * 例: JDBC の URL を書きまちがえると「No suitable driver found for jdbc:...?password=xxx」のように
+     * URL がそのままメッセージに入るので、画面に出す前にここで隠す。
+     */
+    static String maskSecrets(String message) {
+        if (message == null) {
+            return null;
+        }
+        return message
+                // ?password=xxx や &password=xxx（大文字小文字は問わない）
+                .replaceAll("(?i)(password=)[^&\\s;]*", "$1***")
+                // postgresql://user:xxx@host の形
+                .replaceAll("(://[^:/@\\s]+:)[^@\\s]*@", "$1***@");
     }
 
     private static String value(String key) {
         String v = System.getenv(key);
-        return v != null ? v : System.getProperty(key);
+        return v != null && !v.isBlank() ? v : System.getProperty(key);
     }
 
     private static String nullToEmpty(String s) {
