@@ -1,0 +1,57 @@
+# Supabase の無料プランは、しばらく（約 7 日）DB が使われないとプロジェクトが一時停止する。
+# それを防ぐため、週 2 回 DB に軽いクエリ（select 1）を送る。
+#
+# ★ GitHub の Secrets に SUPABASE_DB_URL を設定するまでは、何もせずに終わる（失敗にはならない）。
+#   設定のしかたは docs/desktop-app.md の「Supabase の休止への対策」を見てください。
+#
+# 注意:
+# - Supabase の「Direct connection」（db.xxxx.supabase.co）は IPv6 のみのことがあり、
+#   GitHub のランナー（IPv4）からはつながらない。必ず「Session pooler」の接続文字列を使う。
+# - 公開リポジトリでは、60 日間リポジトリに動きが無いと、GitHub が定期実行を自動で止める
+#   （止まる前にメールが来る。Actions の画面から再び有効にできる）。
+name: Supabase keepalive
+
+on:
+  schedule:
+    # 毎週 月曜と木曜の 12:17（日本時間）。間隔は最大 4 日なので 7 日の休止ルールに余裕がある
+    # （毎時 0 分は混んで遅れやすいので、半端な分にしている）
+    - cron: "17 3 * * 1,4"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    name: DB に select 1 を送る
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Secrets が設定されているか確かめる
+        id: check
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::notice::Secrets に SUPABASE_DB_URL が設定されていないので、何もしません。"
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: select 1 を送る
+        if: steps.check.outputs.configured == 'true'
+        env:
+          # 例: postgresql://postgres.<プロジェクトID>:<パスワード>@aws-0-<地域>.pooler.supabase.com:5432/postgres?sslmode=require
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          # psql は ubuntu-latest に最初から入っている
+          for i in 1 2 3; do
+            if psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -tAc "select 1" > /dev/null; then
+              echo "Supabase の DB に接続できました（select 1 成功）"
+              exit 0
+            fi
+            echo "失敗しました。${i} 回目。20 秒後にもう一度試します"
+            sleep 20
+          done
+          echo "::error::Supabase の DB に接続できませんでした。すでに一時停止しているか、SUPABASE_DB_URL が間違っています。Supabase のダッシュボードを確認してください。"
+          exit 1

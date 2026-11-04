@@ -161,6 +161,19 @@ public final class DesktopLauncher {
         // 4. 画面を開く
         closeSplash();
         CompletableFuture.runAsync(DesktopLauncher::deleteOldCdsArchives);
+        if ("1".equals(System.getenv("DESKTOP_SMOKE_TEST"))) {
+            // GitHub Actions の動作確認用: 画面は開かず、少し待ってから正しく終了する
+            Thread t = new Thread(() -> {
+                try {
+                    TimeUnit.SECONDS.sleep(5);
+                } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
+                }
+                shutdown(0);
+            }, "smoke-test-exit");
+            t.start();
+            return;
+        }
         AppWindow window = new AppWindow(paths.browserProfileDir());
         installTrayIcon(window, url, paths);
         Optional<Process> windowProcess = window.open(url);

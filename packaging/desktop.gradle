@@ -58,6 +58,8 @@ tasks.register('desktopInput') {
     description = 'bootJar を展開して jpackage の入力フォルダを作る'
     dependsOn tasks.named('bootJar')
     def outDir = desktopDir.map { it.dir('input') }
+    inputs.file(bootJarFile)
+    inputs.file(splashImage)
     outputs.dir(outDir)
     doLast {
         def input = outDir.get().asFile
