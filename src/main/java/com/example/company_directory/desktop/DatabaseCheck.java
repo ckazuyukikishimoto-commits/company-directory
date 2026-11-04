@@ -31,11 +31,16 @@ final class DatabaseCheck {
     private DatabaseCheck() {
     }
 
+    /** 環境変数・システムプロパティ（.env）の接続情報でつないでみる。 */
     static Result run(int timeoutSeconds) {
-        String url = value("SPRING_DATASOURCE_URL");
+        return run(value("SPRING_DATASOURCE_URL"), value("SPRING_DATASOURCE_USERNAME"),
+                value("SPRING_DATASOURCE_PASSWORD"), timeoutSeconds);
+    }
+
+    static Result run(String url, String user, String password, int timeoutSeconds) {
         Properties props = new Properties();
-        props.setProperty("user", nullToEmpty(value("SPRING_DATASOURCE_USERNAME")));
-        props.setProperty("password", nullToEmpty(value("SPRING_DATASOURCE_PASSWORD")));
+        props.setProperty("user", nullToEmpty(user));
+        props.setProperty("password", nullToEmpty(password));
         props.setProperty("connectTimeout", String.valueOf(timeoutSeconds));
         props.setProperty("loginTimeout", String.valueOf(timeoutSeconds));
         props.setProperty("socketTimeout", String.valueOf(timeoutSeconds));
