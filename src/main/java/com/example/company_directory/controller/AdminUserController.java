@@ -18,6 +18,7 @@ import com.example.company_directory.form.AccountCreateForm;
 import com.example.company_directory.form.NewPasswordForm;
 import com.example.company_directory.service.AccountException;
 import com.example.company_directory.service.AccountService;
+import com.example.company_directory.service.NotAdminException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -55,11 +56,10 @@ public class AdminUserController {
                 accountService.createUser(principal.getName(), form.getUserId(), form.getPassword(), form.isAdmin());
                 redirectAttributes.addFlashAttribute("successMessage", "アカウントを追加しました");
                 return REDIRECT;
+            } catch (NotAdminException e) {
+                redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+                return REDIRECT;
             } catch (AccountException e) {
-                if (AccountService.isNotAdmin(e)) {
-                    redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-                    return REDIRECT;
-                }
                 bindingResult.rejectValue("userId", "duplicate", e.getMessage());
             }
         }

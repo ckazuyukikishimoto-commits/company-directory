@@ -67,8 +67,8 @@ class AccountServiceTest {
         when(userRepository.findByUserId(ADMIN)).thenReturn(Optional.of(me));
 
         assertThatThrownBy(() -> service.setAdmin(ADMIN, "hanako", false))
-                .isInstanceOf(AccountException.class)
-                .hasMessage(AccountService.NOT_ADMIN_MESSAGE);
+                .isInstanceOf(NotAdminException.class)
+                .hasMessage(NotAdminException.MESSAGE);
         assertThatThrownBy(() -> service.setEnabled(ADMIN, "hanako", false))
                 .isInstanceOf(AccountException.class);
         assertThatThrownBy(() -> service.createUser(ADMIN, "taro", "password123", true))
@@ -87,8 +87,8 @@ class AccountServiceTest {
         me.setEnabled(false);
 
         assertThatThrownBy(() -> service.setAdmin(ADMIN, "hanako", true))
-                .isInstanceOf(AccountException.class)
-                .hasMessage(AccountService.NOT_ADMIN_MESSAGE);
+                .isInstanceOf(NotAdminException.class)
+                .hasMessage(NotAdminException.MESSAGE);
         verify(userRepository, never()).save(any());
     }
 
@@ -97,10 +97,8 @@ class AccountServiceTest {
         when(userRepository.findByUserId(ADMIN)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.unlock(ADMIN, "hanako"))
-                .isInstanceOf(AccountException.class)
-                .hasMessage(AccountService.NOT_ADMIN_MESSAGE);
-        assertThat(AccountService.isNotAdmin(new AccountException(AccountService.NOT_ADMIN_MESSAGE))).isTrue();
-        assertThat(AccountService.isNotAdmin(new AccountException("このユーザーIDはすでに使われています。"))).isFalse();
+                .isInstanceOf(NotAdminException.class)
+                .hasMessage(NotAdminException.MESSAGE);
     }
 
     // ---- 追加 ----

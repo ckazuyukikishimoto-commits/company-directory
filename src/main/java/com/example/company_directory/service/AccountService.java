@@ -29,8 +29,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AccountService {
 
-    public static final String NOT_ADMIN_MESSAGE = "管理者の権限がなくなったため、この操作はできません。ログインし直してください。";
-
     private final UserRepository userRepository;
     private final RememberMeTokenRepository rememberMeTokenRepository;
     private final PasswordEncoder passwordEncoder;
@@ -127,16 +125,11 @@ public class AccountService {
         }
     }
 
-    /** 「管理者の権限がなくなった」ための例外か（画面で入力欄ではなく全体のメッセージとして出すため）。 */
-    public static boolean isNotAdmin(AccountException e) {
-        return NOT_ADMIN_MESSAGE.equals(e.getMessage());
-    }
-
     /** 操作する人が、今も DB 上で有効な管理者かを確かめる。 */
     private void requireActiveAdmin(String currentUserId) {
         User me = userRepository.findByUserId(currentUserId).orElse(null);
         if (me == null || !me.isAdmin() || !me.isEnabled()) {
-            throw new AccountException(NOT_ADMIN_MESSAGE);
+            throw new NotAdminException();
         }
     }
 

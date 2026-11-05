@@ -41,6 +41,7 @@ import com.example.company_directory.config.SecurityConfig;
 import com.example.company_directory.entity.User;
 import com.example.company_directory.service.AccountException;
 import com.example.company_directory.service.AccountService;
+import com.example.company_directory.service.NotAdminException;
 
 import jakarta.servlet.http.Cookie;
 
@@ -167,13 +168,13 @@ class AccountControllersTest {
     @Test
     @WithMockUser(username = "admin1", roles = { "USER", "ADMIN" })
     void add_byOperatorWhoLostAdmin_showsGeneralError() throws Exception {
-        doThrow(new AccountException(AccountService.NOT_ADMIN_MESSAGE))
+        doThrow(new NotAdminException())
                 .when(accountService).createUser(anyString(), anyString(), anyString(), anyBoolean());
 
         mockMvc.perform(post("/admin/users/add").with(csrf())
                 .param("userId", "hanako").param("password", "password123").param("passwordConfirm", "password123"))
                 .andExpect(redirectedUrl("/admin/users"))
-                .andExpect(flash().attribute("errorMessage", AccountService.NOT_ADMIN_MESSAGE));
+                .andExpect(flash().attribute("errorMessage", NotAdminException.MESSAGE));
     }
 
     // ---- 行ごとの操作 ----

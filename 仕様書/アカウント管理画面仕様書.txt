@@ -9,7 +9,9 @@
 　alter table users add column if not exists is_admin boolean not null default false;
 　alter table users add column if not exists last_login_at timestamp;
 　update users set is_admin = true where user_id = '（管理者にするユーザーID）';
-・管理者以外がアカウント管理画面の URL を直接開いた場合は 403（アクセス権がありません）とする。
+　select user_id, is_admin from users;（管理者になったかを確かめる。ユーザーIDを打ち間違えると0件の更新になり、誰もアカウント管理画面に入れないため）
+・万一、管理者が0人になったとき（2人の管理者がほぼ同時にお互いを外した等）は、上の update を SQL エディタで流して戻す。
+・管理者以外がアカウント管理画面の URL を直接開いた場合は 403 画面（「この操作はできませんでした」）とする。
 ・ヘッダーのメニューの「アカウント管理」は管理者にだけ表示する。「パスワード変更」は全員に表示する。"
 表示項目	一覧	"・ユーザーID、権限（管理者／一般）、状態（有効／無効／ロック中）、最終ログイン日時（ID・パスワードでログインした日時。自動ログインは数えない）
 ・ロック中は「ロック中（HH:mm まで）」と期限も表示する。
