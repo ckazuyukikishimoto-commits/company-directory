@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +13,9 @@ import com.example.company_directory.repository.CompanyRepository;
 
 import lombok.RequiredArgsConstructor;
 
+// デスクトップ版は遅延初期化（spring.main.lazy-initialization）を使うが、
+// 定期実行のクラスは作られないと動かないので、いつも起動時に作る
+@Lazy(false)
 @Component
 @RequiredArgsConstructor
 public class TrashPurgeScheduler {

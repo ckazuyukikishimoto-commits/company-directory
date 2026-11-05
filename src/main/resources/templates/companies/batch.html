@@ -6,30 +6,7 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>まとめて登録 - 企業名簿アプリ</title>
     <link rel="icon" type="image/svg+xml" th:href="@{/images/app-icon.svg}">
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap"
-        rel="stylesheet" />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
-        rel="stylesheet" />
-    <script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#0066cc",
-                        "background-light": "#fffbf0",
-                        "background-dark": "#fffbf0",
-                        "text-light-primary": "#222222",
-                    },
-                    fontFamily: {
-                        "display": ["Noto Sans JP", "Inter", "sans-serif"]
-                    },
-                },
-            },
-        }
-    </script>
+    <link rel="stylesheet" th:href="@{/css/fonts/fonts.css}" />
     <style>
         body {
             -webkit-font-smoothing: antialiased;
@@ -162,6 +139,14 @@
         .resizable-table th:last-child .col-resizer {
             display: none;
         }
+    </style>
+    <!-- 画面の CSS とフォントはアプリに同梱（オフラインでも崩れないように）。作り方は frontend/README.md -->
+    <link rel="stylesheet" th:href="@{/css/app.css}" />
+    <!-- この画面だけは以前から角丸を大きくしていなかったので、Tailwind の標準の大きさに戻す -->
+    <style>
+        .rounded { border-radius: 0.25rem; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded-xl { border-radius: 0.75rem; }
     </style>
 </head>
 

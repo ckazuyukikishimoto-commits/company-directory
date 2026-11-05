@@ -1,13 +1,14 @@
 # 📋 企業名簿管理アプリケーション (Company Directory App)
 
 企業情報の管理・検索・Excel連携を効率化するためのモダンなWebアプリケーションです。
-Spring Boot 4 + MySQLを用いた堅牢なバックエンドと、Tailwind CSSによるレスポンシブで洗練されたUIを組み合わせています。
+Spring Boot 4 + PostgreSQL（Supabase）を用いた堅牢なバックエンドと、Tailwind CSSによるレスポンシブで洗練されたUIを組み合わせています。
 
 ![Java](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white)
-![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Windows](https://img.shields.io/badge/Desktop-Windows_(jpackage)-0078D4?style=for-the-badge&logo=windows&logoColor=white)
 
 ## ✨ 主な機能 (Key Features)
 
@@ -40,20 +41,29 @@ Spring Boot 4 + MySQLを用いた堅牢なバックエンドと、Tailwind CSS�
 | Category | Technology |
 |---|---|
 | **Backend** | Java 21, Spring Boot 4.0.0 (Web, Data JPA, Security, Validation) |
-| **Database** | MySQL 8.0 (Docker Container) |
-| **Frontend** | Thymeleaf, Tailwind CSS (CDN), Vanilla JavaScript |
+| **Database** | PostgreSQL（Supabase） |
+| **Frontend** | Thymeleaf, Tailwind CSS 3.4（事前ビルドした CSS を同梱）, Vanilla JavaScript |
 | **Excel Ops** | Apache POI 5.2.5 |
-| **Build/Infra** | Gradle, Docker Compose |
+| **Build/Infra** | Gradle, Docker（Render などのサーバー）, jpackage（Windows デスクトップ版） |
 
 ---
 
 ## 🚀 セットアップと実行 (Getting Started)
 
-### 前提条件
-*   Docker Desktop がインストールされていること
-*   Java 21 (ローカルでビルドする場合)
+使い方は 2 通りあります。
 
-### 実行手順
+### A. Windows のデスクトップアプリとして使う（おすすめ）
+
+GitHub Actions が作った `.msi`（インストーラー）を入れて、ダブルクリックで起動します。
+手順・`.env` の置き場所・確認のチェックリストは **[docs/desktop-app.md](docs/desktop-app.md)** を見てください。
+
+### B. Web アプリとして動かす（開発・サーバー）
+
+#### 前提条件
+*   Java 21
+*   PostgreSQL（Supabase のプロジェクト、または手元の PostgreSQL）
+
+#### 実行手順
 
 1. **リポジトリのクローン**
    ```bash
@@ -61,28 +71,53 @@ Spring Boot 4 + MySQLを用いた堅牢なバックエンドと、Tailwind CSS�
    cd company-directory
    ```
 
-2. **Dockerコンテナの起動（DB & App）**
-   `compose.yaml` を使用して、MySQLとアプリケーションを一括で起動します。
-   ```bash
-   docker compose up -d
+2. **`.env` を作る**（リポジトリ直下。Git には入れない）
    ```
-   *   初回起動時はMySQLの初期化などで数分かかる場合があります。
+   SPRING_DATASOURCE_URL=jdbc:postgresql://<ホスト>:5432/postgres?sslmode=require
+   SPRING_DATASOURCE_USERNAME=<ユーザー名>
+   SPRING_DATASOURCE_PASSWORD=<パスワード>
+   HOJIN_BANGOU_APP_ID=<法人番号 API のキー>
+   GEMINI_API_KEY=<Gemini の API キー>
+   ```
+   *   環境変数で同じ名前を設定しても動きます（Render などのサーバーではこちら）。
 
-3. **ブラウザでアクセス**
-   *   URL: `http://localhost:8080/login`
-   *   初期アカウント（※初回起動時にDBシードデータがある場合）
-       *   ID: `admin`
-       *   Pass: `admin123` (※適宜変更してください)
+3. **起動**
+   ```bash
+   ./gradlew bootRun
+   ```
 
-### 開発環境での実行 (Hot Reload等)
-DBのみDockerで起動し、アプリはローカルで動かす場合：
+4. **ブラウザでアクセス**: `http://localhost:8080/login`
+
+#### Docker で動かす場合
 ```bash
-# DB起動
-docker compose up db -d
-
-# アプリ起動
-./gradlew bootRun
+docker build -t company-directory .
+docker run --env-file .env -p 8080:8080 company-directory
 ```
+*   この方法は `.env` の DB（Supabase など）につなぎます。
+
+#### Docker Compose で動かす場合（ローカルの PostgreSQL を使う）
+本番の Supabase を使わずに、この PC の中に PostgreSQL を立てて試せます（データは Docker の `pg_data` に残ります）。
+1. `.env` に `LOCAL_DB_PASSWORD=<自分で決めたパスワード>` を足す（ローカル DB 専用。Supabase のパスワードとは別のものにする）
+2. 起動
+   ```bash
+   docker compose up --build
+   ```
+3. `http://localhost:8080/login` を開く
+*   `.env` の `SPRING_DATASOURCE_*`（Supabase の接続先）はこのときは使いません。`HOJIN_BANGOU_APP_ID`・`GEMINI_API_KEY` は `.env` にあれば使います。
+*   はじめは DB が空なので、ログイン用のユーザーがいません。アプリが一度起動したあと（表が作られたあと）、次のように 1 人追加してください（`demo` と `好きなパスワード` は自分で決める）。
+    ```bash
+    docker compose exec db psql -U postgres -d company_directory -c "CREATE EXTENSION IF NOT EXISTS pgcrypto; INSERT INTO users (user_id, password_hash, failed_login_count, enabled) VALUES ('demo', crypt('好きなパスワード', gen_salt('bf')), 0, true);"
+    ```
+*   止めるときは `docker compose down`（データも消すときは `docker compose down -v`）。
+
+#### テスト
+```bash
+./gradlew test
+```
+*   `CompanyDirectoryApplicationTests` など一部のテストは DB が必要です（`.env` か環境変数で接続先を指定）。GitHub Actions では PostgreSQL を一緒に立てて動かしています。
+
+#### 画面の CSS を変えたとき
+Tailwind の CSS は事前に作ってアプリに同梱しています。新しいクラスを使ったら `frontend/README.md` の手順で作り直してください。
 
 ---
 
@@ -96,7 +131,8 @@ src/main/java/com/example/company_directory
 ├── repository/    # JPA Repository, Specification (検索条件)
 ├── entity/        # DBテーブル定義
 ├── dto/           # データ転送用オブジェクト (Excel行データ等)
-└── batch/         # 定期実行タスク (ゴミ箱自動削除)
+├── batch/         # 定期実行タスク (ゴミ箱自動削除)
+└── desktop/       # デスクトップ版の起動 (jpackage で作る .exe の入口)
 ```
 
 ## 💡 工夫した点 (Architecture Highlights)

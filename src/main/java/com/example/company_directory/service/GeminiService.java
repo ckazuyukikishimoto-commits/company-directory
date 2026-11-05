@@ -2,6 +2,7 @@ package com.example.company_directory.service;
 
 import com.google.genai.Client;
 import com.google.genai.types.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
@@ -9,7 +10,35 @@ import java.util.Map;
 @Service
 public class GeminiService {
 
-        private final Client client = Client.builder().build();
+        /**
+         * API キー。application.properties の app.gemini.api-key（= 環境変数 / .env の GEMINI_API_KEY）。
+         * 以前は Client.builder().build() が「本物の環境変数」だけを見ていたため、
+         * デスクトップ版の .env（Java のシステムプロパティとして読む）では使えなかった。
+         */
+        private final String apiKey;
+
+        /** 初めて使うときに作る（起動を速くするため。キーが無くてもアプリ自体は起動できる）。 */
+        private volatile Client client;
+
+        public GeminiService(@Value("${app.gemini.api-key:}") String apiKey) {
+                this.apiKey = apiKey;
+        }
+
+        private Client client() {
+                Client c = client;
+                if (c == null) {
+                        synchronized (this) {
+                                c = client;
+                                if (c == null) {
+                                        c = (apiKey == null || apiKey.isBlank())
+                                                        ? Client.builder().build()
+                                                        : Client.builder().apiKey(apiKey).build();
+                                        client = c;
+                                }
+                        }
+                }
+                return c;
+        }
 
         private static final String GEMINI_MODEL = "gemini-3.5-flash";
 
@@ -68,7 +97,7 @@ public class GeminiService {
                                 .parts(List.of(imagePart, textPart))
                                 .build();
 
-                var response = client.models.generateContent(
+                var response = client().models.generateContent(
                                 GEMINI_MODEL,
                                 List.of(content),
                                 config);
@@ -121,7 +150,7 @@ public class GeminiService {
                                 .parts(List.of(textPart))
                                 .build();
 
-                var response = client.models.generateContent(
+                var response = client().models.generateContent(
                                 GEMINI_MODEL,
                                 List.of(content),
                                 config);

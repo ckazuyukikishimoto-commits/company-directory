@@ -1,28 +1,47 @@
+# =====================================================================
+# ローカル開発用: PostgreSQL とアプリを Docker でまとめて起動する。
+#   docker compose up --build
+#   → http://localhost:8080/login
+#
+# 本番の Supabase ではなく、この PC の中だけの PostgreSQL を使う（データは pg_data に残る）。
+# 秘密の値はここに書かず、リポジトリ直下の .env から読む。.env に次を足してください:
+#   LOCAL_DB_PASSWORD=<ローカル DB 用に自分で決めたパスワード>
+#   （HOJIN_BANGOU_APP_ID・GEMINI_API_KEY も .env にあれば使う。無ければその機能だけ使えない）
+# .env の SPRING_DATASOURCE_*（Supabase の接続先）は、ここでは使わない。
+# =====================================================================
 services:
-  # --- 1. アプリケーション (Java) ---
+  # --- 1. データベース (PostgreSQL) ---
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: company_directory
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${LOCAL_DB_PASSWORD:?.env に LOCAL_DB_PASSWORD を書いてください}
+    ports:
+      # この PC からだけつなげる（DBeaver などで中を見たいとき用）
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data # コンテナを消してもデータが残る
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d company_directory"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # --- 2. アプリケーション (Java) ---
   app:
     build: .
     ports:
-      - "8080:8080" # ホストの8080番をコンテナの8080番に繋ぐ
+      - "127.0.0.1:8080:8080"
     environment:
-      # 環境変数でDB接続情報を上書きする
-      - DB_URL=jdbc:mysql://db:3306/company_directory_db?allowPublicKeyRetrieval=true&useSSL=false
-      - DB_USER=root
-      - DB_PASS=root
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/company_directory
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${LOCAL_DB_PASSWORD:?.env に LOCAL_DB_PASSWORD を書いてください}
+      HOJIN_BANGOU_APP_ID: ${HOJIN_BANGOU_APP_ID:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     depends_on:
-      - db # dbが起動してからappを起動する
-
-  # --- 2. データベース (MySQL) ---
-  db:
-    image: mysql:8.0
-    environment:
-      - MYSQL_DATABASE=company_directory_db
-      - MYSQL_ROOT_PASSWORD=root
-    ports:
-      - "3306:3306"
-    volumes:
-      - db_data:/var/lib/mysql # データを永続化（コンテナを消してもデータが残る）
-    command: --default-authentication-plugin=mysql_native_password
+      db:
+        condition: service_healthy # DB が使えるようになってからアプリを起動する
 
 volumes:
-  db_data:
+  pg_data:
