@@ -27,6 +27,8 @@ import com.example.company_directory.repository.UserRepository;
 @ExtendWith(MockitoExtension.class)
 class AccountServiceTest {
 
+    private static final String ADMIN = "admin1";
+
     @Mock
     private UserRepository userRepository;
 
@@ -49,11 +51,66 @@ class AccountServiceTest {
         return u;
     }
 
+    /** 操作する人（admin1）を、DB 上で有効な管理者にしておく。 */
+    private User activeAdmin() {
+        User me = user(ADMIN);
+        me.setAdmin(true);
+        when(userRepository.findByUserId(ADMIN)).thenReturn(Optional.of(me));
+        return me;
+    }
+
+    // ---- 操作する人が今も有効な管理者か ----
+
+    @Test
+    void adminOperations_rejectOperatorWhoIsNoLongerAdmin() {
+        User me = user(ADMIN); // 別の PC で管理者を外された（セッションには ROLE_ADMIN が残っている）
+        when(userRepository.findByUserId(ADMIN)).thenReturn(Optional.of(me));
+
+        assertThatThrownBy(() -> service.setAdmin(ADMIN, "hanako", false))
+                .isInstanceOf(AccountException.class)
+                .hasMessage(AccountService.NOT_ADMIN_MESSAGE);
+        assertThatThrownBy(() -> service.setEnabled(ADMIN, "hanako", false))
+                .isInstanceOf(AccountException.class);
+        assertThatThrownBy(() -> service.createUser(ADMIN, "taro", "password123", true))
+                .isInstanceOf(AccountException.class);
+        assertThatThrownBy(() -> service.resetPassword(ADMIN, "hanako", "password123"))
+                .isInstanceOf(AccountException.class);
+        assertThatThrownBy(() -> service.unlock(ADMIN, "hanako"))
+                .isInstanceOf(AccountException.class);
+        verify(userRepository, never()).save(any());
+        verify(rememberMeTokenRepository, never()).deleteByUsername(anyString());
+    }
+
+    @Test
+    void adminOperations_rejectDisabledAdmin() {
+        User me = activeAdmin();
+        me.setEnabled(false);
+
+        assertThatThrownBy(() -> service.setAdmin(ADMIN, "hanako", true))
+                .isInstanceOf(AccountException.class)
+                .hasMessage(AccountService.NOT_ADMIN_MESSAGE);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void adminOperations_rejectUnknownOperator() {
+        when(userRepository.findByUserId(ADMIN)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.unlock(ADMIN, "hanako"))
+                .isInstanceOf(AccountException.class)
+                .hasMessage(AccountService.NOT_ADMIN_MESSAGE);
+        assertThat(AccountService.isNotAdmin(new AccountException(AccountService.NOT_ADMIN_MESSAGE))).isTrue();
+        assertThat(AccountService.isNotAdmin(new AccountException("このユーザーIDはすでに使われています。"))).isFalse();
+    }
+
+    // ---- 追加 ----
+
     @Test
     void createUser_savesHashedPasswordAndRole() {
+        activeAdmin();
         when(userRepository.existsById("taro")).thenReturn(false);
 
-        service.createUser("taro", "password123", true);
+        service.createUser(ADMIN, "taro", "password123", true);
 
         ArgumentCaptor<User> saved = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(saved.capture());
@@ -66,22 +123,26 @@ class AccountServiceTest {
 
     @Test
     void createUser_rejectsDuplicateId() {
+        activeAdmin();
         when(userRepository.existsById("taro")).thenReturn(true);
 
-        assertThatThrownBy(() -> service.createUser("taro", "password123", false))
+        assertThatThrownBy(() -> service.createUser(ADMIN, "taro", "password123", false))
                 .isInstanceOf(AccountException.class)
                 .hasMessage("このユーザーIDはすでに使われています。");
         verify(userRepository, never()).save(any());
     }
 
+    // ---- 再設定・ロック解除 ----
+
     @Test
     void resetPassword_unlocksAndDeletesAllRememberMeTokens() {
+        activeAdmin();
         User u = user("hanako");
         u.setFailedLoginCount(5);
         u.setLockedUntil(LocalDateTime.now().plusMinutes(10));
         when(userRepository.findByUserId("hanako")).thenReturn(Optional.of(u));
 
-        service.resetPassword("hanako", "newpassword1");
+        service.resetPassword(ADMIN, "hanako", "newpassword1");
 
         assertThat(passwordEncoder.matches("newpassword1", u.getPasswordHash())).isTrue();
         assertThat(u.getFailedLoginCount()).isZero();
@@ -91,12 +152,13 @@ class AccountServiceTest {
 
     @Test
     void unlock_clearsFailuresAndLock() {
+        activeAdmin();
         User u = user("hanako");
         u.setFailedLoginCount(5);
         u.setLockedUntil(LocalDateTime.now().plusMinutes(10));
         when(userRepository.findByUserId("hanako")).thenReturn(Optional.of(u));
 
-        service.unlock("hanako");
+        service.unlock(ADMIN, "hanako");
 
         assertThat(u.getFailedLoginCount()).isZero();
         assertThat(u.getLockedUntil()).isNull();
@@ -104,8 +166,22 @@ class AccountServiceTest {
     }
 
     @Test
+    void unknownTarget_isReported() {
+        activeAdmin();
+        when(userRepository.findByUserId("nobody")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.unlock(ADMIN, "nobody"))
+                .isInstanceOf(AccountException.class)
+                .hasMessage("アカウントが見つかりません。");
+    }
+
+    // ---- 有効／無効 ----
+
+    @Test
     void setEnabled_false_rejectsSelf() {
-        assertThatThrownBy(() -> service.setEnabled("admin1", "admin1", false))
+        activeAdmin();
+
+        assertThatThrownBy(() -> service.setEnabled(ADMIN, ADMIN, false))
                 .isInstanceOf(AccountException.class)
                 .hasMessage("自分自身のアカウントは無効にできません。");
         verify(userRepository, never()).save(any());
@@ -113,30 +189,36 @@ class AccountServiceTest {
 
     @Test
     void setEnabled_false_deletesRememberMeTokens() {
+        activeAdmin();
         User u = user("hanako");
         when(userRepository.findByUserId("hanako")).thenReturn(Optional.of(u));
 
-        service.setEnabled("admin1", "hanako", false);
+        service.setEnabled(ADMIN, "hanako", false);
 
         assertThat(u.isEnabled()).isFalse();
         verify(rememberMeTokenRepository).deleteByUsername("hanako");
     }
 
     @Test
-    void setEnabled_true_keepsTokensAndAllowsSelf() {
-        User u = user("admin1");
+    void setEnabled_true_keepsTokens() {
+        activeAdmin();
+        User u = user("hanako");
         u.setEnabled(false);
-        when(userRepository.findByUserId("admin1")).thenReturn(Optional.of(u));
+        when(userRepository.findByUserId("hanako")).thenReturn(Optional.of(u));
 
-        service.setEnabled("admin1", "admin1", true);
+        service.setEnabled(ADMIN, "hanako", true);
 
         assertThat(u.isEnabled()).isTrue();
         verify(rememberMeTokenRepository, never()).deleteByUsername(anyString());
     }
 
+    // ---- 管理者の付与／解除 ----
+
     @Test
     void setAdmin_false_rejectsSelf() {
-        assertThatThrownBy(() -> service.setAdmin("admin1", "admin1", false))
+        activeAdmin();
+
+        assertThatThrownBy(() -> service.setAdmin(ADMIN, ADMIN, false))
                 .isInstanceOf(AccountException.class)
                 .hasMessage("自分自身の管理者は外せません。");
         verify(userRepository, never()).save(any());
@@ -144,24 +226,18 @@ class AccountServiceTest {
 
     @Test
     void setAdmin_grantsAndRevokesOthers() {
+        activeAdmin();
         User u = user("hanako");
         when(userRepository.findByUserId("hanako")).thenReturn(Optional.of(u));
 
-        service.setAdmin("admin1", "hanako", true);
+        service.setAdmin(ADMIN, "hanako", true);
         assertThat(u.isAdmin()).isTrue();
 
-        service.setAdmin("admin1", "hanako", false);
+        service.setAdmin(ADMIN, "hanako", false);
         assertThat(u.isAdmin()).isFalse();
     }
 
-    @Test
-    void unknownUser_isReported() {
-        when(userRepository.findByUserId("nobody")).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.unlock("nobody"))
-                .isInstanceOf(AccountException.class)
-                .hasMessage("アカウントが見つかりません。");
-    }
+    // ---- 本人のパスワード変更（管理者でなくてよい） ----
 
     @Test
     void changeOwnPassword_rejectsWrongCurrentPassword() {
@@ -201,12 +277,22 @@ class AccountServiceTest {
     @Test
     void authorities_addAdminRoleOnlyForAdmins() {
         User normal = user("hanako");
-        User admin = user("admin1");
+        User admin = user(ADMIN);
         admin.setAdmin(true);
 
         assertThat(CustomUserDetailsService.authorities(normal)).extracting("authority")
                 .containsExactly("ROLE_USER");
         assertThat(CustomUserDetailsService.authorities(admin)).extracting("authority")
                 .containsExactly("ROLE_USER", "ROLE_ADMIN");
+    }
+
+    @Test
+    void forms_doNotPrintPasswordsInToString() {
+        com.example.company_directory.form.PasswordChangeForm form = new com.example.company_directory.form.PasswordChangeForm();
+        form.setCurrentPassword("secret-current");
+        form.setPassword("secret-new");
+        form.setPasswordConfirm("secret-confirm");
+
+        assertThat(form.toString()).doesNotContain("secret-current", "secret-new", "secret-confirm");
     }
 }

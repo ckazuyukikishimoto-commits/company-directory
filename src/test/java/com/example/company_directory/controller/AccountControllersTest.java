@@ -108,7 +108,7 @@ class AccountControllersTest {
     @WithMockUser(username = "admin1", roles = { "USER", "ADMIN" })
     void postWithoutCsrf_isRejected() throws Exception {
         mockMvc.perform(post("/admin/users/unlock").param("userId", "hanako")).andExpect(status().isForbidden());
-        verify(accountService, never()).unlock(anyString());
+        verify(accountService, never()).unlock(anyString(), anyString());
     }
 
     // ---- 追加 ----
@@ -121,7 +121,7 @@ class AccountControllersTest {
                 .param("passwordConfirm", "password123").param("admin", "false"))
                 .andExpect(redirectedUrl("/admin/users"))
                 .andExpect(flash().attribute("successMessage", "アカウントを追加しました"));
-        verify(accountService).createUser("hanako", "password123", false);
+        verify(accountService).createUser("admin1", "hanako", "password123", false);
     }
 
     @Test
@@ -139,7 +139,7 @@ class AccountControllersTest {
                 // 入力したパスワードを画面に戻さない
                 .andExpect(content().string(org.hamcrest.Matchers.not(
                         org.hamcrest.Matchers.containsString("value=\"short\""))));
-        verify(accountService, never()).createUser(anyString(), anyString(), anyBoolean());
+        verify(accountService, never()).createUser(anyString(), anyString(), anyString(), anyBoolean());
     }
 
     @Test
@@ -149,19 +149,31 @@ class AccountControllersTest {
                 .param("userId", "hanako").param("password", "password123").param("passwordConfirm", "password124"))
                 .andExpect(status().isOk())
                 .andExpect(model().attributeHasFieldErrors("createForm", "passwordConfirm"));
-        verify(accountService, never()).createUser(anyString(), anyString(), anyBoolean());
+        verify(accountService, never()).createUser(anyString(), anyString(), anyString(), anyBoolean());
     }
 
     @Test
     @WithMockUser(username = "admin1", roles = { "USER", "ADMIN" })
     void add_duplicate_isShownOnUserId() throws Exception {
         doThrow(new AccountException("このユーザーIDはすでに使われています。"))
-                .when(accountService).createUser(eq("hanako"), anyString(), anyBoolean());
+                .when(accountService).createUser(anyString(), eq("hanako"), anyString(), anyBoolean());
 
         mockMvc.perform(post("/admin/users/add").with(csrf())
                 .param("userId", "hanako").param("password", "password123").param("passwordConfirm", "password123"))
                 .andExpect(status().isOk())
                 .andExpect(model().attributeHasFieldErrors("createForm", "userId"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin1", roles = { "USER", "ADMIN" })
+    void add_byOperatorWhoLostAdmin_showsGeneralError() throws Exception {
+        doThrow(new AccountException(AccountService.NOT_ADMIN_MESSAGE))
+                .when(accountService).createUser(anyString(), anyString(), anyString(), anyBoolean());
+
+        mockMvc.perform(post("/admin/users/add").with(csrf())
+                .param("userId", "hanako").param("password", "password123").param("passwordConfirm", "password123"))
+                .andExpect(redirectedUrl("/admin/users"))
+                .andExpect(flash().attribute("errorMessage", AccountService.NOT_ADMIN_MESSAGE));
     }
 
     // ---- 行ごとの操作 ----
@@ -173,7 +185,7 @@ class AccountControllersTest {
                 .param("userId", "hanako").param("password", "password123").param("passwordConfirm", "x"))
                 .andExpect(redirectedUrl("/admin/users"))
                 .andExpect(flash().attribute("errorMessage", "hanako：確認用のパスワードが一致しません。"));
-        verify(accountService, never()).resetPassword(anyString(), anyString());
+        verify(accountService, never()).resetPassword(anyString(), anyString(), anyString());
     }
 
     @Test
@@ -182,7 +194,7 @@ class AccountControllersTest {
         mockMvc.perform(post("/admin/users/password").with(csrf())
                 .param("userId", "hanako").param("password", "password123").param("passwordConfirm", "password123"))
                 .andExpect(flash().attribute("successMessage", "パスワードを再設定しました"));
-        verify(accountService).resetPassword("hanako", "password123");
+        verify(accountService).resetPassword("admin1", "hanako", "password123");
     }
 
     @Test

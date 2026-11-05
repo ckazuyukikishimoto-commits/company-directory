@@ -19,10 +19,17 @@ import lombok.RequiredArgsConstructor;
  * 入力の形（文字数・半角英数字）は画面のフォームで確かめ、ここでは
  * 「重複していないか」「自分自身を無効にしていないか」など、DB の状態を見て決まることを確かめる。
  * </p>
+ * <p>
+ * 管理者向けの操作は、最初に「操作する人が今も有効な管理者か」を DB で確かめる。
+ * 権限はログインした時点のものがセッションに残るため、別の PC で管理者を外された・無効にされた人が
+ * 開いたままの画面から操作を続けて、管理者が 0 人になるのを防ぐ。
+ * </p>
  */
 @Service
 @RequiredArgsConstructor
 public class AccountService {
+
+    public static final String NOT_ADMIN_MESSAGE = "管理者の権限がなくなったため、この操作はできません。ログインし直してください。";
 
     private final UserRepository userRepository;
     private final RememberMeTokenRepository rememberMeTokenRepository;
@@ -36,7 +43,8 @@ public class AccountService {
 
     /** アカウントを追加する。 */
     @Transactional
-    public void createUser(String userId, String rawPassword, boolean admin) {
+    public void createUser(String currentUserId, String userId, String rawPassword, boolean admin) {
+        requireActiveAdmin(currentUserId);
         if (userRepository.existsById(userId)) {
             throw new AccountException("このユーザーIDはすでに使われています。");
         }
@@ -52,7 +60,8 @@ public class AccountService {
 
     /** 管理者がパスワードを再設定する。あわせてロックを解き、ログイン保持をすべて消す。 */
     @Transactional
-    public void resetPassword(String targetUserId, String rawPassword) {
+    public void resetPassword(String currentUserId, String targetUserId, String rawPassword) {
+        requireActiveAdmin(currentUserId);
         User user = find(targetUserId);
         user.setPasswordHash(passwordEncoder.encode(rawPassword));
         user.setFailedLoginCount(0);
@@ -63,7 +72,8 @@ public class AccountService {
 
     /** ロックを解く。 */
     @Transactional
-    public void unlock(String targetUserId) {
+    public void unlock(String currentUserId, String targetUserId) {
+        requireActiveAdmin(currentUserId);
         User user = find(targetUserId);
         user.setFailedLoginCount(0);
         user.setLockedUntil(null);
@@ -73,6 +83,7 @@ public class AccountService {
     /** 有効／無効を切り替える。自分自身は無効にできない。無効にしたらログイン保持を消す。 */
     @Transactional
     public void setEnabled(String currentUserId, String targetUserId, boolean enabled) {
+        requireActiveAdmin(currentUserId);
         if (!enabled && targetUserId.equals(currentUserId)) {
             throw new AccountException("自分自身のアカウントは無効にできません。");
         }
@@ -87,6 +98,7 @@ public class AccountService {
     /** 管理者にする／外す。自分自身の管理者は外せない（管理者が 0 人になるのを防ぐ）。 */
     @Transactional
     public void setAdmin(String currentUserId, String targetUserId, boolean admin) {
+        requireActiveAdmin(currentUserId);
         if (!admin && targetUserId.equals(currentUserId)) {
             throw new AccountException("自分自身の管理者は外せません。");
         }
@@ -112,6 +124,19 @@ public class AccountService {
             rememberMeTokenRepository.deleteByUsername(userId);
         } else {
             rememberMeTokenRepository.deleteByUsernameAndSeriesNot(userId, currentSeries);
+        }
+    }
+
+    /** 「管理者の権限がなくなった」ための例外か（画面で入力欄ではなく全体のメッセージとして出すため）。 */
+    public static boolean isNotAdmin(AccountException e) {
+        return NOT_ADMIN_MESSAGE.equals(e.getMessage());
+    }
+
+    /** 操作する人が、今も DB 上で有効な管理者かを確かめる。 */
+    private void requireActiveAdmin(String currentUserId) {
+        User me = userRepository.findByUserId(currentUserId).orElse(null);
+        if (me == null || !me.isAdmin() || !me.isEnabled()) {
+            throw new AccountException(NOT_ADMIN_MESSAGE);
         }
     }
 

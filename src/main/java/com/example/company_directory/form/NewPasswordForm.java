@@ -3,6 +3,7 @@ package com.example.company_directory.form;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import lombok.ToString;
 
 /**
  * 新しいパスワードと、その確認（仕様書「⑥アカウント管理」のバリデーション）。
@@ -17,8 +18,10 @@ public class NewPasswordForm {
 
     @NotNull(message = PASSWORD_SIZE_MESSAGE)
     @Size(min = 8, max = 64, message = PASSWORD_SIZE_MESSAGE)
+    @ToString.Exclude // ログにパスワードを出さない
     private String password;
 
+    @ToString.Exclude
     private String passwordConfirm;
 
     /** 確認と一致するか。 */

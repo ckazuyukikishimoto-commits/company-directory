@@ -52,10 +52,14 @@ public class AdminUserController {
         }
         if (!bindingResult.hasErrors()) {
             try {
-                accountService.createUser(form.getUserId(), form.getPassword(), form.isAdmin());
+                accountService.createUser(principal.getName(), form.getUserId(), form.getPassword(), form.isAdmin());
                 redirectAttributes.addFlashAttribute("successMessage", "アカウントを追加しました");
                 return REDIRECT;
             } catch (AccountException e) {
+                if (AccountService.isNotAdmin(e)) {
+                    redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+                    return REDIRECT;
+                }
                 bindingResult.rejectValue("userId", "duplicate", e.getMessage());
             }
         }
@@ -65,7 +69,7 @@ public class AdminUserController {
 
     @PostMapping("/password")
     public String resetPassword(@RequestParam String userId, @Validated NewPasswordForm form,
-            BindingResult bindingResult, RedirectAttributes redirectAttributes) {
+            BindingResult bindingResult, Principal principal, RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
             redirectAttributes.addFlashAttribute("errorMessage",
                     userId + "：" + bindingResult.getAllErrors().get(0).getDefaultMessage());
@@ -76,12 +80,12 @@ public class AdminUserController {
             return REDIRECT;
         }
         return run(redirectAttributes, "パスワードを再設定しました",
-                () -> accountService.resetPassword(userId, form.getPassword()));
+                () -> accountService.resetPassword(principal.getName(), userId, form.getPassword()));
     }
 
     @PostMapping("/unlock")
-    public String unlock(@RequestParam String userId, RedirectAttributes redirectAttributes) {
-        return run(redirectAttributes, "ロックを解除しました", () -> accountService.unlock(userId));
+    public String unlock(@RequestParam String userId, Principal principal, RedirectAttributes redirectAttributes) {
+        return run(redirectAttributes, "ロックを解除しました", () -> accountService.unlock(principal.getName(), userId));
     }
 
     @PostMapping("/enable")
