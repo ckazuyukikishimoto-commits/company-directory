@@ -1,6 +1,7 @@
 package com.example.company_directory.config;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -32,6 +33,7 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         userRepository.findByUserId(username).ifPresent(user -> {
             user.setFailedLoginCount(0);
             user.setLockedUntil(null);
+            user.setLastLoginAt(LocalDateTime.now());
             userRepository.save(user);
         });
 

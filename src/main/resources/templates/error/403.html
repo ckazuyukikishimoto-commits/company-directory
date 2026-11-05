@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html class="dark" lang="ja">
+
+<head>
+    <meta charset="utf-8" />
+    <title>この操作はできませんでした</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/app-icon.svg}">
+    <link rel="stylesheet" th:href="@{/css/fonts/fonts.css}" />
+    <!-- 画面の CSS とフォントはアプリに同梱（オフラインでも崩れないように）。作り方は frontend/README.md -->
+    <link rel="stylesheet" th:href="@{/css/plain.css}" />
+</head>
+
+<body class="font-['Inter'] bg-gray-900 text-white min-h-screen flex items-center justify-center">
+    <div class="text-center p-8">
+        <span class="material-symbols-outlined text-8xl text-yellow-500 mb-4">lock</span>
+        <h1 class="text-3xl font-bold mb-4">この操作はできませんでした</h1>
+        <p class="text-gray-400 mb-6">この画面を使う権限がないか、画面を開いたまま時間がたってログインの有効期限が切れた可能性があります。<br />一覧に戻って、もう一度やり直してください。</p>
+        <a href="/companies"
+            class="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold transition-colors inline-block">
+            一覧に戻る
+        </a>
+    </div>
+</body>
+
+</html>
