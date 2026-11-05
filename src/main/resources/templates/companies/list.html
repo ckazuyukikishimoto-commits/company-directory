@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<html lang="ja" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 
 <head>
     <meta charset="utf-8" />
@@ -264,6 +264,15 @@
                                         <span class="material-symbols-outlined text-xl">delete_history</span>
                                     </button>
                                 </form>
+                                <a th:href="@{/account/password}" title="パスワード変更" aria-label="パスワード変更"
+                                    class="flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
+                                    <span class="material-symbols-outlined text-xl">key</span>
+                                </a>
+                                <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/users}" title="アカウント管理"
+                                    aria-label="アカウント管理" id="adminUsersLink"
+                                    class="flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-gray-200 dark:bg-[#283039] text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-[#3b4754] transition-colors">
+                                    <span class="material-symbols-outlined text-xl">manage_accounts</span>
+                                </a>
                             </div>
                         </div>
                         <form id="companySearchForm" th:action="@{/companies}" method="get" th:object="${searchForm}">

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>アカウント管理</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/app-icon.svg}">
+    <link rel="stylesheet" th:href="@{/css/fonts/fonts.css}" />
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24
+        }
+    </style>
+    <!-- 画面の CSS とフォントはアプリに同梱（オフラインでも崩れないように）。作り方は frontend/README.md -->
+    <link rel="stylesheet" th:href="@{/css/app.css}" />
+    <style>.font-display { font-family: "Noto Sans JP", "Space Grotesk", sans-serif; }</style>
+</head>
+
+<body class="font-display bg-background-light text-text-light-primary min-h-screen">
+    <header
+        class="flex items-center p-4 pb-2 justify-between sticky top-0 z-10 bg-background-light/95 backdrop-blur-sm border-b border-gray-200">
+        <a th:href="@{/companies}"
+            class="flex size-12 shrink-0 items-center justify-center rounded-full text-gray-800 hover:bg-gray-200 transition-colors"
+            aria-label="一覧に戻る" title="一覧に戻る">
+            <span class="material-symbols-outlined text-3xl">arrow_back_ios_new</span>
+        </a>
+        <h1 class="text-xl font-bold leading-tight flex-1 text-center text-gray-900">アカウント管理</h1>
+        <div class="w-12"></div>
+    </header>
+
+    <main class="mx-auto w-full max-w-[1000px] px-4 py-6 flex flex-col gap-6">
+        <!-- 成功・エラーのメッセージ -->
+        <div th:if="${successMessage}" id="successMessage"
+            class="p-4 text-green-800 rounded-lg bg-green-100 border border-green-200">
+            <span th:text="${successMessage}"></span>
+        </div>
+        <div th:if="${errorMessage}" id="errorMessage"
+            class="p-4 text-red-800 rounded-lg bg-red-100 border border-red-200">
+            <span th:text="${errorMessage}"></span>
+        </div>
+
+        <!-- 追加 -->
+        <section class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <h2 class="text-lg font-bold text-gray-900 mb-1">アカウントを追加</h2>
+            <p class="text-sm text-gray-600 mb-4">初期パスワードは、口頭などで本人に伝えてください（アプリからは送りません）。</p>
+            <form th:action="@{/admin/users/add}" method="post" th:object="${createForm}" id="createForm"
+                class="grid gap-4 sm:grid-cols-2">
+                <label class="flex flex-col gap-1">
+                    <span class="text-sm font-bold text-gray-800">ユーザーID（半角英数字）</span>
+                    <input type="text" th:field="*{userId}" maxlength="50" autocomplete="off"
+                        class="form-input rounded-md border-gray-300 h-10" />
+                    <span th:if="${#fields.hasErrors('userId')}" th:text="${#fields.errors('userId')[0]}"
+                        class="text-sm text-red-600"></span>
+                </label>
+                <fieldset class="flex flex-col gap-1">
+                    <legend class="text-sm font-bold text-gray-800 mb-1">権限</legend>
+                    <div class="flex items-center gap-4 h-10">
+                        <label class="flex items-center gap-2">
+                            <input type="radio" name="admin" value="false" th:checked="${!createForm.admin}" />
+                            <span>一般</span>
+                        </label>
+                        <label class="flex items-center gap-2">
+                            <input type="radio" name="admin" value="true" th:checked="${createForm.admin}" />
+                            <span>管理者</span>
+                        </label>
+                    </div>
+                </fieldset>
+                <!-- パスワードは th:field を使わない（エラーで出し直したときに値を画面へ戻さないため） -->
+                <label class="flex flex-col gap-1">
+                    <span class="text-sm font-bold text-gray-800">初期パスワード（8〜64文字）</span>
+                    <input type="password" name="password" maxlength="64" autocomplete="new-password"
+                        class="form-input rounded-md border-gray-300 h-10" />
+                    <span th:if="${#fields.hasErrors('password')}" th:text="${#fields.errors('password')[0]}"
+                        class="text-sm text-red-600"></span>
+                </label>
+                <label class="flex flex-col gap-1">
+                    <span class="text-sm font-bold text-gray-800">初期パスワード（確認）</span>
+                    <input type="password" name="passwordConfirm" maxlength="64" autocomplete="new-password"
+                        class="form-input rounded-md border-gray-300 h-10" />
+                    <span th:if="${#fields.hasErrors('passwordConfirm')}"
+                        th:text="${#fields.errors('passwordConfirm')[0]}" class="text-sm text-red-600"></span>
+                </label>
+                <div class="sm:col-span-2 flex justify-end">
+                    <button type="submit"
+                        class="flex items-center justify-center gap-2 rounded-md h-10 px-4 bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-colors">
+                        <span class="material-symbols-outlined text-base">person_add</span>
+                        <span>追加する</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- 一覧 -->
+        <section class="rounded-lg border border-gray-200 bg-white shadow-sm overflow-x-auto">
+            <table class="w-full text-sm" id="userTable">
+                <thead class="bg-gray-50 text-left text-gray-700">
+                    <tr>
+                        <th class="px-4 py-3 font-bold">ユーザーID</th>
+                        <th class="px-4 py-3 font-bold">権限</th>
+                        <th class="px-4 py-3 font-bold">状態</th>
+                        <th class="px-4 py-3 font-bold">最終ログイン</th>
+                        <th class="px-4 py-3 font-bold">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="u : ${users}" class="border-t border-gray-200 align-top"
+                        th:with="self=${u.userId == currentUserId},
+                                 locked=${u.lockedUntil != null and u.lockedUntil.isAfter(now)}">
+                        <td class="px-4 py-3">
+                            <span class="font-bold text-gray-900" th:text="${u.userId}"></span>
+                            <span th:if="${self}" class="text-gray-500">（自分）</span>
+                        </td>
+                        <td class="px-4 py-3" th:text="${u.admin} ? '管理者' : '一般'"></td>
+                        <td class="px-4 py-3">
+                            <span th:if="${!u.enabled}" class="text-gray-500">無効</span>
+                            <span th:if="${u.enabled and locked}" class="text-red-600"
+                                th:text="|ロック中（${#temporals.format(u.lockedUntil, 'HH:mm')} まで）|"></span>
+                            <span th:if="${u.enabled and !locked}" class="text-green-700">有効</span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-700"
+                            th:text="${u.lastLoginAt} ? ${#temporals.format(u.lastLoginAt, 'yyyy/MM/dd HH:mm')} : '—'">
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex flex-wrap items-start gap-2">
+                                <!-- パスワード再設定（開いたときだけ入力欄を出す） -->
+                                <details class="w-full sm:w-auto">
+                                    <summary
+                                        class="cursor-pointer inline-flex items-center gap-1 rounded-md h-8 px-3 bg-gray-200 text-gray-800 font-bold hover:bg-gray-300">
+                                        <span class="material-symbols-outlined text-base">key</span>パスワード再設定
+                                    </summary>
+                                    <form th:action="@{/admin/users/password}" method="post"
+                                        class="mt-2 flex flex-col gap-2 rounded-md border border-gray-200 p-3">
+                                        <input type="hidden" name="userId" th:value="${u.userId}" />
+                                        <input type="password" name="password" maxlength="64"
+                                            autocomplete="new-password" placeholder="新しいパスワード（8〜64文字）"
+                                            class="form-input rounded-md border-gray-300 h-9 text-sm" />
+                                        <input type="password" name="passwordConfirm" maxlength="64"
+                                            autocomplete="new-password" placeholder="新しいパスワード（確認）"
+                                            class="form-input rounded-md border-gray-300 h-9 text-sm" />
+                                        <button type="submit"
+                                            class="rounded-md h-8 px-3 bg-primary text-white font-bold hover:bg-primary/90">再設定する</button>
+                                    </form>
+                                </details>
+
+                                <form th:if="${locked}" th:action="@{/admin/users/unlock}" method="post">
+                                    <input type="hidden" name="userId" th:value="${u.userId}" />
+                                    <button type="submit"
+                                        class="inline-flex items-center gap-1 rounded-md h-8 px-3 bg-gray-200 text-gray-800 font-bold hover:bg-gray-300">
+                                        <span class="material-symbols-outlined text-base">lock_open</span>ロック解除
+                                    </button>
+                                </form>
+
+                                <form th:if="${!self and u.enabled}" th:action="@{/admin/users/disable}" method="post"
+                                    data-confirm="このアカウントを無効にしますか？ログインできなくなり、自動ログインも切れます。">
+                                    <input type="hidden" name="userId" th:value="${u.userId}" />
+                                    <button type="submit"
+                                        class="inline-flex items-center gap-1 rounded-md h-8 px-3 bg-gray-200 text-red-700 font-bold hover:bg-gray-300">
+                                        <span class="material-symbols-outlined text-base">block</span>無効にする
+                                    </button>
+                                </form>
+                                <form th:if="${!u.enabled}" th:action="@{/admin/users/enable}" method="post">
+                                    <input type="hidden" name="userId" th:value="${u.userId}" />
+                                    <button type="submit"
+                                        class="inline-flex items-center gap-1 rounded-md h-8 px-3 bg-gray-200 text-gray-800 font-bold hover:bg-gray-300">
+                                        <span class="material-symbols-outlined text-base">check_circle</span>有効にする
+                                    </button>
+                                </form>
+
+                                <form th:if="${!u.admin}" th:action="@{/admin/users/grant-admin}" method="post"
+                                    data-confirm="このアカウントを管理者にしますか？">
+                                    <input type="hidden" name="userId" th:value="${u.userId}" />
+                                    <button type="submit"
+                                        class="inline-flex items-center gap-1 rounded-md h-8 px-3 bg-gray-200 text-gray-800 font-bold hover:bg-gray-300">
+                                        <span class="material-symbols-outlined text-base">shield_person</span>管理者にする
+                                    </button>
+                                </form>
+                                <form th:if="${u.admin and !self}" th:action="@{/admin/users/revoke-admin}"
+                                    method="post" data-confirm="このアカウントの管理者を外しますか？">
+                                    <input type="hidden" name="userId" th:value="${u.userId}" />
+                                    <button type="submit"
+                                        class="inline-flex items-center gap-1 rounded-md h-8 px-3 bg-gray-200 text-gray-800 font-bold hover:bg-gray-300">
+                                        <span class="material-symbols-outlined text-base">remove_moderator</span>管理者を外す
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <p class="text-sm text-gray-600">
+            権限の変更は、そのアカウントが次にログインしたときから効きます。アカウントの削除はできません（使わなくなったら「無効にする」）。
+        </p>
+    </main>
+
+    <script>
+        // 取り消しにくい操作は、押す前に確かめる
+        document.querySelectorAll('form[data-confirm]').forEach((form) => {
+            form.addEventListener('submit', (event) => {
+                if (!window.confirm(form.dataset.confirm)) {
+                    event.preventDefault();
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
