@@ -36,6 +36,8 @@ public class SecurityConfig {
                                                 .requestMatchers("/login", "/css/**", "/js/**", "/maintenance",
                                                                 "/error")
                                                 .permitAll()
+                                                // アカウント管理は管理者だけ（画面の表示だけでなくここでも止める）
+                                                .requestMatchers("/admin/**").hasRole("ADMIN")
                                                 .anyRequest().authenticated())
                                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                                 .formLogin(form -> form

@@ -1,7 +1,7 @@
 package com.example.company_directory.service;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
+import java.util.List;
 
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -48,6 +48,14 @@ public class CustomUserDetailsService implements UserDetailsService {
                 true, // accountNonExpired
                 true, // credentialsNonExpired
                 accountNonLocked, // accountNonLocked
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")));
+                authorities(user));
+    }
+
+    /** 全員が ROLE_USER を持ち、管理者はさらに ROLE_ADMIN を持つ。 */
+    static List<SimpleGrantedAuthority> authorities(User user) {
+        if (user.isAdmin()) {
+            return List.of(new SimpleGrantedAuthority("ROLE_USER"), new SimpleGrantedAuthority("ROLE_ADMIN"));
+        }
+        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
     }
 }
