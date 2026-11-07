@@ -213,6 +213,6 @@ class CompanyListSortTest {
         mockMvc.perform(get("/companies/trash").param("no", "7").param("page", "1").param("size", "10"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(Matchers.containsString("no=7")))
-                .andExpect(content().string(Matchers.containsString("name=\"no\" value=\"7\"")));
+                .andExpect(content().string(Matchers.containsString("type=\"hidden\" name=\"no\" value=\"7\"")));
     }
 }
