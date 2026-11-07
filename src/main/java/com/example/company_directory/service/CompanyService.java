@@ -199,12 +199,17 @@ public class CompanyService {
         String sortOrder = form.getSortOrder() != null ? form.getSortOrder() : "ASC";
 
         // Validate sort field to prevent injection/errors (simple allow-list)
-        List<String> allowedSorts = Arrays.asList("companyId", "companyName", "address", "zipCode", "registrationDate");
+        List<String> allowedSorts = Arrays.asList("displayNumber", "companyId", "companyName", "address", "zipCode",
+                "registrationDate", "remarks");
         if (!allowedSorts.contains(sortBy)) {
             sortBy = "companyId";
         }
 
         Sort sort = Sort.by(Sort.Direction.fromString(sortOrder.toUpperCase()), sortBy);
+        if (!"companyId".equals(sortBy)) {
+            // 一覧と同じく、同じ値の行は企業ID の昇順で並べる
+            sort = sort.and(Sort.by(Sort.Direction.ASC, "companyId"));
+        }
 
         switch (scope) {
             case "SELECTION":
