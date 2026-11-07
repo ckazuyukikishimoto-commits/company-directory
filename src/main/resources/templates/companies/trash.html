@@ -487,6 +487,7 @@
                             <form id="pageSizeForm" th:action="@{/companies/trash}" method="get">
                                 <!-- 検索条件を維持するための隠しフィールド -->
                                 <input type="hidden" name="sort" th:value="${sortParam}" />
+                                <input type="hidden" name="no" th:value="${searchForm?.no}" />
                                 <input type="hidden" name="keyword" th:value="${searchForm?.keyword}" />
                                 <input type="hidden" name="companyId" th:value="${searchForm?.companyId}" />
                                 <input type="hidden" name="companyName" th:value="${searchForm?.companyName}" />
@@ -517,7 +518,7 @@
                             </div>
                             <div class="flex gap-1 text-archive-text">
                                 <!-- First Page -->
-                                <a th:href="@{/companies/trash(page=0, size=${page.size}, sort=${sortParam}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
+                                <a th:href="@{/companies/trash(page=0, size=${page.size}, sort=${sortParam}, no=${searchForm?.no}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
                                     th:classappend="${page.first or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''">
                                     <button th:disabled="${page.first or page.totalElements == 0}"
                                         class="h-8 w-8 rounded flex items-center justify-center hover:bg-archive-dark-panel disabled:opacity-50">
@@ -526,7 +527,7 @@
                                 </a>
 
                                 <!-- Previous Page -->
-                                <a th:href="@{/companies/trash(page=${page.number - 1}, size=${page.size}, sort=${sortParam}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
+                                <a th:href="@{/companies/trash(page=${page.number - 1}, size=${page.size}, sort=${sortParam}, no=${searchForm?.no}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
                                     th:classappend="${page.first or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''">
                                     <button th:disabled="${page.first or page.totalElements == 0}"
                                         class="h-8 w-8 rounded flex items-center justify-center hover:bg-archive-dark-panel disabled:opacity-50">
@@ -535,7 +536,7 @@
                                 </a>
 
                                 <!-- Next Page -->
-                                <a th:href="@{/companies/trash(page=${page.number + 1}, size=${page.size}, sort=${sortParam}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
+                                <a th:href="@{/companies/trash(page=${page.number + 1}, size=${page.size}, sort=${sortParam}, no=${searchForm?.no}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
                                     th:classappend="${page.last or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''">
                                     <button th:disabled="${page.last or page.totalElements == 0}"
                                         class="h-8 w-8 rounded flex items-center justify-center hover:bg-archive-dark-panel disabled:opacity-50">
@@ -544,7 +545,7 @@
                                 </a>
 
                                 <!-- Last Page -->
-                                <a th:href="@{/companies/trash(page=${page.totalPages - 1}, size=${page.size}, sort=${sortParam}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
+                                <a th:href="@{/companies/trash(page=${page.totalPages - 1}, size=${page.size}, sort=${sortParam}, no=${searchForm?.no}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
                                     th:classappend="${page.last or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''">
                                     <button th:disabled="${page.last or page.totalElements == 0}"
                                         class="h-8 w-8 rounded flex items-center justify-center hover:bg-archive-dark-panel disabled:opacity-50">
@@ -726,6 +727,7 @@
             (function () {
                 const table = document.querySelector('table[data-current-sort]');
                 if (!table) return;
+                // data-sort-type は「並び替えできる見出し」の目印として使う（値の種類はサーバー側の並びには使わない）
                 const headers = table.querySelectorAll('thead th[data-col][data-sort-type]');
                 if (headers.length === 0) return;
 
@@ -988,13 +990,13 @@
         })();
     </script>
     <a th:if="${page != null and !page.first and page.totalElements > 0}"
-        th:href="@{/companies/trash(page=${page.number - 1}, size=${page.size}, sort=${sortParam}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
+        th:href="@{/companies/trash(page=${page.number - 1}, size=${page.size}, sort=${sortParam}, no=${searchForm?.no}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
         class="fixed left-4 top-1/2 z-30 -translate-y-1/2 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg transition hover:bg-primary/90"
         aria-label="前のページへ">
         <span class="material-symbols-outlined">arrow_back</span>
     </a>
     <a th:if="${page != null and !page.last and page.totalElements > 0}"
-        th:href="@{/companies/trash(page=${page.number + 1}, size=${page.size}, sort=${sortParam}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
+        th:href="@{/companies/trash(page=${page.number + 1}, size=${page.size}, sort=${sortParam}, no=${searchForm?.no}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
         class="fixed right-4 top-1/2 z-30 -translate-y-1/2 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg transition hover:bg-primary/90"
         aria-label="次のページへ">
         <span class="material-symbols-outlined">arrow_forward</span>

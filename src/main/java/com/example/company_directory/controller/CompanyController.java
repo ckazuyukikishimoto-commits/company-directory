@@ -50,7 +50,7 @@ public class CompanyController {
     @GetMapping
     public String list(@ModelAttribute CompanySearchForm searchForm,
             @RequestParam(name = "size", defaultValue = "100") int size,
-            @PageableDefault(size = 100, sort = "displayNumber", direction = Sort.Direction.ASC) Pageable pageable,
+            @PageableDefault(size = 100) Pageable pageable,
             Model model) {
 
         Sort sort = ListSort.resolve(pageable.getSort(), ListSort.LIST_COLUMNS);
@@ -172,7 +172,7 @@ public class CompanyController {
     @GetMapping("/trash")
     public String trash(@ModelAttribute CompanySearchForm searchForm,
             @RequestParam(value = "size", defaultValue = "100") int size,
-            @PageableDefault(size = 100, sort = "displayNumber", direction = Sort.Direction.ASC) Pageable pageable,
+            @PageableDefault(size = 100) Pageable pageable,
             Model model) {
 
         Sort sort = ListSort.resolve(pageable.getSort(), ListSort.TRASH_COLUMNS);

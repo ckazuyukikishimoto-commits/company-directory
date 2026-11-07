@@ -121,13 +121,38 @@ class CompanyListSortTest {
     void list_unknownColumnFallsBackToDefault() throws Exception {
         when(companyService.searchCompanies(any(), any())).thenAnswer(inv -> emptyPage(inv.getArgument(1)));
 
-        // 画面に無い列（isDeleted）・存在しない列は受け付けない
+        // 画面に無い列（isDeleted）は受け付けない
         mockMvc.perform(get("/companies").param("sort", "isDeleted,desc").param("page", "0"))
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("sortParam", "displayNumber,asc"));
 
         assertThat(listPageable().getSort()).isEqualTo(
                 Sort.by(Sort.Order.asc("displayNumber"), Sort.Order.asc("companyId")));
+    }
+
+    @Test
+    void list_nonexistentColumnFallsBackToDefault() throws Exception {
+        when(companyService.searchCompanies(any(), any())).thenAnswer(inv -> emptyPage(inv.getArgument(1)));
+
+        mockMvc.perform(get("/companies").param("sort", "noSuchColumn,asc"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("sortParam", "displayNumber,asc"));
+
+        assertThat(listPageable().getSort()).isEqualTo(
+                Sort.by(Sort.Order.asc("displayNumber"), Sort.Order.asc("companyId")));
+    }
+
+    @Test
+    void list_usesFirstAllowedColumnWhenSeveralAreSent() throws Exception {
+        when(companyService.searchCompanies(any(), any())).thenAnswer(inv -> emptyPage(inv.getArgument(1)));
+
+        mockMvc.perform(get("/companies").param("sort", "foo,asc").param("sort", "companyName,desc")
+                .param("sort", "address,asc"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("sortParam", "companyName,desc"));
+
+        assertThat(listPageable().getSort()).isEqualTo(
+                Sort.by(Sort.Order.desc("companyName"), Sort.Order.asc("companyId")));
     }
 
     @Test
@@ -178,5 +203,16 @@ class CompanyListSortTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(Matchers.containsString("sort=companyName,asc")))
                 .andExpect(content().string(Matchers.containsString("data-current-sort=\"companyName,asc\"")));
+    }
+
+    @Test
+    void trash_pagingLinksKeepNoFilter() throws Exception {
+        when(companyService.searchTrashCompanies(any(), any()))
+                .thenAnswer(inv -> new PageImpl<>(List.of(), inv.getArgument(1), 50));
+
+        mockMvc.perform(get("/companies/trash").param("no", "7").param("page", "1").param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.containsString("no=7")))
+                .andExpect(content().string(Matchers.containsString("name=\"no\" value=\"7\"")));
     }
 }

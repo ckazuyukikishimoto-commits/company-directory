@@ -754,11 +754,13 @@
                                             class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">並び替え基準</label>
                                         <select name="sortBy" id="exportSortBy"
                                             class="form-select block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white h-9 text-sm">
+                                            <option value="displayNumber">No.</option>
                                             <option value="companyId">企業ID</option>
                                             <option value="companyName">企業名</option>
                                             <option value="address">住所</option>
                                             <option value="zipCode">郵便番号</option>
                                             <option value="registrationDate">登録日</option>
+                                            <option value="remarks">備考</option>
                                         </select>
                                     </div>
                                     <div>
@@ -976,6 +978,7 @@
             (function () {
                 const table = document.querySelector('table[data-current-sort]');
                 if (!table) return;
+                // data-sort-type は「並び替えできる見出し」の目印として使う（値の種類はサーバー側の並びには使わない）
                 const headers = table.querySelectorAll('thead th[data-col][data-sort-type]');
                 if (headers.length === 0) return;
 
@@ -1146,9 +1149,10 @@
                             document.querySelector('input[name="scope"][value="SEARCH"]').checked = true;
                         }
 
-                        // 4. Initialize Sort based on current URL
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const currentSort = urlParams.get('sort'); // e.g., "companyName,desc"
+                        // 4. Initialize Sort based on the list's current order
+                        // （URL ではなくサーバーが決めた並び。一覧で見ている順にそのまま出力する）
+                        const listTable = document.querySelector('table[data-current-sort]');
+                        const currentSort = listTable ? listTable.dataset.currentSort : null; // e.g., "companyName,desc"
                         if (currentSort) {
                             const parts = currentSort.split(',');
                             const sortBy = parts[0]; // field name
