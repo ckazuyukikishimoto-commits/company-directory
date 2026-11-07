@@ -223,6 +223,7 @@
                         <form id="trashSearchForm" th:action="@{/companies/trash}" method="get"
                             th:object="${searchForm}">
                             <input type="hidden" name="size" th:value="${page?.size} ?: 5" />
+                            <input type="hidden" name="sort" th:value="${sortParam}" />
                             <div class="flex flex-col gap-3 pb-3">
                                 <div class="flex items-start gap-3">
                                     <div class="flex-1">
@@ -368,7 +369,7 @@
                 <div
                     class="flex overflow-hidden rounded-lg border border-archive-dark-border bg-archive-dark flex-col flex-1">
                     <div class="overflow-y-auto flex-1">
-                        <table class="resizable-table w-full min-w-[1000px] text-sm">
+                        <table class="resizable-table w-full min-w-[1000px] text-sm" th:data-current-sort="${sortParam}">
                             <thead class="sticky top-0 z-10 bg-amber-50">
                                 <tr class="bg-amber-50">
                                     <th data-col="displayNumber" data-sort-type="number"
@@ -485,6 +486,7 @@
                             <span>表示件数:</span>
                             <form id="pageSizeForm" th:action="@{/companies/trash}" method="get">
                                 <!-- 検索条件を維持するための隠しフィールド -->
+                                <input type="hidden" name="sort" th:value="${sortParam}" />
                                 <input type="hidden" name="keyword" th:value="${searchForm?.keyword}" />
                                 <input type="hidden" name="companyId" th:value="${searchForm?.companyId}" />
                                 <input type="hidden" name="companyName" th:value="${searchForm?.companyName}" />
@@ -515,7 +517,7 @@
                             </div>
                             <div class="flex gap-1 text-archive-text">
                                 <!-- First Page -->
-                                <a th:href="@{/companies/trash(page=0, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
+                                <a th:href="@{/companies/trash(page=0, size=${page.size}, sort=${sortParam}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
                                     th:classappend="${page.first or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''">
                                     <button th:disabled="${page.first or page.totalElements == 0}"
                                         class="h-8 w-8 rounded flex items-center justify-center hover:bg-archive-dark-panel disabled:opacity-50">
@@ -524,7 +526,7 @@
                                 </a>
 
                                 <!-- Previous Page -->
-                                <a th:href="@{/companies/trash(page=${page.number - 1}, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
+                                <a th:href="@{/companies/trash(page=${page.number - 1}, size=${page.size}, sort=${sortParam}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
                                     th:classappend="${page.first or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''">
                                     <button th:disabled="${page.first or page.totalElements == 0}"
                                         class="h-8 w-8 rounded flex items-center justify-center hover:bg-archive-dark-panel disabled:opacity-50">
@@ -533,7 +535,7 @@
                                 </a>
 
                                 <!-- Next Page -->
-                                <a th:href="@{/companies/trash(page=${page.number + 1}, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
+                                <a th:href="@{/companies/trash(page=${page.number + 1}, size=${page.size}, sort=${sortParam}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
                                     th:classappend="${page.last or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''">
                                     <button th:disabled="${page.last or page.totalElements == 0}"
                                         class="h-8 w-8 rounded flex items-center justify-center hover:bg-archive-dark-panel disabled:opacity-50">
@@ -542,7 +544,7 @@
                                 </a>
 
                                 <!-- Last Page -->
-                                <a th:href="@{/companies/trash(page=${page.totalPages - 1}, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
+                                <a th:href="@{/companies/trash(page=${page.totalPages - 1}, size=${page.size}, sort=${sortParam}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
                                     th:classappend="${page.last or page.totalElements == 0} ? 'pointer-events-none opacity-50' : ''">
                                     <button th:disabled="${page.last or page.totalElements == 0}"
                                         class="h-8 w-8 rounded flex items-center justify-center hover:bg-archive-dark-panel disabled:opacity-50">
@@ -719,94 +721,45 @@
             })();
 
             // Table Sort Logic
+            // 並び替えはサーバー側で全件に対して行う（ページを移っても順番が保たれる）。
+            // 見出しをクリックしたら sort を付けて 1 ページ目を開き直す。昇順 → 降順 → 既定（No. の昇順）の順に切り替わる。
             (function () {
-                const table = document.querySelector('table');
-                const tbody = table ? table.querySelector('tbody') : null;
-                const headers = table ? table.querySelectorAll('thead th[data-col]') : [];
-                const state = { column: null, direction: null };
-                const originalRows = tbody ? Array.from(tbody.querySelectorAll('tr')) : [];
+                const table = document.querySelector('table[data-current-sort]');
+                if (!table) return;
+                const headers = table.querySelectorAll('thead th[data-col][data-sort-type]');
+                if (headers.length === 0) return;
 
-                if (!table || !tbody || headers.length === 0) return;
-
-                function parseValue(value, type) {
-                    if (type === 'number') {
-                        const num = parseFloat(value.replace(/[^0-9.-]/g, ''));
-                        return Number.isNaN(num) ? null : num;
-                    }
-                    if (type === 'date') {
-                        const date = Date.parse(value);
-                        return Number.isNaN(date) ? null : date;
-                    }
-                    return value.toLowerCase();
-                }
-
-                function updateIcons(activeCol, direction) {
-                    headers.forEach(header => {
-                        const icon = header.querySelector('.sort-icon');
-                        if (!icon) return;
-                        if (header.dataset.col === activeCol && direction) {
-                            icon.textContent = direction === 'asc' ? '↑' : '↓';
-                        } else {
-                            icon.textContent = '↕';
-                        }
-                    });
-                }
-
-                function resetRows() {
-                    originalRows.forEach(row => tbody.appendChild(row));
-                }
-
-                function sortRows(column, type, direction) {
-                    const rows = Array.from(tbody.querySelectorAll('tr'))
-                        .filter(row => !row.classList.contains('js-empty-row'));
-
-                    rows.sort((a, b) => {
-                        const aCell = a.querySelector(`[data-col="${column}"]`);
-                        const bCell = b.querySelector(`[data-col="${column}"]`);
-                        const aValue = parseValue(aCell ? aCell.textContent.trim() : '', type);
-                        const bValue = parseValue(bCell ? bCell.textContent.trim() : '', type);
-
-                        if (aValue === null && bValue === null) return 0;
-                        if (aValue === null) return 1;
-                        if (bValue === null) return -1;
-
-                        if (aValue < bValue) return direction === 'asc' ? -1 : 1;
-                        if (aValue > bValue) return direction === 'asc' ? 1 : -1;
-                        return 0;
-                    });
-
-                    rows.forEach(row => tbody.appendChild(row));
-                }
+                const [currentCol, currentDirRaw] = (table.dataset.currentSort || '').split(',');
+                const currentDir = currentDirRaw === 'desc' ? 'desc' : 'asc';
 
                 headers.forEach(header => {
-                    if (header.dataset.col === 'actions') return;
+                    const icon = header.querySelector('.sort-icon');
+                    if (!icon) return;
+                    if (header.dataset.col === currentCol) {
+                        icon.textContent = currentDir === 'asc' ? '↑' : '↓';
+                    } else {
+                        icon.textContent = '↕';
+                    }
+                });
+
+                headers.forEach(header => {
                     header.addEventListener('click', (event) => {
                         if (window.__isResizingColumn) return;
                         if (event.target.closest('.col-resizer')) return;
                         const column = header.dataset.col;
-                        const type = header.dataset.sortType || 'text';
-                        const isSame = state.column === column;
-                        let nextDirection = 'asc';
+                        const params = new URLSearchParams(window.location.search);
 
-                        if (isSame) {
-                            if (state.direction === 'asc') {
-                                nextDirection = 'desc';
-                            } else if (state.direction === 'desc') {
-                                nextDirection = null;
-                            }
-                        }
-
-                        if (nextDirection === null) {
-                            state.column = null;
-                            state.direction = null;
-                            resetRows();
-                            updateIcons(null, null);
+                        if (column === currentCol && currentDir === 'asc') {
+                            params.set('sort', `${column},desc`);
+                        } else if (column === currentCol && currentDir === 'desc') {
+                            params.delete('sort');
                         } else {
-                            state.column = column;
-                            state.direction = nextDirection;
-                            sortRows(column, type, nextDirection);
-                            updateIcons(column, nextDirection);
+                            params.set('sort', `${column},asc`);
                         }
+                        params.set('page', '0');
+
+                        const query = params.toString();
+                        window.location.href = `${window.location.pathname}${query ? `?${query}` : ''}`;
                     });
                 });
             })();
@@ -1035,13 +988,13 @@
         })();
     </script>
     <a th:if="${page != null and !page.first and page.totalElements > 0}"
-        th:href="@{/companies/trash(page=${page.number - 1}, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
+        th:href="@{/companies/trash(page=${page.number - 1}, size=${page.size}, sort=${sortParam}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
         class="fixed left-4 top-1/2 z-30 -translate-y-1/2 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg transition hover:bg-primary/90"
         aria-label="前のページへ">
         <span class="material-symbols-outlined">arrow_back</span>
     </a>
     <a th:if="${page != null and !page.last and page.totalElements > 0}"
-        th:href="@{/companies/trash(page=${page.number + 1}, size=${page.size}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
+        th:href="@{/companies/trash(page=${page.number + 1}, size=${page.size}, sort=${sortParam}, keyword=${searchForm.keyword}, companyId=${searchForm.companyId}, companyName=${searchForm.companyName}, address=${searchForm.address}, zipCode=${searchForm.zipCode}, dateFrom=${searchForm.dateFrom}, dateTo=${searchForm.dateTo})}"
         class="fixed right-4 top-1/2 z-30 -translate-y-1/2 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg transition hover:bg-primary/90"
         aria-label="次のページへ">
         <span class="material-symbols-outlined">arrow_forward</span>
