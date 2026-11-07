@@ -369,7 +369,7 @@
                 <div
                     class="flex overflow-hidden rounded-lg border border-archive-dark-border bg-archive-dark flex-col flex-1">
                     <div class="overflow-y-auto flex-1">
-                        <table class="resizable-table w-full min-w-[1000px] text-sm" th:data-current-sort="${sortParam}">
+                        <table class="resizable-table w-full min-w-[1000px] text-sm" th:data-current-sort="${sortParam}" th:data-default-sort="${defaultSortParam}">
                             <thead class="sticky top-0 z-10 bg-amber-50">
                                 <tr class="bg-amber-50">
                                     <th data-col="displayNumber" data-sort-type="number"
@@ -723,7 +723,7 @@
 
             // Table Sort Logic
             // 並び替えはサーバー側で全件に対して行う（ページを移っても順番が保たれる）。
-            // 見出しをクリックしたら sort を付けて 1 ページ目を開き直す。昇順 → 降順 → 既定（No. の昇順）の順に切り替わる。
+            // 見出しをクリックしたら sort を付けて 1 ページ目を開き直す。昇順 → 降順 → 既定（削除日時の新しい順）の順に切り替わる。
             (function () {
                 const table = document.querySelector('table[data-current-sort]');
                 if (!table) return;
@@ -731,7 +731,9 @@
                 const headers = table.querySelectorAll('thead th[data-col][data-sort-type]');
                 if (headers.length === 0) return;
 
-                const [currentCol, currentDirRaw] = (table.dataset.currentSort || '').split(',');
+                const currentSort = table.dataset.currentSort || '';
+                const defaultSort = table.dataset.defaultSort || '';
+                const [currentCol, currentDirRaw] = currentSort.split(',');
                 const currentDir = currentDirRaw === 'desc' ? 'desc' : 'asc';
 
                 headers.forEach(header => {
@@ -751,12 +753,23 @@
                         const column = header.dataset.col;
                         const params = new URLSearchParams(window.location.search);
 
-                        if (column === currentCol && currentDir === 'asc') {
-                            params.set('sort', `${column},desc`);
-                        } else if (column === currentCol && currentDir === 'desc') {
+                        // 次の並び: 別の列なら昇順。同じ列なら 昇順 → 降順 → 既定。
+                        // 今が既定の並び（例: ゴミ箱の削除日時の降順）なら、逆向きにする
+                        let next;
+                        if (column !== currentCol) {
+                            next = `${column},asc`;
+                        } else if (currentSort === defaultSort) {
+                            next = `${column},${currentDir === 'asc' ? 'desc' : 'asc'}`;
+                        } else if (currentDir === 'asc') {
+                            next = `${column},desc`;
+                        } else {
+                            next = null;
+                        }
+
+                        if (next === null || next === defaultSort) {
                             params.delete('sort');
                         } else {
-                            params.set('sort', `${column},asc`);
+                            params.set('sort', next);
                         }
                         params.set('page', '0');
 

@@ -164,7 +164,8 @@ class CompanyListSortTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(Matchers.containsString("sort=address,asc")))
                 .andExpect(content().string(Matchers.containsString("name=\"sort\" value=\"address,asc\"")))
-                .andExpect(content().string(Matchers.containsString("data-current-sort=\"address,asc\"")));
+                .andExpect(content().string(Matchers.containsString("data-current-sort=\"address,asc\"")))
+                .andExpect(content().string(Matchers.containsString("data-default-sort=\"displayNumber,asc\"")));
     }
 
     // ---- ゴミ箱 ----
@@ -182,16 +183,30 @@ class CompanyListSortTest {
     }
 
     @Test
+    void trash_defaultsToNewestDeletedFirst() throws Exception {
+        when(companyService.searchTrashCompanies(any(), any())).thenAnswer(inv -> emptyPage(inv.getArgument(1)));
+
+        mockMvc.perform(get("/companies/trash"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("sortParam", "deletedAt,desc"))
+                .andExpect(model().attribute("defaultSortParam", "deletedAt,desc"))
+                .andExpect(content().string(Matchers.containsString("data-default-sort=\"deletedAt,desc\"")));
+
+        assertThat(trashPageable().getSort()).isEqualTo(
+                Sort.by(Sort.Order.desc("deletedAt"), Sort.Order.asc("companyId")));
+    }
+
+    @Test
     void trash_listOnlyColumnFallsBackToDefault() throws Exception {
         when(companyService.searchTrashCompanies(any(), any())).thenAnswer(inv -> emptyPage(inv.getArgument(1)));
 
         // 備考はゴミ箱の画面に無い列
         mockMvc.perform(get("/companies/trash").param("sort", "remarks,asc"))
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("sortParam", "displayNumber,asc"));
+                .andExpect(model().attribute("sortParam", "deletedAt,desc"));
 
         assertThat(trashPageable().getSort()).isEqualTo(
-                Sort.by(Sort.Order.asc("displayNumber"), Sort.Order.asc("companyId")));
+                Sort.by(Sort.Order.desc("deletedAt"), Sort.Order.asc("companyId")));
     }
 
     @Test

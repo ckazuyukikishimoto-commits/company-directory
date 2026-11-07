@@ -53,7 +53,7 @@ public class CompanyController {
             @PageableDefault(size = 100) Pageable pageable,
             Model model) {
 
-        Sort sort = ListSort.resolve(pageable.getSort(), ListSort.LIST_COLUMNS);
+        Sort sort = ListSort.resolve(pageable.getSort(), ListSort.LIST_COLUMNS, ListSort.LIST_DEFAULT);
         pageable = PageRequest.of(pageable.getPageNumber(), size, sort);
         // 検索＆ページ取得
         Page<Company> page = companyService.searchCompanies(searchForm, pageable);
@@ -62,6 +62,7 @@ public class CompanyController {
         model.addAttribute("companies", page.getContent()); // 現在のページのデータリスト
         model.addAttribute("searchForm", searchForm); // 検索条件を画面に残すために返す
         model.addAttribute("sortParam", ListSort.toParam(sort)); // ページ送り・検索で並び順を引き継ぐ
+        model.addAttribute("defaultSortParam", ListSort.toParam(ListSort.LIST_DEFAULT));
 
         return "companies/list";
     }
@@ -175,7 +176,7 @@ public class CompanyController {
             @PageableDefault(size = 100) Pageable pageable,
             Model model) {
 
-        Sort sort = ListSort.resolve(pageable.getSort(), ListSort.TRASH_COLUMNS);
+        Sort sort = ListSort.resolve(pageable.getSort(), ListSort.TRASH_COLUMNS, ListSort.TRASH_DEFAULT);
         pageable = PageRequest.of(pageable.getPageNumber(), size, sort);
         Page<Company> page = companyService.searchTrashCompanies(searchForm, pageable);
 
@@ -183,6 +184,7 @@ public class CompanyController {
         model.addAttribute("trashCompanies", page.getContent());
         model.addAttribute("searchForm", searchForm);
         model.addAttribute("sortParam", ListSort.toParam(sort));
+        model.addAttribute("defaultSortParam", ListSort.toParam(ListSort.TRASH_DEFAULT));
 
         return "companies/trash";
     }
