@@ -174,12 +174,26 @@ class CompanyListSortTest {
     void trash_sortsAllRowsByRequestedColumn() throws Exception {
         when(companyService.searchTrashCompanies(any(), any())).thenAnswer(inv -> emptyPage(inv.getArgument(1)));
 
-        mockMvc.perform(get("/companies/trash").param("sort", "deletedAt,desc"))
+        // 既定（削除日時の降順）と違う並びを送り、指定どおりに DB へ渡ることを確かめる
+        mockMvc.perform(get("/companies/trash").param("sort", "companyName,desc"))
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("sortParam", "deletedAt,desc"));
+                .andExpect(model().attribute("sortParam", "companyName,desc"));
 
         assertThat(trashPageable().getSort()).isEqualTo(
-                Sort.by(Sort.Order.desc("deletedAt"), Sort.Order.asc("companyId")));
+                Sort.by(Sort.Order.desc("companyName"), Sort.Order.asc("companyId")));
+    }
+
+    @Test
+    void trash_deletedAtAscendingIsKept() throws Exception {
+        when(companyService.searchTrashCompanies(any(), any())).thenAnswer(inv -> emptyPage(inv.getArgument(1)));
+
+        // 既定の列の逆向き（古い順）も、既定に戻さずそのまま使う
+        mockMvc.perform(get("/companies/trash").param("sort", "deletedAt,asc"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("sortParam", "deletedAt,asc"));
+
+        assertThat(trashPageable().getSort()).isEqualTo(
+                Sort.by(Sort.Order.asc("deletedAt"), Sort.Order.asc("companyId")));
     }
 
     @Test
